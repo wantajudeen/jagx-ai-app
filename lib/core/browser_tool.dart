@@ -18,14 +18,20 @@ class BrowserTool {
       final res = await _dio.get(url);
       final raw = res.data?.toString() ?? '';
       final text = raw
-          .replaceAll(RegExp(r'<script[^>]*>.*?</script>', caseSensitive: false, dotAll: true), ' ')
-          .replaceAll(RegExp(r'<style[^>]*>.*?</style>', caseSensitive: false, dotAll: true), ' ')
+          .replaceAll(
+              RegExp(r'<script[^>]*>.*?</script>',
+                  caseSensitive: false, dotAll: true),
+              ' ')
+          .replaceAll(
+              RegExp(r'<style[^>]*>.*?</style>',
+                  caseSensitive: false, dotAll: true),
+              ' ')
           .replaceAll(RegExp(r'<[^>]+>'), ' ')
           .replaceAll(RegExp(r'\s+'), ' ')
           .trim();
-      if (text.length > 6000) return text.substring(0, 6000) + '…';
+      if (text.length > 6000) return '${text.substring(0, 6000)}…';
       return text.isEmpty ? 'Page had no readable text.' : text;
-    } catch (e) {
+    } catch (_) {
       return 'Could not open $url';
     }
   }
@@ -38,7 +44,7 @@ class BrowserTool {
         'https://html.duckduckgo.com/html/?q=$q',
       );
       final raw = res.data?.toString() ?? '';
-      final links = RegExp(r'uddg=([^&"\']+)')
+      final links = RegExp(r'uddg=([^&]+)')
           .allMatches(raw)
           .map((m) => Uri.decodeComponent(m.group(1)!))
           .where((u) => u.startsWith('http'))
