@@ -7,20 +7,24 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.jagx.ai.core.OpenRouter
 
-data class Agent(val name: String, val role: String, val model: String)
+data class Agent(
+    val name: String,
+    val role: String,
+    val model: String
+)
 
 @Composable
 fun BotScreen() {
     val agents = listOf(
-        Agent("Navigator", "Research & web search", "llama-3.1-8b"),
-        Agent("Coder", "Code & architecture", "qwen-2.5-coder"),
-        Agent("Analyst", "Finance & data", "gemini-flash"),
-        Agent("Writer", "Content & copy", "llama-3.1-70b"),
-        Agent("Planner", "Company & product plans", "deepseek-r1")
+        Agent("Navigator", "Research & web search", OpenRouter.DEFAULT_MODEL),
+        Agent("Coder", "Code & architecture", OpenRouter.CODER_MODEL),
+        Agent("Analyst", "Finance & data", OpenRouter.DEFAULT_MODEL),
+        Agent("Writer", "Content & copy", OpenRouter.STRONG_MODEL),
+        Agent("Planner", "Company & product plans", OpenRouter.STRONG_MODEL)
     )
 
     Column(
@@ -36,7 +40,7 @@ fun BotScreen() {
             modifier = Modifier.padding(vertical = 16.dp)
         )
         Text(
-            "Multi-agent workspace • free models only",
+            "Multi-agent workspace • free OpenRouter models",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -63,7 +67,7 @@ fun BotScreen() {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            "Model: ${agent.model}",
+                            agent.model.substringAfterLast("/").take(40),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.secondary
                         )

@@ -14,11 +14,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jagx.ai.core.OpenRouter
 import kotlinx.coroutines.launch
 
 data class ChatMessage(val id: String, val text: String, val isUser: Boolean)
@@ -29,19 +29,50 @@ fun AskScreen() {
     var messages by remember {
         mutableStateOf(
             listOf(
-                ChatMessage("1", "Welcome to JagX AI — Nigeria-first intelligence. Ask me anything.", false)
+                ChatMessage(
+                    "1",
+                    "Welcome to JagX AI — Nigeria-first intelligence. Ask me anything.",
+                    false
+                )
             )
         )
     }
+    var isLoading by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+
+    fun send() {
+        val text = input.trim()
+        if (text.isBlank() || isLoading) return
+        val userMsg = ChatMessage(System.currentTimeMillis().toString(), text, true)
+        messages = messages + userMsg
+        input = ""
+        isLoading = true
+        scope.launch {
+            listState.animateScrollToItem(messages.lastIndex)
+            val history = messages
+                .filter { it.id != "1" || messages.size > 2 }
+                .map { (if (it.isUser) "user" else "assistant") to it.text }
+            val replyText = try {
+                OpenRouter.chat(history)
+            } catch (e: Exception) {
+                "Error: ${e.message}"
+            }
+            messages = messages + ChatMessage(
+                (System.currentTimeMillis() + 1).toString(),
+                replyText,
+                false
+            )
+            isLoading = false
+            listState.animateScrollToItem(messages.lastIndex)
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Top bar
         TopAppBar(
             title = {
                 Text(
@@ -55,7 +86,6 @@ fun AskScreen() {
             )
         )
 
-        // Messages
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -68,9 +98,18 @@ fun AskScreen() {
             items(messages, key = { it.id }) { msg ->
                 MessageBubble(msg)
             }
+            if (isLoading) {
+                item {
+                    Text(
+                        "JagX is thinking…",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
         }
 
-        // Input row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -94,7 +133,7 @@ fun AskScreen() {
                 decorationBox = { inner ->
                     if (input.isEmpty()) {
                         Text(
-                            "Ask JagX anything...",
+                            "Ask JagX anything…",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 16.sp
                         )
@@ -102,29 +141,19 @@ fun AskScreen() {
                     inner()
                 }
             )
-            IconButton(onClick = { /* TODO voice */ }) {
-                Icon(Icons.Default.Mic, contentDescription = "Voice", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            IconButton(onClick = { /* voice next */ }) {
+                Icon(
+                    Icons.Default.Mic,
+                    contentDescription = "Voice",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            IconButton(
-                onClick = {
-                    if (input.isNotBlank()) {
-                        val userMsg = ChatMessage(System.currentTimeMillis().toString(), input, true)
-                        messages = messages + userMsg
-                        input = ""
-                        // Placeholder reply (real OpenRouter later)
-                        val reply = ChatMessage(
-                            (System.currentTimeMillis() + 1).toString(),
-                            "JagX is thinking... (OpenRouter + agents coming next)",
-                            false
-                        )
-                        messages = messages + reply
-                        scope.launch {
-                            listState.animateScrollToItem(messages.lastIndex)
-                        }
-                    }
-                }
-            ) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.primary)
+            IconButton(onClick = { send() }, enabled = !isLoading) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Send,
+                    contentDescription = "Send",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
