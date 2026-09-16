@@ -23,24 +23,54 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Make gradlew executable
+      - name: Bootstrap Gradle wrapper
         run: |
-          if [ -f gradlew ]; then chmod +x gradlew; fi
-          # Create a minimal gradlew if missing (for pure Android)
+          # Ensure wrapper exists
           if [ ! -f gradlew ]; then
-            curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradlew -o gradlew
+            gradle wrapper --gradle-version 8.9 || true
+          fi
+          if [ ! -f gradlew ]; then
+            # Fallback: download official wrapper files
+            curl -sL -o gradlew https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradlew
             chmod +x gradlew
             mkdir -p gradle/wrapper
-            curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+            curl -sL -o gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.9.0/gradle/wrapper/gradle-wrapper.jar
+            cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.9-bin.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+EOF
           fi
+          chmod +x gradlew
+          ls -la gradlew gradle/wrapper/
+
+      - name: Create default launcher icons if missing
+        run: |
+          for d in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
+            mkdir -p app/src/main/res/$d
+            # Minimal 1x1 black PNG as placeholder (build needs the file)
+            printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82' > app/src/main/res/$d/ic_launcher.png
+            cp app/src/main/res/$d/ic_launcher.png app/src/main/res/$d/ic_launcher_round.png
+          done
+          mkdir -p app/src/main/res/values
+          cat > app/src/main/res/values/strings.xml << 'EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">JagX AI</string>
+</resources>
+EOF
 
       - name: Build Release APK
         run: |
           set -o pipefail
-          ./gradlew assembleRelease --stacktrace 2>&1 | tee build_log.txt
+          ./gradlew assembleRelease --stacktrace --no-daemon 2>&1 | tee build_log.txt
 
       - name: Upload build log on failure
         if: failure()
