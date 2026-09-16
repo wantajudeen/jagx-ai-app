@@ -10,6 +10,7 @@ import '../screens/onboarding_screen.dart';
 import '../screens/premium_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/splash_screen.dart';
+import '../screens/terms_screen.dart';
 import 'profile.dart';
 
 bool get _hasSupabase {
@@ -31,7 +32,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final session = Supabase.instance.client.auth.currentSession;
       final loggedIn = session != null;
 
-      if (!loggedIn && path != '/' && path != '/auth') return '/auth';
+      if (!loggedIn && path != '/' && path != '/auth' && path != '/terms') {
+        return '/auth';
+      }
       if (loggedIn && (path == '/auth' || path == '/')) {
         final need = await Profile.needsOnboarding();
         return need ? '/onboarding' : '/chat';
@@ -47,6 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/premium', builder: (_, __) => const PremiumScreen()),
       GoRoute(path: '/github', builder: (_, __) => const GithubConnectScreen()),
+      GoRoute(path: '/terms', builder: (_, __) => const TermsScreen()),
     ],
   );
 });
