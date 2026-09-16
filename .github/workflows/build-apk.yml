@@ -69,7 +69,7 @@ jobs:
           cp -a /tmp/jagx_lib lib
           cp /tmp/jagx_pubspec.yaml pubspec.yaml
 
-      - name: Generate upload keystore (sideload-signed APK)
+      - name: Generate upload keystore
         run: |
           keytool -genkey -v \
             -keystore android/app/jagx-upload.jks \
@@ -89,28 +89,36 @@ jobs:
           storeFile=jagx-upload.jks
           EOF
 
-      - name: Patch Android Gradle for release signing + SDK
+      - name: Patch Android (correct Kotlin DSL)
         run: |
           python3 << 'PY'
+          import re
           from pathlib import Path
 
-          # Prefer .kts (newer Flutter)
           kts = Path("android/app/build.gradle.kts")
           groovy = Path("android/app/build.gradle")
 
-          if kts.exists():
-              t = kts.read_text()
-              # inject signing if missing
-              if "key.properties" not in t:
-                  inject = '''
+          def fix_sdk(text: str) -> str:
+              text = re.sub(r"compileSdk\s*=\s*[^\n]+", "compileSdk = 35", text)
+              text = re.sub(r"minSdk\s*=\s*[^\n]+", "minSdk = 24", text)
+              text = re.sub(r"targetSdk\s*=\s*[^\n]+", "targetSdk = 35", text)
+              text = re.sub(r"compileSdkVersion\s+[^\n]+", "compileSdkVersion 35", text)
+              text = re.sub(r"minSdkVersion\s+[^\n]+", "minSdkVersion 24", text)
+              text = re.sub(r"targetSdkVersion\s+[^\n]+", "targetSdkVersion 35", text)
+              return text
+
+          def add_signing_kts(text: str) -> str:
+              props = '''
 val keystoreProperties = java.util.Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
 }
 '''
-                  t = t.replace("android {", inject + "\nandroid {", 1)
-                  t = t.replace(
+              if "keystoreProperties" not in text:
+                  text = text.replace("android {", props + "\nandroid {", 1)
+              if "signingConfigs" not in text:
+                  text = text.replace(
                       "buildTypes {",
                       '''signingConfigs {
         create("release") {
@@ -126,68 +134,44 @@ if (keystorePropertiesFile.exists()) {
 ''',
                       1,
                   )
-                  t = t.replace(
-                      "release {",
-                      "release {\n            signingConfig = signingConfigs.getByName(\"release\")",
-                      1,
+              if 'signingConfig = signingConfigs.getByName("release")' not in text:
+                  text = re.sub(
+                      r"(getByName\(\"release\"\)\s*\{)",
+                      r'\1\n            signingConfig = signingConfigs.getByName("release")',
+                      text,
+                      count=1,
                   )
-              t = t.replace("compileSdk = 34", "compileSdk = 35")
-              t = t.replace("compileSdk = 33", "compileSdk = 35")
-              t = t.replace("targetSdk = 34", "targetSdk = 35")
-              t = t.replace("targetSdk = 33", "targetSdk = 35")
-              t = t.replace("minSdk = 21", "minSdk = 24")
+                  if 'signingConfig = signingConfigs.getByName("release")' not in text:
+                      text = re.sub(
+                          r"(release\s*\{)",
+                          r'\1\n            signingConfig = signingConfigs.getByName("release")',
+                          text,
+                          count=1,
+                      )
+              return text
+
+          if kts.exists():
+              t = kts.read_text()
+              t = fix_sdk(t)
+              t = add_signing_kts(t)
               kts.write_text(t)
-              print("patched build.gradle.kts")
+              print("=== build.gradle.kts ===")
+              print(t)
           elif groovy.exists():
-              t = groovy.read_text()
-              if "key.properties" not in t:
-                  inject = '''
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-}
-'''
-                  t = t.replace("android {", inject + "\nandroid {", 1)
-                  t = t.replace(
-                      "buildTypes {",
-                      """signingConfigs {
-        release {
-            if (keystorePropertiesFile.exists()) {
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-                storeFile file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-            }
-        }
-    }
-    buildTypes {
-""",
-                      1,
-                  )
-                  t = t.replace(
-                      "release {",
-                      "release {\n            signingConfig signingConfigs.release",
-                      1,
-                  )
+              t = fix_sdk(groovy.read_text())
               groovy.write_text(t)
-              print("patched build.gradle")
+              print("patched groovy")
 
           man = Path("android/app/src/main/AndroidManifest.xml")
           if man.exists():
               m = man.read_text()
-              m = m.replace('android:label="jagx_ai"', 'android:label="JagX AI"')
-              m = m.replace('android:label="jagx ai"', 'android:label="JagX AI"')
+              m = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', m)
               if "android.permission.INTERNET" not in m:
-                  m = m.replace(
-                      "<manifest",
-                      '<manifest',
-                      1,
-                  )
-                  m = m.replace(
-                      ">",
-                      '>\n    <uses-permission android:name="android.permission.INTERNET"/>',
-                      1,
+                  m = re.sub(
+                      r"(<manifest[^>]*>)",
+                      r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>',
+                      m,
+                      count=1,
                   )
               if "io.supabase.jagxai" not in m:
                   intent = '''
@@ -199,7 +183,7 @@ if (keystorePropertiesFile.exists()) {
                 </intent-filter>'''
                   m = m.replace("</activity>", intent + "\n        </activity>", 1)
               man.write_text(m)
-              print("patched manifest")
+              print("manifest ok")
           PY
 
       - name: Pub get
@@ -211,7 +195,7 @@ if (keystorePropertiesFile.exists()) {
       - name: Build signed release APK
         run: flutter build apk --release --no-tree-shake-icons
 
-      - name: Verify APK exists
+      - name: Verify APK
         run: |
           ls -lh build/app/outputs/flutter-apk/
           test -f build/app/outputs/flutter-apk/app-release.apk
