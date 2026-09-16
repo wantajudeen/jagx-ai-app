@@ -31,31 +31,43 @@ jobs:
 
       - name: Make gradlew executable + fetch wrapper jar
         run: |
-          chmod +x gradlew
+          chmod +x gradlew || true
           mkdir -p gradle/wrapper
           if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
             curl -sL -o gradle/wrapper/gradle-wrapper.jar \
               https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar
           fi
+          # Ensure properties exist
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.9-bin.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+EOF
           ls -la gradlew gradle/wrapper/
 
-      - name: Ensure launcher icons exist
+      - name: Generate JagX icons (angular J + circuit)
         run: |
-          for d in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
-            mkdir -p app/src/main/res/$d
-            if [ ! -f app/src/main/res/$d/ic_launcher.png ]; then
-              # Minimal valid 1x1 PNG
-              printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82' > app/src/main/res/$d/ic_launcher.png
-              cp app/src/main/res/$d/ic_launcher.png app/src/main/res/$d/ic_launcher_round.png
-            fi
+          python3 scripts/make_jagx_icon.py /tmp/icon512.png 512
+          for pair in "48:mipmap-mdpi" "72:mipmap-hdpi" "96:mipmap-xhdpi" "144:mipmap-xxhdpi" "192:mipmap-xxxhdpi"; do
+            size="${pair%%:*}"
+            folder="${pair##*:}"
+            mkdir -p "app/src/main/res/$folder"
+            python3 scripts/make_jagx_icon.py "app/src/main/res/$folder/ic_launcher.png" "$size"
+            cp "app/src/main/res/$folder/ic_launcher.png" "app/src/main/res/$folder/ic_launcher_round.png"
           done
           mkdir -p app/src/main/res/values
-          [ -f app/src/main/res/values/strings.xml ] || cat > app/src/main/res/values/strings.xml << 'EOF'
+          cat > app/src/main/res/values/strings.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">JagX AI</string>
 </resources>
 EOF
+          echo "Icons ready"
+          ls -la app/src/main/res/mipmap-*/
 
       - name: Build Release APK
         run: |
@@ -69,14 +81,13 @@ EOF
           name: apk-build-log
           path: build_log.txt
 
-      - name: Prepare APK
+      - name: Prepare APK + .jagx
         if: success()
         run: |
           mkdir -p downloads
           APK=$(find app/build/outputs/apk -name "*.apk" | head -1)
           echo "Found APK: $APK"
           cp "$APK" downloads/JagX-AI.apk
-          # Also create .jagx branded copy
           cp "$APK" downloads/JagX-AI.jagx
           ls -lh downloads/
 
@@ -97,9 +108,9 @@ EOF
           tag_name: apk-latest
           name: JagX AI Android APK (Kotlin)
           body: |
-            Native Kotlin + Jetpack Compose.
-            Files: JagX-AI.apk + JagX-AI.jagx
-            Uninstall old version first.
+            Native Kotlin + Jetpack Compose + OpenRouter chat.
+            Files: JagX-AI.apk + JagX-AI.jagx (JagX OS package)
+            Uninstall old version first, then install.
           files: |
             downloads/JagX-AI.apk
             downloads/JagX-AI.jagx
