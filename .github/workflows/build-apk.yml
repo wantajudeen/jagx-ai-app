@@ -69,79 +69,44 @@ jobs:
           cp -a /tmp/jagx_lib lib
           cp /tmp/jagx_pubspec.yaml pubspec.yaml
 
-      - name: Write clean build.gradle.kts (no sed)
-        run: |
-          cat > android/app/build.gradle.kts << 'EOF'
-          plugins {
-              id("com.android.application")
-              id("kotlin-android")
-              // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-              id("dev.flutter.flutter-gradle-plugin")
-          }
-
-          android {
-              namespace = "com.jagx.ai.jagx_ai"
-              compileSdk = 35
-              ndkVersion = flutter.ndkVersion
-
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_11
-                  targetCompatibility = JavaVersion.VERSION_11
-              }
-
-              kotlinOptions {
-                  jvmTarget = JavaVersion.VERSION_11.toString()
-              }
-
-              defaultConfig {
-                  applicationId = "com.jagx.ai.jagx_ai"
-                  minSdk = 24
-                  targetSdk = 35
-                  versionCode = flutter.versionCode
-                  versionName = flutter.versionName
-              }
-
-              buildTypes {
-                  release {
-                      // Debug keys — installable sideload APK
-                      signingConfig = signingConfigs.getByName("debug")
-                  }
-              }
-          }
-
-          flutter {
-              source = "../.."
-          }
-          EOF
-          echo "--- gradle.kts ---"
-          cat android/app/build.gradle.kts
-
-      - name: Manifest label + internet + OAuth
+      - name: Soft patch only (label + internet + release uses debug signing)
         run: |
           python3 << 'PY'
           import re
           from pathlib import Path
-          p = Path("android/app/src/main/AndroidManifest.xml")
-          m = p.read_text()
-          m = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', m)
-          if "android.permission.INTERNET" not in m:
-              m = re.sub(
-                  r"(<manifest[^>]*>)",
-                  r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>',
-                  m,
-                  count=1,
-              )
-          if "io.supabase.jagxai" not in m:
-              intent = '''
+
+          man = Path("android/app/src/main/AndroidManifest.xml")
+          if man.exists():
+              m = man.read_text()
+              m = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', m)
+              if "android.permission.INTERNET" not in m:
+                  m = re.sub(r"(<manifest[^>]*>)", r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>', m, count=1)
+              if "io.supabase.jagxai" not in m:
+                  intent = '''
                   <intent-filter>
                       <action android:name="android.intent.action.VIEW"/>
                       <category android:name="android.intent.category.DEFAULT"/>
                       <category android:name="android.intent.category.BROWSABLE"/>
                       <data android:scheme="io.supabase.jagxai" android:host="login-callback"/>
                   </intent-filter>'''
-              m = m.replace("</activity>", intent + "\n        </activity>", 1)
-          p.write_text(m)
-          print(m)
+                  m = m.replace("</activity>", intent + "\n        </activity>", 1)
+              man.write_text(m)
+
+          # Release signing = debug so sideload works (do not rewrite whole file)
+          for name in ("build.gradle.kts", "build.gradle"):
+              p = Path("android/app") / name
+              if not p.exists():
+                  continue
+              t = p.read_text()
+              if "signingConfig" not in t and "release" in t:
+                  t = re.sub(
+                      r"(release\s*\{)",
+                      r'\1\n            signingConfig = signingConfigs.getByName("debug")' if name.endswith(".kts") else r'\1\n            signingConfig signingConfigs.debug',
+                      t,
+                      count=1,
+                  )
+                  p.write_text(t)
+              print(p, "ok")
           PY
 
       - name: Pub get
@@ -150,16 +115,24 @@ jobs:
       - name: Icons
         run: dart run flutter_launcher_icons || true
 
-      - name: Dart analyze (log only)
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings || true
+      - name: Build APK (save log)
+        run: |
+          set -o pipefail
+          flutter build apk --release --no-tree-shake-icons 2>&1 | tee build_log.txt
 
-      - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons -v
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-build-log
+          path: build_log.txt
 
       - name: Show APK
+        if: success()
         run: ls -lh build/app/outputs/flutter-apk/
 
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: JagX-AI-Android-APK
           path: build/app/outputs/flutter-apk/app-release.apk

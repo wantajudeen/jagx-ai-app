@@ -82,7 +82,7 @@ class _ConnectorsScreenState extends State<ConnectorsScreen> {
                 subtitle: Text(e.subtitle,
                     style: const TextStyle(color: Jx.dim, fontSize: 12)),
                 value: _on[e.id] ?? false,
-                activeColor: Jx.accent,
+                activeThumbColor: Jx.accent,
                 onChanged: (v) => _toggle(e.id, v),
               ),
             );
