@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/ai.dart';
 import '../core/models.dart';
+import '../core/profile.dart';
 import '../core/theme.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -22,11 +24,25 @@ class _ChatScreenState extends State<ChatScreen>
   final List<_Msg> _messages = [];
   bool _loading = false;
   String? _streaming;
+  String? _hello;
 
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 2, vsync: this);
+    _tabs.addListener(() {
+      if (!_tabs.indexIsChanging) setState(() {});
+    });
+    _loadHello();
+  }
+
+  Future<void> _loadHello() async {
+    final n = await Profile.name();
+    setState(() {
+      _hello = n == null || n.isEmpty
+          ? '${Profile.greeting()}.'
+          : '${Profile.greeting()}, $n.';
+    });
   }
 
   @override
@@ -42,31 +58,38 @@ class _ChatScreenState extends State<ChatScreen>
     if (text.isEmpty || _loading) return;
 
     if (_model.comingSoon) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Oracle is Coming soon'),
-          backgroundColor: Jx.card,
-        ),
-      );
+      _toast('Oracle is Coming soon');
       return;
     }
 
-    final tab = _tabs.index;
-    if (tab == 1) text = 'Generate image or creative visual: $text';
-    if (tab == 2) {
-      text = 'Build this app or site with complete code: $text';
-      _model = Models.byId('jagx-0.4');
-    }
+    final isImagine = _tabs.index == 1;
 
     setState(() {
       _messages.add(_Msg(text, true));
       _controller.clear();
       _loading = true;
-      _streaming = '';
+      _streaming = isImagine ? null : '';
     });
     _scrollDown();
 
+    if (isImagine) {
+      final url = await Ai.imagine(text);
+      setState(() {
+        _messages.add(_Msg(
+          url != null
+              ? 'Here’s what I imagined.'
+              : 'Couldn’t generate that image right now. Try again or rephrase.',
+          false,
+          imageUrl: url,
+        ));
+        _loading = false;
+      });
+      _scrollDown();
+      return;
+    }
+
     final history = _messages
+        .where((m) => m.imageUrl == null)
         .map((m) => {
               'role': m.user ? 'user' : 'assistant',
               'content': m.text,
@@ -75,13 +98,12 @@ class _ChatScreenState extends State<ChatScreen>
 
     final reply = await Ai.chat(modelId: _model.id, messages: history);
 
-    // Fake stream for feel
     var built = '';
-    const step = 12;
+    const step = 14;
     for (var i = 0; i < reply.length; i += step) {
       built = reply.substring(0, (i + step).clamp(0, reply.length));
       setState(() => _streaming = built);
-      await Future.delayed(const Duration(milliseconds: 12));
+      await Future.delayed(const Duration(milliseconds: 10));
     }
 
     setState(() {
@@ -92,11 +114,17 @@ class _ChatScreenState extends State<ChatScreen>
     _scrollDown();
   }
 
+  void _toast(String m) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(m), backgroundColor: Jx.card),
+    );
+  }
+
   void _scrollDown() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
         _scroll.animateTo(
-          _scroll.position.maxScrollExtent + 80,
+          _scroll.position.maxScrollExtent + 120,
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
         );
@@ -138,12 +166,7 @@ class _ChatScreenState extends State<ChatScreen>
               onTap: m.comingSoon
                   ? () {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Oracle is Coming soon'),
-                          backgroundColor: Jx.card,
-                        ),
-                      );
+                      _toast('Oracle is Coming soon');
                     }
                   : () {
                       setState(() => _model = m);
@@ -156,8 +179,56 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  void _plusMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Jx.card,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.image_outlined, color: Jx.muted),
+              title: const Text('Imagine', style: TextStyle(color: Jx.text)),
+              onTap: () {
+                Navigator.pop(context);
+                _tabs.animateTo(1);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.link, color: Jx.muted),
+              title: const Text('Connectors', style: TextStyle(color: Jx.text)),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/connectors');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.code, color: Jx.muted),
+              title: const Text('Code help', style: TextStyle(color: Jx.text)),
+              onTap: () {
+                Navigator.pop(context);
+                _controller.text = 'Help me write code for: ';
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.attach_file, color: Jx.muted),
+              title: const Text('Attach (soon)', style: TextStyle(color: Jx.dim)),
+              onTap: () {
+                Navigator.pop(context);
+                _toast('File attach coming soon');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final imagine = _tabs.index == 1;
+
     return Scaffold(
       backgroundColor: Jx.bg,
       drawer: _Drawer(
@@ -177,43 +248,49 @@ class _ChatScreenState extends State<ChatScreen>
           tabs: const [
             Tab(text: 'Ask'),
             Tab(text: 'Imagine'),
-            Tab(text: 'Build'),
           ],
         ),
         actions: [
-          GestureDetector(
-            onTap: _pickModel,
-            child: Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Jx.card,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Jx.border),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _model.badge ?? _model.name,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Jx.text,
+          if (!imagine)
+            GestureDetector(
+              onTap: _pickModel,
+              child: Container(
+                margin: const EdgeInsets.only(right: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Jx.card,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Jx.border),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _model.badge ?? _model.name,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Jx.text,
+                      ),
                     ),
-                  ),
-                  const Icon(Icons.keyboard_arrow_down, size: 16, color: Jx.muted),
-                ],
+                    const Icon(Icons.keyboard_arrow_down,
+                        size: 16, color: Jx.muted),
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
       body: Column(
         children: [
           Expanded(
             child: _messages.isEmpty && _streaming == null
-                ? _Empty(onTap: _send, tab: _tabs.index)
+                ? _Empty(
+                    onTap: _send,
+                    imagine: imagine,
+                    hello: _hello,
+                  )
                 : ListView(
                     controller: _scroll,
                     padding: const EdgeInsets.symmetric(
@@ -222,6 +299,16 @@ class _ChatScreenState extends State<ChatScreen>
                       ..._messages.map((m) => _Bubble(m)),
                       if (_streaming != null)
                         _Bubble(_Msg(_streaming!, false), streaming: true),
+                      if (_loading && imagine)
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Jx.accent,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
           ),
@@ -238,7 +325,7 @@ class _ChatScreenState extends State<ChatScreen>
                   children: [
                     IconButton(
                       icon: const Icon(Icons.add, color: Jx.muted),
-                      onPressed: () {},
+                      onPressed: _plusMenu,
                     ),
                     Expanded(
                       child: TextField(
@@ -249,11 +336,9 @@ class _ChatScreenState extends State<ChatScreen>
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _send(),
                         decoration: InputDecoration(
-                          hintText: _tabs.index == 0
-                              ? 'Ask anything'
-                              : _tabs.index == 1
-                                  ? 'Describe an image...'
-                                  : 'Describe the app to build...',
+                          hintText: imagine
+                              ? 'Describe an image…'
+                              : 'Ask anything',
                           hintStyle: const TextStyle(color: Jx.dim),
                           border: InputBorder.none,
                           contentPadding:
@@ -261,21 +346,23 @@ class _ChatScreenState extends State<ChatScreen>
                         ),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: _pickModel,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Jx.border,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          _model.badge ?? 'Fast',
-                          style: const TextStyle(fontSize: 11, color: Jx.muted),
+                    if (!imagine)
+                      GestureDetector(
+                        onTap: _pickModel,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Jx.border,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _model.badge ?? 'Fast',
+                            style: const TextStyle(
+                                fontSize: 11, color: Jx.muted),
+                          ),
                         ),
                       ),
-                    ),
                     IconButton(
                       onPressed: _loading ? null : () => _send(),
                       icon: Icon(
@@ -295,9 +382,10 @@ class _ChatScreenState extends State<ChatScreen>
 }
 
 class _Msg {
-  _Msg(this.text, this.user);
+  _Msg(this.text, this.user, {this.imageUrl});
   final String text;
   final bool user;
+  final String? imageUrl;
 }
 
 class _Bubble extends StatelessWidget {
@@ -313,15 +401,49 @@ class _Bubble extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints:
-            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.88),
         decoration: BoxDecoration(
           color: msg.user ? Jx.card : Jx.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Jx.border),
         ),
-        child: Text(
-          msg.text,
-          style: const TextStyle(color: Jx.text, fontSize: 15, height: 1.45),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (msg.imageUrl != null) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  msg.imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 160,
+                    color: Jx.card,
+                    child: const Center(
+                      child: Text('Image unavailable',
+                          style: TextStyle(color: Jx.muted)),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            SelectableText(
+              msg.text,
+              style: const TextStyle(
+                  color: Jx.text, fontSize: 15, height: 1.45),
+            ),
+            if (!msg.user && !streaming)
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  icon: const Icon(Icons.copy, size: 16, color: Jx.dim),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: msg.text));
+                  },
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -329,30 +451,29 @@ class _Bubble extends StatelessWidget {
 }
 
 class _Empty extends StatelessWidget {
-  const _Empty({required this.onTap, required this.tab});
+  const _Empty({
+    required this.onTap,
+    required this.imagine,
+    this.hello,
+  });
   final void Function(String) onTap;
-  final int tab;
+  final bool imagine;
+  final String? hello;
 
   List<String> get _tips {
-    if (tab == 1) {
+    if (imagine) {
       return [
-        'Lagos skyline at night',
-        'Premium dark dashboard UI',
-        'Logo for a Nigerian fintech',
-      ];
-    }
-    if (tab == 2) {
-      return [
-        'JAMB prep Flutter app',
-        'Simple e-commerce site',
-        'Portfolio website',
+        'A cinematic Lagos skyline at golden hour',
+        'Minimal dark fintech app UI mockup',
+        'Afrofuturist portrait, soft studio light',
+        'Product shot of a sleek black phone',
       ];
     }
     return [
       'Draft a CV for a Flutter developer in Nigeria',
       'Explain SaaS pricing in Naira',
       'Write a fintech pitch outline',
-      'Code a Riverpod counter',
+      'Code a Riverpod counter with dark theme',
     ];
   }
 
@@ -361,7 +482,19 @@ class _Empty extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        const SizedBox(height: 40),
+        const SizedBox(height: 32),
+        if (!imagine && hello != null) ...[
+          Text(
+            hello!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: Jx.muted,
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         const Center(
           child: Text(
             'J',
@@ -375,11 +508,7 @@ class _Empty extends StatelessWidget {
         const SizedBox(height: 16),
         Center(
           child: Text(
-            tab == 1
-                ? 'Imagine anything.'
-                : tab == 2
-                    ? 'Build apps and sites.'
-                    : 'Ask JagX AI anything.',
+            imagine ? 'What will you imagine?' : 'How can JagX help?',
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -388,10 +517,12 @@ class _Empty extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        const Center(
+        Center(
           child: Text(
-            'JagX 0.3 · 0.4 · Forge · Bot',
-            style: TextStyle(color: Jx.dim, fontSize: 13),
+            imagine
+                ? 'Describe a scene, product, or style'
+                : 'JagX 0.3 · 0.4 · Forge · Bot',
+            style: const TextStyle(color: Jx.dim, fontSize: 13),
           ),
         ),
         const SizedBox(height: 28),
@@ -434,8 +565,7 @@ class _Drawer extends StatelessWidget {
     return Drawer(
       backgroundColor: Jx.surface,
       child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ListView(
           children: [
             ListTile(
               leading: CircleAvatar(
@@ -453,29 +583,51 @@ class _Drawer extends StatelessWidget {
                   style: TextStyle(color: Jx.muted, fontSize: 12)),
             ),
             const Divider(color: Jx.border),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined, color: Jx.muted),
-              title: const Text('New chat', style: TextStyle(color: Jx.text)),
-              onTap: () {
-                onNew();
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.smart_toy_outlined, color: Jx.muted),
-              title: const Text('JagX Bot', style: TextStyle(color: Jx.text)),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Jx.border,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text('New',
-                    style: TextStyle(fontSize: 10, color: Jx.muted)),
-              ),
-              onTap: () => Navigator.pop(context),
-            ),
-            const Spacer(),
+            _item(Icons.edit_outlined, 'New chat', () {
+              onNew();
+              Navigator.pop(context);
+            }),
+            _item(Icons.smart_toy_outlined, 'JagX Bot', () {
+              Navigator.pop(context);
+            }),
+            _item(Icons.link, 'Connectors', () {
+              Navigator.pop(context);
+              context.push('/connectors');
+            }),
+            _item(Icons.image_outlined, 'Imagine', () {
+              Navigator.pop(context);
+            }),
+            _item(Icons.code, 'Coding', () {
+              Navigator.pop(context);
+            }),
+            _item(Icons.trending_up, 'Finance & markets', () {
+              Navigator.pop(context);
+            }),
+            _item(Icons.business, 'Company builder', () {
+              Navigator.pop(context);
+            }),
+            _item(Icons.translate, 'Translate / Pidgin', () {
+              Navigator.pop(context);
+            }),
+            _item(Icons.school_outlined, 'Study & exams', () {
+              Navigator.pop(context);
+            }),
+            _item(Icons.description_outlined, 'Docs & CV', () {
+              Navigator.pop(context);
+            }),
+            _item(Icons.mic_none, 'Voice (soon)', () {
+              Navigator.pop(context);
+            }),
+            _item(Icons.history, 'Chat history', () {
+              Navigator.pop(context);
+            }),
+            _item(Icons.workspace_premium_outlined, 'Premium', () {
+              Navigator.pop(context);
+            }),
+            _item(Icons.settings_outlined, 'Settings', () {
+              Navigator.pop(context);
+              context.push('/settings');
+            }),
             const Divider(color: Jx.border),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.redAccent),
@@ -491,6 +643,14 @@ class _Drawer extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _item(IconData icon, String title, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: Jx.muted),
+      title: Text(title, style: const TextStyle(color: Jx.text)),
+      onTap: onTap,
     );
   }
 }

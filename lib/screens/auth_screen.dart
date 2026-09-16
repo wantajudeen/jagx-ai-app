@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/profile.dart';
 import '../core/theme.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -28,6 +29,12 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
+  Future<void> _afterLogin() async {
+    final need = await Profile.needsOnboarding();
+    if (!mounted) return;
+    context.go(need ? '/onboarding' : '/chat');
+  }
+
   Future<void> _submit() async {
     final email = _email.text.trim();
     final password = _password.text;
@@ -37,6 +44,10 @@ class _AuthScreenState extends State<AuthScreen> {
     }
     if (password.length < 6) {
       setState(() => _error = 'Password min 6 characters');
+      return;
+    }
+    if (_register && _name.text.trim().isEmpty) {
+      setState(() => _error = 'Name is required');
       return;
     }
 
@@ -51,10 +62,14 @@ class _AuthScreenState extends State<AuthScreen> {
         final res = await client.auth.signUp(
           email: email,
           password: password,
-          data: {'name': _name.text.trim().isEmpty ? email.split('@').first : _name.text.trim()},
+          data: {'name': _name.text.trim()},
         );
         if (res.session != null) {
-          if (mounted) context.go('/chat');
+          await Profile.save(
+            name: _name.text.trim(),
+            dob: '',
+          );
+          await _afterLogin();
           return;
         }
         setState(() {
@@ -63,13 +78,33 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       } else {
         await client.auth.signInWithPassword(email: email, password: password);
-        if (mounted) context.go('/chat');
+        await _afterLogin();
       }
     } on AuthException catch (e) {
       setState(() => _error = e.message);
-    } catch (e) {
+    } catch (_) {
       setState(() => _error =
-          'Auth failed. Check SUPABASE_URL and SUPABASE_ANON_KEY in .env');
+          'Auth failed. Check SUPABASE_URL and SUPABASE_ANON_KEY.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _oauth(OAuthProvider provider) async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(
+        provider,
+        redirectTo: 'io.supabase.jagxai://login-callback/',
+      );
+    } on AuthException catch (e) {
+      setState(() => _error = e.message);
+    } catch (_) {
+      setState(() => _error =
+          'OAuth failed. Enable Google / X in Supabase Providers.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -85,7 +120,7 @@ class _AuthScreenState extends State<AuthScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 56),
+              const SizedBox(height: 48),
               const Text(
                 'JagX AI',
                 style: TextStyle(
@@ -99,7 +134,30 @@ class _AuthScreenState extends State<AuthScreen> {
                 _register ? 'Create account' : 'Sign in to continue',
                 style: const TextStyle(fontSize: 16, color: Jx.muted),
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 28),
+              _oauthBtn(
+                label: 'Continue with Google',
+                icon: Icons.g_mobiledata,
+                onTap: () => _oauth(OAuthProvider.google),
+              ),
+              const SizedBox(height: 12),
+              _oauthBtn(
+                label: 'Continue with X',
+                icon: Icons.close, // X mark style
+                onTap: () => _oauth(OAuthProvider.twitter),
+              ),
+              const SizedBox(height: 20),
+              const Row(
+                children: [
+                  Expanded(child: Divider(color: Jx.border)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('or', style: TextStyle(color: Jx.dim)),
+                  ),
+                  Expanded(child: Divider(color: Jx.border)),
+                ],
+              ),
+              const SizedBox(height: 20),
               if (_register) ...[
                 _field(_name, 'Name', 'Taju'),
                 const SizedBox(height: 14),
@@ -177,6 +235,28 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _oauthBtn({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: _loading ? null : onTap,
+        icon: Icon(icon, color: Jx.text),
+        label: Text(label, style: const TextStyle(color: Jx.text)),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: Jx.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
       ),
