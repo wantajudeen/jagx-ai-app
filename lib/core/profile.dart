@@ -8,7 +8,11 @@ class Profile {
   static Future<bool> needsOnboarding() async {
     final p = await SharedPreferences.getInstance();
     final name = p.getString(_kName);
-    return name == null || name.trim().isEmpty;
+    final dob = p.getString(_kDob);
+    return name == null ||
+        name.trim().isEmpty ||
+        dob == null ||
+        dob.trim().isEmpty;
   }
 
   static Future<String?> name() async {
@@ -31,10 +35,15 @@ class Profile {
   static Future<void> save({required String name, required String dob}) async {
     final p = await SharedPreferences.getInstance();
     await p.setString(_kName, name.trim());
-    await p.setString(_kDob, dob);
+    if (dob.trim().isNotEmpty) {
+      await p.setString(_kDob, dob);
+    }
     try {
       await Supabase.instance.client.auth.updateUser(
-        UserAttributes(data: {'name': name.trim(), 'date_of_birth': dob}),
+        UserAttributes(data: {
+          'name': name.trim(),
+          if (dob.trim().isNotEmpty) 'date_of_birth': dob,
+        }),
       );
     } catch (_) {}
   }
