@@ -32,43 +32,50 @@ jobs:
           OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
           EOF
 
-      - name: Assets + icon
+      - name: Generate JagX app icon PNG
         run: |
           mkdir -p assets/icons
-          python3 -c "
+          python3 << 'PY'
           from struct import pack
           import zlib
           def chunk(tag, data):
               return pack('>I', len(data)) + tag + data + pack('>I', zlib.crc32(tag + data) & 0xffffffff)
-          w=h=512
-          rows=[]
+          w = h = 512
+          rows = []
           for y in range(h):
-              row=b'\\x00'
+              row = b'\x00'
               for x in range(w):
-                  cx,cy=256,256
-                  r2=(x-cx)**2+(y-cy)**2
-                  on=False
-                  if 290<=x<=340 and 120<=y<=340: on=True
-                  if 180<=x<=340 and 120<=y<=160: on=True
-                  if 180<=x<=280 and 320<=y<=380: on=True
-                  if 140<=x<=190 and 260<=y<=380: on=True
-                  if r2>230*230: on=False
-                  c=(5,5,6) if r2>240*240 else ((228,228,231) if on else (10,10,12))
-                  row+=bytes(c)
+                  r2 = (x - 256) ** 2 + (y - 256) ** 2
+                  on = False
+                  # Stylized J
+                  if 290 <= x <= 340 and 120 <= y <= 340: on = True
+                  if 180 <= x <= 340 and 120 <= y <= 160: on = True
+                  if 180 <= x <= 280 and 320 <= y <= 380: on = True
+                  if 140 <= x <= 190 and 260 <= y <= 380: on = True
+                  if r2 > 230 * 230: on = False
+                  if r2 > 240 * 240:
+                      c = (0, 0, 0)
+                  elif on:
+                      c = (245, 245, 245)
+                  else:
+                      c = (12, 12, 12)
+                  row += bytes(c)
               rows.append(row)
-          raw=b''.join(rows)
-          ihdr=pack('>IIBBBBB',w,h,8,2,0,0,0)
-          png=b'\\x89PNG\\r\\n\\x1a\\n'+chunk(b'IHDR',ihdr)+chunk(b'IDAT',zlib.compress(raw,9))+chunk(b'IEND',b'')
-          open('assets/icons/app_icon.png','wb').write(png)
-          "
+          raw = b''.join(rows)
+          ihdr = pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)
+          png = b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', ihdr) + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b'')
+          open('assets/icons/app_icon.png', 'wb').write(png)
+          print('icon ok', len(png))
+          PY
+          test -f assets/icons/app_icon.png
 
-      - name: Platforms
+      - name: Ensure Android platform
         run: |
           if [ ! -d android ]; then
             flutter create . --project-name jagx_ai --org com.jagx.ai --platforms=android,web
           fi
 
-      - name: App label
+      - name: App label JagX AI
         run: |
           if [ -f android/app/src/main/AndroidManifest.xml ]; then
             sed -i 's/android:label="[^"]*"/android:label="JagX AI"/' android/app/src/main/AndroidManifest.xml || true
@@ -76,9 +83,8 @@ jobs:
 
       - run: flutter pub get
 
-      - name: Launcher icons
+      - name: Apply launcher icons (overwrite Flutter default)
         run: dart run flutter_launcher_icons
-        continue-on-error: true
 
       - run: flutter build apk --release
 
