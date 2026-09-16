@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Android APK
 
 on:
   push:
@@ -9,7 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  apk:
+    name: Signed APK
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -26,16 +27,14 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Write .env from secrets
+      - name: Create .env
         run: |
           printf '%s\n' \
             "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" \
             "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" \
-            "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" \
-            > .env
-          cat .env | sed 's/=.*/=***/' 
+            "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" > .env
 
-      - name: Generate icon
+      - name: App icon
         run: |
           mkdir -p assets/icons
           python3 << 'PY'
@@ -50,8 +49,9 @@ jobs:
               for x in range(w):
                   r2 = (x - 256) ** 2 + (y - 256) ** 2
                   on = (290 <= x <= 340 and 120 <= y <= 340) or (180 <= x <= 340 and 120 <= y <= 160) or (180 <= x <= 280 and 320 <= y <= 380) or (140 <= x <= 190 and 260 <= y <= 380)
-                  if r2 > 230 * 230: on = False
-                  c = (0,0,0) if r2 > 240*240 else ((245,245,245) if on else (12,12,12))
+                  if r2 > 230 * 230:
+                      on = False
+                  c = (0, 0, 0) if r2 > 240 * 240 else ((245, 245, 245) if on else (12, 12, 12))
                   row += bytes(c)
               rows.append(row)
           raw = b"".join(rows)
@@ -60,51 +60,165 @@ jobs:
           open("assets/icons/app_icon.png", "wb").write(png)
           PY
 
-      - name: Ensure Flutter platforms
+      - name: Flutter create platforms (keep our lib)
         run: |
-          # Backup critical sources
-          cp -a lib lib.bak
-          cp pubspec.yaml pubspec.yaml.bak
+          cp -a lib /tmp/jagx_lib
+          cp pubspec.yaml /tmp/jagx_pubspec.yaml
           flutter create . --project-name jagx_ai --org com.jagx.ai --platforms=android,web
-          # Restore app source (flutter create must not wipe our UI)
           rm -rf lib
-          mv lib.bak lib
-          mv pubspec.yaml.bak pubspec.yaml
+          cp -a /tmp/jagx_lib lib
+          cp /tmp/jagx_pubspec.yaml pubspec.yaml
 
-      - name: Android label + SDK + deep link
+      - name: Generate upload keystore (sideload-signed APK)
         run: |
-          MANIFEST=android/app/src/main/AndroidManifest.xml
-          if [ -f "$MANIFEST" ]; then
-            sed -i 's/android:label="[^"]*"/android:label="JagX AI"/' "$MANIFEST" || true
-          fi
-          for f in android/app/build.gradle.kts android/app/build.gradle; do
-            [ -f "$f" ] || continue
-            sed -i 's/compileSdk = [0-9]*/compileSdk = 35/' "$f" || true
-            sed -i 's/targetSdk = [0-9]*/targetSdk = 35/' "$f" || true
-            sed -i 's/minSdk = [0-9]*/minSdk = 24/' "$f" || true
-          done
-          if [ -f "$MANIFEST" ] && ! grep -q 'io.supabase.jagxai' "$MANIFEST"; then
-            python3 -c "
-          from pathlib import Path
-          p=Path('android/app/src/main/AndroidManifest.xml')
-          t=p.read_text()
-          i='''\n                <intent-filter>\n                    <action android:name=\"android.intent.action.VIEW\"/>\n                    <category android:name=\"android.intent.category.DEFAULT\"/>\n                    <category android:name=\"android.intent.category.BROWSABLE\"/>\n                    <data android:scheme=\"io.supabase.jagxai\" android:host=\"login-callback\"/>\n                </intent-filter>'''
-          p.write_text(t.replace('</activity>', i+'\n        </activity>', 1))
-          "
-          fi
+          keytool -genkey -v \
+            -keystore android/app/jagx-upload.jks \
+            -storetype JKS \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias jagx \
+            -storepass jagxai2026 \
+            -keypass jagxai2026 \
+            -dname "CN=JagX AI, OU=JagX, O=JRILICENSE, L=Lagos, ST=LA, C=NG"
 
-      - name: Dependencies
+      - name: key.properties
+        run: |
+          cat > android/key.properties << EOF
+          storePassword=jagxai2026
+          keyPassword=jagxai2026
+          keyAlias=jagx
+          storeFile=jagx-upload.jks
+          EOF
+
+      - name: Patch Android Gradle for release signing + SDK
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+
+          # Prefer .kts (newer Flutter)
+          kts = Path("android/app/build.gradle.kts")
+          groovy = Path("android/app/build.gradle")
+
+          if kts.exists():
+              t = kts.read_text()
+              # inject signing if missing
+              if "key.properties" not in t:
+                  inject = '''
+val keystoreProperties = java.util.Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+}
+'''
+                  t = t.replace("android {", inject + "\nandroid {", 1)
+                  t = t.replace(
+                      "buildTypes {",
+                      '''signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
+    }
+    buildTypes {
+''',
+                      1,
+                  )
+                  t = t.replace(
+                      "release {",
+                      "release {\n            signingConfig = signingConfigs.getByName(\"release\")",
+                      1,
+                  )
+              t = t.replace("compileSdk = 34", "compileSdk = 35")
+              t = t.replace("compileSdk = 33", "compileSdk = 35")
+              t = t.replace("targetSdk = 34", "targetSdk = 35")
+              t = t.replace("targetSdk = 33", "targetSdk = 35")
+              t = t.replace("minSdk = 21", "minSdk = 24")
+              kts.write_text(t)
+              print("patched build.gradle.kts")
+          elif groovy.exists():
+              t = groovy.read_text()
+              if "key.properties" not in t:
+                  inject = '''
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+'''
+                  t = t.replace("android {", inject + "\nandroid {", 1)
+                  t = t.replace(
+                      "buildTypes {",
+                      """signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
+        }
+    }
+    buildTypes {
+""",
+                      1,
+                  )
+                  t = t.replace(
+                      "release {",
+                      "release {\n            signingConfig signingConfigs.release",
+                      1,
+                  )
+              groovy.write_text(t)
+              print("patched build.gradle")
+
+          man = Path("android/app/src/main/AndroidManifest.xml")
+          if man.exists():
+              m = man.read_text()
+              m = m.replace('android:label="jagx_ai"', 'android:label="JagX AI"')
+              m = m.replace('android:label="jagx ai"', 'android:label="JagX AI"')
+              if "android.permission.INTERNET" not in m:
+                  m = m.replace(
+                      "<manifest",
+                      '<manifest',
+                      1,
+                  )
+                  m = m.replace(
+                      ">",
+                      '>\n    <uses-permission android:name="android.permission.INTERNET"/>',
+                      1,
+                  )
+              if "io.supabase.jagxai" not in m:
+                  intent = '''
+                <intent-filter>
+                    <action android:name="android.intent.action.VIEW"/>
+                    <category android:name="android.intent.category.DEFAULT"/>
+                    <category android:name="android.intent.category.BROWSABLE"/>
+                    <data android:scheme="io.supabase.jagxai" android:host="login-callback"/>
+                </intent-filter>'''
+                  m = m.replace("</activity>", intent + "\n        </activity>", 1)
+              man.write_text(m)
+              print("patched manifest")
+          PY
+
+      - name: Pub get
         run: flutter pub get
 
-      - name: Icons
+      - name: Launcher icons
         run: dart run flutter_launcher_icons || true
 
-      - name: Build APK
+      - name: Build signed release APK
         run: flutter build apk --release --no-tree-shake-icons
+
+      - name: Verify APK exists
+        run: |
+          ls -lh build/app/outputs/flutter-apk/
+          test -f build/app/outputs/flutter-apk/app-release.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: jagx-ai-apk
+          name: JagX-AI-Android-APK
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 30
