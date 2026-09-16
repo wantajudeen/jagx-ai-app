@@ -32,25 +32,35 @@ class _PremiumScreenState extends State<PremiumScreen> {
       setState(() => _msg = 'Enter a code');
       return;
     }
-    // Manual codes for now — founders + sample
-    final map = {
-      'JAGX-PREMIUM-30': ('Premium', 30),
-      'JAGX-PLUS-30': ('Premium+', 30),
-      'JAGX-PLUS-365': ('Premium+', 365),
-      'FOUNDER-YEAR': ('Premium+', 365),
-    };
-    if (!map.containsKey(c)) {
-      setState(() => _msg = 'Invalid code');
-      return;
+
+    String? tierName;
+    int? days;
+    switch (c) {
+      case 'JAGX-PREMIUM-30':
+        tierName = 'Premium';
+        days = 30;
+        break;
+      case 'JAGX-PLUS-30':
+        tierName = 'Premium+';
+        days = 30;
+        break;
+      case 'JAGX-PLUS-365':
+      case 'FOUNDER-YEAR':
+        tierName = 'Premium+';
+        days = 365;
+        break;
+      default:
+        setState(() => _msg = 'Invalid code');
+        return;
     }
-    final tier = map[c]!;
+
     final p = await SharedPreferences.getInstance();
-    final exp = DateTime.now().add(Duration(days: tier.\$2));
-    await p.setString('jx_tier', tier.\$1);
+    final exp = DateTime.now().add(Duration(days: days));
+    await p.setString('jx_tier', tierName);
     await p.setInt('jx_tier_exp', exp.millisecondsSinceEpoch);
     setState(() {
-      _status = tier.\$1;
-      _msg = 'Activated ${tier.\$1} for ${tier.\$2} days';
+      _status = tierName!;
+      _msg = 'Activated $tierName for $days days';
     });
   }
 
