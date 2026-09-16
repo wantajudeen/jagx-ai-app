@@ -12,7 +12,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../core/agents.dart';
 import '../core/ai.dart';
 import '../core/models.dart';
 import '../core/profile.dart';
@@ -32,7 +31,6 @@ class _ChatScreenState extends State<ChatScreen>
   final _scroll = ScrollController();
   late TabController _tabs;
   JagxModel _model = Models.fast;
-  Agent? _agent;
   final List<_Msg> _messages = [];
   bool _loading = false;
   String? _streaming;
@@ -43,7 +41,7 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 2, vsync: this);
     _tabs.addListener(() {
       if (!_tabs.indexIsChanging) setState(() {});
     });
@@ -153,11 +151,11 @@ class _ChatScreenState extends State<ChatScreen>
               },
             ),
             ListTile(
-              leading: const Icon(Icons.image_outlined, color: Jx.muted),
-              title: const Text('Imagine', style: TextStyle(color: Jx.text)),
+              leading: const Icon(Icons.smart_toy_outlined, color: Jx.muted),
+              title: const Text('Open JagX Bot', style: TextStyle(color: Jx.text)),
               onTap: () {
                 Navigator.pop(context);
-                _tabs.animateTo(1);
+                context.push('/bot');
               },
             ),
             ListTile(
@@ -182,54 +180,77 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  bool _wantsImage(String text) {
+    final t = text.toLowerCase();
+    return t.contains('imagine') ||
+        t.contains('generate image') ||
+        t.contains('draw ') ||
+        t.contains('create an image') ||
+        t.contains('picture of') ||
+        t.contains('image of');
+  }
+
   Future<void> _send([String? override]) async {
     var text = (override ?? _controller.text).trim();
     if ((text.isEmpty && _attachedName == null) || _loading) return;
+
     if (_model.comingSoon) {
       _toast('Oracle is Coming soon');
       return;
     }
-    final isImagine = _tabs.index == 1;
-    final isBuild = _tabs.index == 2;
+
+    final isBuild = _tabs.index == 1;
+
     if (_attachedName != null) {
       text = text.isEmpty
           ? 'I attached a file: $_attachedName. Help me with it.'
           : '$text\n\n[Attached: $_attachedName]';
     }
+
     setState(() {
       _messages.add(_Msg(text, true));
       _controller.clear();
       _attachedName = null;
       _attachedPath = null;
       _loading = true;
-      _streaming = isImagine ? null : '';
+      _streaming = '';
     });
     _scrollDown();
-    if (isImagine) {
+
+    // Inline image generation (no separate Imagine tab)
+    if (_wantsImage(text) && !isBuild) {
       final url = await Ai.imagine(text);
       setState(() {
-        _messages.add(_Msg(
-          url != null ? 'Here is what I imagined.' : 'Could not generate that image.',
-          false,
-          imageUrl: url,
-        ));
+        _messages.add(_Msg('Here’s an image for that.', false, imageUrl: url));
+        _streaming = null;
         _loading = false;
       });
       await _saveHistory();
       _scrollDown();
       return;
     }
+
     final history = _messages
         .where((m) => m.imageUrl == null)
-        .map((m) => {'role': m.user ? 'user' : 'assistant', 'content': m.text})
+        .map((m) => {
+              'role': m.user ? 'user' : 'assistant',
+              'content': m.text,
+            })
         .toList();
+
     var modelId = _model.id;
     if (isBuild) modelId = 'forge';
-    final reply = await Ai.chat(
-      modelId: modelId,
-      messages: history,
-      agentId: modelId == 'bot' ? _agent?.id : null,
-    );
+
+    final reply = await Ai.chat(modelId: modelId, messages: history);
+
+    // Secondary image if model returned IMAGE_PROMPT:
+    final imgLine = RegExp(r'IMAGE_PROMPT:\s*(.+)', caseSensitive: false)
+        .firstMatch(reply);
+    String? extraImage;
+    if (imgLine != null) {
+      extraImage = await Ai.imagine(imgLine.group(1)!.trim());
+    }
+
     var built = '';
     const step = 12;
     for (var i = 0; i < reply.length; i += step) {
@@ -237,8 +258,9 @@ class _ChatScreenState extends State<ChatScreen>
       setState(() => _streaming = built);
       await Future.delayed(const Duration(milliseconds: 8));
     }
+
     setState(() {
-      _messages.add(_Msg(reply, false));
+      _messages.add(_Msg(reply, false, imageUrl: extraImage));
       _streaming = null;
       _loading = false;
     });
@@ -281,8 +303,7 @@ class _ChatScreenState extends State<ChatScreen>
               subtitle: Text(m.subtitle,
                   style: const TextStyle(color: Jx.muted, fontSize: 12)),
               trailing: m.badge != null
-                  ? Text(m.badge!,
-                      style: const TextStyle(color: Jx.dim, fontSize: 11))
+                  ? Text(m.badge!, style: const TextStyle(color: Jx.dim, fontSize: 11))
                   : null,
               onTap: m.comingSoon
                   ? () {
@@ -290,12 +311,8 @@ class _ChatScreenState extends State<ChatScreen>
                       _toast('Oracle is Coming soon');
                     }
                   : () {
-                      setState(() {
-                        _model = m;
-                        if (m.id != 'bot') _agent = null;
-                      });
+                      setState(() => _model = m);
                       Navigator.pop(context);
-                      if (m.id == 'bot') _pickAgent();
                     },
             );
           }).toList(),
@@ -304,41 +321,10 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  void _pickAgent() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Jx.card,
-      builder: (_) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            const ListTile(
-              title: Text('Choose agent',
-                  style: TextStyle(color: Jx.muted, fontWeight: FontWeight.w600)),
-            ),
-            ...Agents.list.map((a) {
-              return ListTile(
-                title: Text(a.name,
-                    style: const TextStyle(color: Jx.text, fontWeight: FontWeight.w600)),
-                subtitle: Text(a.role, style: const TextStyle(color: Jx.muted, fontSize: 12)),
-                onTap: () {
-                  setState(() => _agent = a);
-                  Navigator.pop(context);
-                },
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final mode = _tabs.index;
-    final chip = _model.id == 'bot' && _agent != null
-        ? _agent!.name
-        : (_model.badge ?? _model.name);
+    final mode = _tabs.index; // 0 ask 1 build
+    final chip = _model.badge ?? _model.name;
 
     return Scaffold(
       backgroundColor: Jx.bg,
@@ -363,11 +349,15 @@ class _ChatScreenState extends State<ChatScreen>
           labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           tabs: const [
             Tab(text: 'Ask'),
-            Tab(text: 'Imagine'),
             Tab(text: 'Build'),
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'JagX Bot',
+            icon: const Icon(Icons.smart_toy_outlined, color: Jx.muted),
+            onPressed: () => context.push('/bot'),
+          ),
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: Jx.muted),
             onPressed: () async {
@@ -385,7 +375,7 @@ class _ChatScreenState extends State<ChatScreen>
         children: [
           Expanded(
             child: _messages.isEmpty && _streaming == null
-                ? EmptyChat(mode: mode, hello: _hello)
+                ? EmptyChat(mode: mode == 1 ? 2 : 0, hello: _hello)
                 : ListView(
                     controller: _scroll,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -393,16 +383,6 @@ class _ChatScreenState extends State<ChatScreen>
                       ..._messages.map((m) => _Bubble(m)),
                       if (_streaming != null)
                         _Bubble(_Msg(_streaming!, false), streaming: true),
-                      if (_loading && mode == 1)
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: Jx.accent,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                        ),
                     ],
                   ),
           ),
@@ -461,37 +441,34 @@ class _ChatScreenState extends State<ChatScreen>
                         onSubmitted: (_) => _send(),
                         decoration: InputDecoration(
                           hintText: mode == 1
-                              ? 'Describe an image…'
-                              : mode == 2
-                                  ? 'Describe the app or site to build…'
-                                  : 'Ask anything',
+                              ? 'Describe the app or site to build…'
+                              : 'Ask anything (or say “generate image…”)',
                           hintStyle: const TextStyle(color: Jx.dim),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
-                    if (mode != 1)
-                      GestureDetector(
-                        onTap: _pickModel,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1A1A1A),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Jx.border),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.bolt, size: 14, color: Jx.muted),
-                              const SizedBox(width: 4),
-                              Text(chip, style: const TextStyle(fontSize: 12, color: Jx.text)),
-                              const Icon(Icons.keyboard_arrow_down, size: 14, color: Jx.dim),
-                            ],
-                          ),
+                    GestureDetector(
+                      onTap: _pickModel,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A1A1A),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Jx.border),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.bolt, size: 14, color: Jx.muted),
+                            const SizedBox(width: 4),
+                            Text(chip, style: const TextStyle(fontSize: 12, color: Jx.text)),
+                            const Icon(Icons.keyboard_arrow_down, size: 14, color: Jx.dim),
+                          ],
                         ),
                       ),
+                    ),
                     IconButton(
                       onPressed: _loading ? null : () => _send(),
                       icon: Icon(
@@ -634,9 +611,12 @@ class _Drawer extends StatelessWidget {
                   color: Jx.border,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text('New', style: TextStyle(color: Jx.muted, fontSize: 11)),
+                child: const Text('Agents', style: TextStyle(color: Jx.muted, fontSize: 11)),
               ),
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/bot');
+              },
             ),
             ListTile(
               leading: const Icon(Icons.code, color: Jx.muted),
