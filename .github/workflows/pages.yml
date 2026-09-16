@@ -5,7 +5,7 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Official GitHub Pages pattern: build job + deploy job
+# Optional Actions deploy. Primary site is branch deploy from main/(root).
 permissions:
   contents: read
   pages: write
@@ -20,21 +20,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Ensure docs exist
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Package site from root
         run: |
-          mkdir -p docs
-          test -f docs/index.html || echo '<html><body><h1>JagX AI</h1></body></html>' > docs/index.html
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+          mkdir -p _site
+          cp index.html _site/index.html
+          if [ -f CNAME ]; then cp CNAME _site/CNAME; fi
+      - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: _site
 
   deploy:
     needs: build
@@ -43,6 +38,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4
