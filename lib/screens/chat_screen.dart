@@ -1,8 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/agents.dart';
 import '../core/ai.dart';
 import '../core/models.dart';
 import '../core/profile.dart';
@@ -21,6 +27,7 @@ class _ChatScreenState extends State<ChatScreen>
   final _scroll = ScrollController();
   late TabController _tabs;
   JagxModel _model = Models.fast;
+  Agent? _agent;
   final List<_Msg> _messages = [];
   bool _loading = false;
   String? _streaming;
@@ -78,7 +85,7 @@ class _ChatScreenState extends State<ChatScreen>
         _messages.add(_Msg(
           url != null
               ? 'Here’s what I imagined.'
-              : 'Couldn’t generate that image right now. Try again or rephrase.',
+              : 'Couldn’t generate that image. Try again.',
           false,
           imageUrl: url,
         ));
@@ -96,7 +103,11 @@ class _ChatScreenState extends State<ChatScreen>
             })
         .toList();
 
-    final reply = await Ai.chat(modelId: _model.id, messages: history);
+    final reply = await Ai.chat(
+      modelId: _model.id,
+      messages: history,
+      agentId: _model.id == 'bot' ? _agent?.id : null,
+    );
 
     var built = '';
     const step = 14;
@@ -136,44 +147,71 @@ class _ChatScreenState extends State<ChatScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: Jx.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
       builder: (_) => SafeArea(
         child: ListView(
           shrinkWrap: true,
-          children: Models.list.map((m) {
-            return ListTile(
-              title: Text(m.name,
+          children: [
+            ...Models.list.map((m) {
+              return ListTile(
+                title: Text(m.name,
+                    style: TextStyle(
+                      color: m.comingSoon ? Jx.dim : Jx.text,
+                      fontWeight: FontWeight.w600,
+                    )),
+                subtitle: Text(m.subtitle,
+                    style: const TextStyle(color: Jx.muted, fontSize: 12)),
+                trailing: m.badge != null
+                    ? Text(m.badge!,
+                        style: const TextStyle(color: Jx.dim, fontSize: 11))
+                    : null,
+                onTap: m.comingSoon
+                    ? () {
+                        Navigator.pop(context);
+                        _toast('Oracle is Coming soon');
+                      }
+                    : () {
+                        setState(() {
+                          _model = m;
+                          if (m.id != 'bot') _agent = null;
+                        });
+                        Navigator.pop(context);
+                        if (m.id == 'bot') _pickAgent();
+                      },
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _pickAgent() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Jx.card,
+      builder: (_) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const ListTile(
+              title: Text('Choose agent',
                   style: TextStyle(
-                    color: m.comingSoon ? Jx.dim : Jx.text,
-                    fontWeight: FontWeight.w600,
-                  )),
-              subtitle: Text(m.subtitle,
-                  style: const TextStyle(color: Jx.muted, fontSize: 12)),
-              trailing: m.badge != null
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Jx.border,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(m.badge!,
-                          style: const TextStyle(fontSize: 11, color: Jx.muted)),
-                    )
-                  : null,
-              onTap: m.comingSoon
-                  ? () {
-                      Navigator.pop(context);
-                      _toast('Oracle is Coming soon');
-                    }
-                  : () {
-                      setState(() => _model = m);
-                      Navigator.pop(context);
-                    },
-            );
-          }).toList(),
+                      color: Jx.muted, fontWeight: FontWeight.w600)),
+            ),
+            ...Agents.list.map((a) {
+              return ListTile(
+                title: Text(a.name,
+                    style: const TextStyle(
+                        color: Jx.text, fontWeight: FontWeight.w600)),
+                subtitle: Text(a.role,
+                    style: const TextStyle(color: Jx.muted, fontSize: 12)),
+                onTap: () {
+                  setState(() => _agent = a);
+                  Navigator.pop(context);
+                },
+              );
+            }),
+          ],
         ),
       ),
     );
@@ -196,6 +234,14 @@ class _ChatScreenState extends State<ChatScreen>
               },
             ),
             ListTile(
+              leading: const Icon(Icons.code, color: Jx.muted),
+              title: const Text('Connect GitHub', style: TextStyle(color: Jx.text)),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/github');
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.link, color: Jx.muted),
               title: const Text('Connectors', style: TextStyle(color: Jx.text)),
               onTap: () {
@@ -204,19 +250,12 @@ class _ChatScreenState extends State<ChatScreen>
               },
             ),
             ListTile(
-              leading: const Icon(Icons.code, color: Jx.muted),
-              title: const Text('Code help', style: TextStyle(color: Jx.text)),
+              leading: const Icon(Icons.groups_outlined, color: Jx.muted),
+              title: const Text('Pick Bot agent', style: TextStyle(color: Jx.text)),
               onTap: () {
                 Navigator.pop(context);
-                _controller.text = 'Help me write code for: ';
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.attach_file, color: Jx.muted),
-              title: const Text('Attach (soon)', style: TextStyle(color: Jx.dim)),
-              onTap: () {
-                Navigator.pop(context);
-                _toast('File attach coming soon');
+                setState(() => _model = Models.byId('bot'));
+                _pickAgent();
               },
             ),
           ],
@@ -228,6 +267,9 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   Widget build(BuildContext context) {
     final imagine = _tabs.index == 1;
+    final chip = _model.id == 'bot' && _agent != null
+        ? _agent!.name
+        : (_model.badge ?? _model.name);
 
     return Scaffold(
       backgroundColor: Jx.bg,
@@ -266,14 +308,11 @@ class _ChatScreenState extends State<ChatScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      _model.badge ?? _model.name,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Jx.text,
-                      ),
-                    ),
+                    Text(chip,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Jx.text)),
                     const Icon(Icons.keyboard_arrow_down,
                         size: 16, color: Jx.muted),
                   ],
@@ -286,11 +325,7 @@ class _ChatScreenState extends State<ChatScreen>
         children: [
           Expanded(
             child: _messages.isEmpty && _streaming == null
-                ? _Empty(
-                    onTap: _send,
-                    imagine: imagine,
-                    hello: _hello,
-                  )
+                ? _Empty(onTap: _send, imagine: imagine, hello: _hello)
                 : ListView(
                     controller: _scroll,
                     padding: const EdgeInsets.symmetric(
@@ -336,9 +371,8 @@ class _ChatScreenState extends State<ChatScreen>
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _send(),
                         decoration: InputDecoration(
-                          hintText: imagine
-                              ? 'Describe an image…'
-                              : 'Ask anything',
+                          hintText:
+                              imagine ? 'Describe an image…' : 'Ask anything',
                           hintStyle: const TextStyle(color: Jx.dim),
                           border: InputBorder.none,
                           contentPadding:
@@ -356,11 +390,9 @@ class _ChatScreenState extends State<ChatScreen>
                             color: Jx.border,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Text(
-                            _model.badge ?? 'Fast',
-                            style: const TextStyle(
-                                fontSize: 11, color: Jx.muted),
-                          ),
+                          child: Text(chip,
+                              style: const TextStyle(
+                                  fontSize: 11, color: Jx.muted)),
                         ),
                       ),
                     IconButton(
@@ -392,6 +424,24 @@ class _Bubble extends StatelessWidget {
   const _Bubble(this.msg, {this.streaming = false});
   final _Msg msg;
   final bool streaming;
+
+  Future<void> _shareImage(BuildContext context) async {
+    final url = msg.imageUrl;
+    if (url == null) return;
+    try {
+      final res = await http.get(Uri.parse(url));
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/jagx_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await file.writeAsBytes(res.bodyBytes);
+      await Share.shareXFiles([XFile(file.path)], text: 'Imagined with JagX AI');
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Could not save/share image'),
+            backgroundColor: Jx.card),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -427,20 +477,24 @@ class _Bubble extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => _shareImage(context),
+                icon: const Icon(Icons.download, size: 16, color: Jx.muted),
+                label: const Text('Save / Share',
+                    style: TextStyle(color: Jx.muted, fontSize: 12)),
+              ),
             ],
             SelectableText(
               msg.text,
-              style: const TextStyle(
-                  color: Jx.text, fontSize: 15, height: 1.45),
+              style: const TextStyle(color: Jx.text, fontSize: 15, height: 1.45),
             ),
             if (!msg.user && !streaming)
               Align(
                 alignment: Alignment.centerRight,
                 child: IconButton(
                   icon: const Icon(Icons.copy, size: 16, color: Jx.dim),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: msg.text));
-                  },
+                  onPressed: () =>
+                      Clipboard.setData(ClipboardData(text: msg.text)),
                 ),
               ),
           ],
@@ -451,31 +505,22 @@ class _Bubble extends StatelessWidget {
 }
 
 class _Empty extends StatelessWidget {
-  const _Empty({
-    required this.onTap,
-    required this.imagine,
-    this.hello,
-  });
+  const _Empty({required this.onTap, required this.imagine, this.hello});
   final void Function(String) onTap;
   final bool imagine;
   final String? hello;
 
-  List<String> get _tips {
-    if (imagine) {
-      return [
-        'A cinematic Lagos skyline at golden hour',
-        'Minimal dark fintech app UI mockup',
-        'Afrofuturist portrait, soft studio light',
-        'Product shot of a sleek black phone',
-      ];
-    }
-    return [
-      'Draft a CV for a Flutter developer in Nigeria',
-      'Explain SaaS pricing in Naira',
-      'Write a fintech pitch outline',
-      'Code a Riverpod counter with dark theme',
-    ];
-  }
+  List<String> get _tips => imagine
+      ? [
+          'A cinematic Lagos skyline at golden hour',
+          'Minimal dark fintech app UI mockup',
+          'Afrofuturist portrait, soft studio light',
+        ]
+      : [
+          'Draft a CV for a Flutter developer in Nigeria',
+          'Explain SaaS pricing in Naira',
+          'Code a Riverpod counter with dark theme',
+        ];
 
   @override
   Widget build(BuildContext context) {
@@ -483,46 +528,23 @@ class _Empty extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       children: [
         const SizedBox(height: 32),
-        if (!imagine && hello != null) ...[
-          Text(
-            hello!,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Jx.muted,
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
+        if (!imagine && hello != null)
+          Text(hello!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, color: Jx.muted)),
+        const SizedBox(height: 12),
         const Center(
-          child: Text(
-            'J',
-            style: TextStyle(
-              fontSize: 40,
-              fontWeight: FontWeight.w800,
-              color: Jx.dim,
-            ),
-          ),
-        ),
+            child: Text('J',
+                style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w800,
+                    color: Jx.dim))),
         const SizedBox(height: 16),
         Center(
           child: Text(
             imagine ? 'What will you imagine?' : 'How can JagX help?',
             style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Jx.text,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Center(
-          child: Text(
-            imagine
-                ? 'Describe a scene, product, or style'
-                : 'JagX 0.3 · 0.4 · Forge · Bot',
-            style: const TextStyle(color: Jx.dim, fontSize: 13),
+                fontSize: 20, fontWeight: FontWeight.w600, color: Jx.text),
           ),
         ),
         const SizedBox(height: 28),
@@ -570,65 +592,57 @@ class _Drawer extends StatelessWidget {
             ListTile(
               leading: CircleAvatar(
                 backgroundColor: Jx.accent,
-                child: Text(
-                  email[0].toUpperCase(),
-                  style: const TextStyle(
-                      color: Colors.black, fontWeight: FontWeight.bold),
-                ),
+                child: Text(email[0].toUpperCase(),
+                    style: const TextStyle(
+                        color: Colors.black, fontWeight: FontWeight.bold)),
               ),
               title: Text(email,
                   style: const TextStyle(color: Jx.text, fontSize: 14),
                   overflow: TextOverflow.ellipsis),
-              subtitle: const Text('JagX AI',
-                  style: TextStyle(color: Jx.muted, fontSize: 12)),
             ),
             const Divider(color: Jx.border),
-            _item(Icons.edit_outlined, 'New chat', () {
-              onNew();
-              Navigator.pop(context);
-            }),
-            _item(Icons.smart_toy_outlined, 'JagX Bot', () {
-              Navigator.pop(context);
-            }),
-            _item(Icons.link, 'Connectors', () {
-              Navigator.pop(context);
-              context.push('/connectors');
-            }),
-            _item(Icons.image_outlined, 'Imagine', () {
-              Navigator.pop(context);
-            }),
-            _item(Icons.code, 'Coding', () {
-              Navigator.pop(context);
-            }),
-            _item(Icons.trending_up, 'Finance & markets', () {
-              Navigator.pop(context);
-            }),
-            _item(Icons.business, 'Company builder', () {
-              Navigator.pop(context);
-            }),
-            _item(Icons.translate, 'Translate / Pidgin', () {
-              Navigator.pop(context);
-            }),
-            _item(Icons.school_outlined, 'Study & exams', () {
-              Navigator.pop(context);
-            }),
-            _item(Icons.description_outlined, 'Docs & CV', () {
-              Navigator.pop(context);
-            }),
-            _item(Icons.mic_none, 'Voice (soon)', () {
-              Navigator.pop(context);
-            }),
-            _item(Icons.history, 'Chat history', () {
-              Navigator.pop(context);
-            }),
-            _item(Icons.workspace_premium_outlined, 'Premium', () {
-              Navigator.pop(context);
-            }),
-            _item(Icons.settings_outlined, 'Settings', () {
-              Navigator.pop(context);
-              context.push('/settings');
-            }),
-            const Divider(color: Jx.border),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined, color: Jx.muted),
+              title: const Text('New chat', style: TextStyle(color: Jx.text)),
+              onTap: () {
+                onNew();
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.code, color: Jx.muted),
+              title:
+                  const Text('Connect GitHub', style: TextStyle(color: Jx.text)),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/github');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.link, color: Jx.muted),
+              title: const Text('Connectors', style: TextStyle(color: Jx.text)),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/connectors');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.workspace_premium_outlined,
+                  color: Jx.muted),
+              title: const Text('Premium', style: TextStyle(color: Jx.text)),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/premium');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined, color: Jx.muted),
+              title: const Text('Settings', style: TextStyle(color: Jx.text)),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/settings');
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.redAccent),
               title: const Text('Sign out',
@@ -643,14 +657,6 @@ class _Drawer extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _item(IconData icon, String title, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: Jx.muted),
-      title: Text(title, style: const TextStyle(color: Jx.text)),
-      onTap: onTap,
     );
   }
 }
