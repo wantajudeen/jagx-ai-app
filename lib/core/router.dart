@@ -6,6 +6,7 @@ import '../screens/auth_screen.dart';
 import '../screens/chat_screen.dart';
 import '../screens/connectors_screen.dart';
 import '../screens/onboarding_screen.dart';
+import '../screens/premium_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/splash_screen.dart';
 import 'profile.dart';
@@ -43,6 +44,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/chat', builder: (_, __) => const ChatScreen()),
       GoRoute(path: '/connectors', builder: (_, __) => const ConnectorsScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/premium', builder: (_, __) => const PremiumScreen()),
     ],
   );
 });
