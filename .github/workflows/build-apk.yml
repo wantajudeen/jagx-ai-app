@@ -56,7 +56,7 @@ jobs:
           python3 scripts/make_jagx_icon.py assets/icons/app_icon.png 512
           test -f assets/icons/app_icon.png
 
-      - name: Patch Android SDK 36 + label + release signing
+      - name: Patch Android SDK 36 + subprojects + label + signing
         run: |
           set -e
           GRADLE=""
@@ -78,8 +78,66 @@ jobs:
               sed -i '/release {/a\            signingConfig signingConfigs.debug' "$GRADLE"
             fi
           fi
-          echo "---- after patch ----"
+          echo "---- after app gradle patch ----"
           cat "$GRADLE"
+
+          # Force compileSdk 36 on ALL subprojects (file_picker AAR metadata)
+          if [ -f android/build.gradle.kts ]; then
+            ROOTG=android/build.gradle.kts
+            if ! grep -q 'subprojects' "$ROOTG"; then
+              cat >> "$ROOTG" << 'KTS'
+
+subprojects {
+    afterEvaluate {
+        if (project.hasProperty("android")) {
+            project.extensions.findByName("android")?.let { ext ->
+                try {
+                    val androidExt = ext as com.android.build.gradle.BaseExtension
+                    androidExt.compileSdkVersion(36)
+                } catch (e: Exception) {
+                    // ignore non-android subprojects
+                }
+            }
+        }
+    }
+}
+KTS
+            fi
+          elif [ -f android/build.gradle ]; then
+            ROOTG=android/build.gradle
+            if ! grep -q 'subprojects' "$ROOTG"; then
+              cat >> "$ROOTG" << 'GROOVY'
+
+subprojects { subproject ->
+    subproject.afterEvaluate {
+        if (subproject.hasProperty("android")) {
+            try {
+                subproject.android {
+                    if (it.hasProperty("compileSdkVersion")) {
+                        compileSdkVersion 36
+                    }
+                    if (it.hasProperty("compileSdk")) {
+                        compileSdk 36
+                    }
+                }
+            } catch (Exception e) {
+                // ignore
+            }
+        }
+    }
+}
+GROOVY
+            fi
+          fi
+          echo "---- root gradle ----"
+          cat android/build.gradle* 2>/dev/null || true
+
+          # Also set in gradle.properties
+          mkdir -p android
+          echo "android.defaults.buildfeatures.buildconfig=true" >> android/gradle.properties
+          echo "android.nonTransitiveRClass=false" >> android/gradle.properties
+          echo "android.compileSdkVersion=36" >> android/gradle.properties || true
+
           # Manifest
           python3 - <<'PY'
           import re
