@@ -12,188 +12,55 @@ jobs:
   apk:
     name: Android APK
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-      - name: Create .env
+      - name: Make gradlew executable
         run: |
-          printf '%s\n' \
-            "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" \
-            "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" \
-            "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" > .env
-
-      - name: Generate JagX icon
-        run: |
-          mkdir -p assets/icons
-          python3 scripts/make_jagx_icon.py assets/icons/app_icon.png 512
-          python3 scripts/make_jagx_icon.py assets/icons/app_icon_fg.png 512
-
-      - name: Flutter create (keep app source)
-        run: |
-          cp -a lib /tmp/jagx_lib
-          cp pubspec.yaml /tmp/jagx_pubspec.yaml
-          cp -a assets /tmp/jagx_assets 2>/dev/null || true
-          cp -a scripts /tmp/jagx_scripts 2>/dev/null || true
-          flutter create . --project-name jagx_ai --org com.jagx.ai --platforms=android,web
-          rm -rf lib
-          cp -a /tmp/jagx_lib lib
-          cp /tmp/jagx_pubspec.yaml pubspec.yaml
-          mkdir -p assets/icons scripts
-          cp -a /tmp/jagx_assets/. assets/ 2>/dev/null || true
-          cp -a /tmp/jagx_scripts/. scripts/ 2>/dev/null || true
-          python3 scripts/make_jagx_icon.py assets/icons/app_icon.png 512
-          test -f assets/icons/app_icon.png
-
-      - name: Patch Android SDK 36 + subprojects + label + signing
-        run: |
-          set -e
-          GRADLE=""
-          if [ -f android/app/build.gradle.kts ]; then GRADLE=android/app/build.gradle.kts; fi
-          if [ -f android/app/build.gradle ]; then GRADLE=android/app/build.gradle; fi
-          echo "Using $GRADLE"
-          cat "$GRADLE"
-          sed -i -E 's/compileSdk\s*=\s*[^\n]+/compileSdk = 36/' "$GRADLE" || true
-          sed -i -E 's/targetSdk\s*=\s*[^\n]+/targetSdk = 36/' "$GRADLE" || true
-          sed -i -E 's/minSdk\s*=\s*[^\n]+/minSdk = 24/' "$GRADLE" || true
-          sed -i -E 's/compileSdkVersion\s+[^\n]+/compileSdkVersion 36/' "$GRADLE" || true
-          sed -i -E 's/targetSdkVersion\s+[^\n]+/targetSdkVersion 36/' "$GRADLE" || true
-          if ! grep -q 'signingConfig' "$GRADLE"; then
-            if [[ "$GRADLE" == *.kts ]]; then
-              sed -i '/release {/a\            signingConfig = signingConfigs.getByName("debug")' "$GRADLE"
-            else
-              sed -i '/release {/a\            signingConfig signingConfigs.debug' "$GRADLE"
-            fi
+          if [ -f gradlew ]; then chmod +x gradlew; fi
+          # Create a minimal gradlew if missing (for pure Android)
+          if [ ! -f gradlew ]; then
+            curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradlew -o gradlew
+            chmod +x gradlew
+            mkdir -p gradle/wrapper
+            curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
           fi
-          echo "---- after app gradle patch ----"
-          cat "$GRADLE"
 
-          # Force compileSdk 36 on ALL subprojects via Python (safe, no heredoc issues)
-          python3 << 'PY'
-          from pathlib import Path
-          block = """
-          // JagX force compileSdk 36 for file_picker
-          subprojects { sub ->
-            sub.afterEvaluate {
-              if (sub.plugins.hasPlugin(\"com.android.application\") || sub.plugins.hasPlugin(\"com.android.library\")) {
-                try {
-                  sub.android.compileSdkVersion = 36
-                } catch (Throwable t) {
-                  try { sub.android.compileSdk = 36 } catch (Throwable t2) {}
-                }
-              }
-            }
-          }
-          """
-          for name in ["android/build.gradle", "android/build.gradle.kts"]:
-            p = Path(name)
-            if p.exists() and "JagX force compileSdk" not in p.read_text():
-              if name.endswith(".kts"):
-                p.write_text(p.read_text() + """
-          subprojects {
-            afterEvaluate {
-              plugins.withId(\"com.android.application\") {
-                extensions.findByName(\"android\")?.let {
-                  try { (it as com.android.build.gradle.BaseExtension).compileSdkVersion(36) } catch (_: Exception) {}
-                }
-              }
-              plugins.withId(\"com.android.library\") {
-                extensions.findByName(\"android\")?.let {
-                  try { (it as com.android.build.gradle.BaseExtension).compileSdkVersion(36) } catch (_: Exception) {}
-                }
-              }
-            }
-          }
-          """)
-              else:
-                p.write_text(p.read_text() + block)
-              print("Patched", name)
-          Path("android/gradle.properties").parent.mkdir(parents=True, exist_ok=True)
-          with open("android/gradle.properties", "a") as f:
-            f.write("\nandroid.compileSdkVersion=36\n")
-          print("Done subproject force")
-          PY
-
-          echo "---- root gradle ----"
-          cat android/build.gradle* 2>/dev/null || true
-
-          python3 << 'PY'
-          import re
-          from pathlib import Path
-          man = Path("android/app/src/main/AndroidManifest.xml")
-          m = man.read_text()
-          m = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', m)
-          if "android.permission.INTERNET" not in m:
-              m = re.sub(r"(<manifest[^>]*>)", r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>', m, count=1)
-          if "io.supabase.jagxai" not in m:
-              intent = '''
-                  <intent-filter>
-                      <action android:name="android.intent.action.VIEW"/>
-                      <category android:name="android.intent.category.DEFAULT"/>
-                      <category android:name="android.intent.category.BROWSABLE"/>
-                      <data android:scheme="io.supabase.jagxai" android:host="login-callback"/>
-                  </intent-filter>'''
-              m = m.replace("</activity>", intent + "\n        </activity>", 1)
-          man.write_text(m)
-          PY
-
-      - run: flutter pub get
-
-      - name: Force launcher icons
-        run: |
-          dart run flutter_launcher_icons || true
-          for size_folder in "48:mipmap-mdpi" "72:mipmap-hdpi" "96:mipmap-xhdpi" "144:mipmap-xxhdpi" "192:mipmap-xxxhdpi"; do
-            size="${size_folder%%:*}"
-            folder="${size_folder##*:}"
-            dir="android/app/src/main/res/$folder"
-            mkdir -p "$dir"
-            python3 scripts/make_jagx_icon.py "$dir/ic_launcher.png" "$size"
-            cp "$dir/ic_launcher.png" "$dir/ic_launcher_round.png"
-            cp "$dir/ic_launcher.png" "$dir/ic_launcher_foreground.png"
-          done
-          mkdir -p android/app/src/main/res/mipmap-anydpi-v26 android/app/src/main/res/values
-          printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' \
-            '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">' \
-            '    <background android:drawable="@color/ic_launcher_background"/>' \
-            '    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>' \
-            '</adaptive-icon>' > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-          cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
-          printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' \
-            '<resources>' \
-            '    <color name="ic_launcher_background">#000000</color>' \
-            '</resources>' > android/app/src/main/res/values/colors.xml
-
-      - name: Build APK
+      - name: Build Release APK
         run: |
           set -o pipefail
-          flutter build apk --release --no-tree-shake-icons 2>&1 | tee build_log.txt
+          ./gradlew assembleRelease --stacktrace 2>&1 | tee build_log.txt
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload build log on failure
         if: failure()
+        uses: actions/upload-artifact@v4
         with:
           name: apk-build-log
           path: build_log.txt
 
-      - name: Copy APK for release
+      - name: Prepare APK
         if: success()
         run: |
           mkdir -p downloads
-          cp build/app/outputs/flutter-apk/app-release.apk downloads/JagX-AI.apk
+          APK=$(find app/build/outputs/apk -name "*.apk" | head -1)
+          echo "Found APK: $APK"
+          cp "$APK" downloads/JagX-AI.apk
           ls -lh downloads/
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK artifact
         if: success()
+        uses: actions/upload-artifact@v4
         with:
           name: JagX-AI-Android-APK
           path: downloads/JagX-AI.apk
@@ -204,10 +71,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
-          name: JagX AI Android APK
+          name: JagX AI Android APK (Kotlin)
           body: |
-            JagX AI APK — angular circuit J icon.
-            Uninstall old app first, then install JagX-AI.apk
+            Native Kotlin + Jetpack Compose build.
+            Uninstall any old Flutter version first, then install JagX-AI.apk
           files: downloads/JagX-AI.apk
           make_latest: true
           overwrite_files: true

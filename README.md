@@ -1,25 +1,29 @@
 # JagX AI
 
-Grok-style multipurpose AI for Africa. Clean rebuild.
+**Nigeria-first multi-purpose AI** — native Android app built with **Kotlin + Jetpack Compose**.
 
-## Setup
+## Features (in progress)
+- Dark Grok-style UI
+- Ask / Imagine / Build / Bot tabs
+- Named multi-agent system (free OpenRouter models)
+- Image generation
+- Company & finance planner
+- Supabase auth (coming)
+- Custom angular circuit J icon
 
-1. Copy `.env.example` → `.env`
-2. Add Supabase URL, anon key, OpenRouter key
-3. `flutter pub get && flutter run`
+## Build
 
-## GitHub Secrets (CI)
+```bash
+./gradlew assembleRelease
+```
 
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `OPENROUTER_API_KEY`
+APK is produced automatically by GitHub Actions on every push to `main`.
 
-## Models
+Download the latest APK from the [Releases](https://github.com/wantajudeen/jagx-ai-app/releases) page or the Actions artifact.
 
-| Model | Role |
-|-------|------|
-| JagX 0.3 | Fast |
-| JagX 0.4 | Expert |
-| Forge | Strongest regular |
-| JagX Bot | Tool-using teammate |
-| Oracle | Coming soon |
+## Stack
+- Kotlin
+- Jetpack Compose + Material 3
+- Navigation Compose
+- OkHttp + Coroutines (OpenRouter)
+- GitHub Actions CI
