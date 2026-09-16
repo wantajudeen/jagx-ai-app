@@ -37,12 +37,8 @@ jobs:
       - name: Generate JagX icon
         run: |
           mkdir -p assets/icons
-          if [ -f scripts/make_jagx_icon.py ]; then
-            python3 scripts/make_jagx_icon.py assets/icons/app_icon.png 512
-            python3 scripts/make_jagx_icon.py assets/icons/app_icon_fg.png 512
-          else
-            python3 -c "print('icon script missing')" && exit 1
-          fi
+          python3 scripts/make_jagx_icon.py assets/icons/app_icon.png 512
+          python3 scripts/make_jagx_icon.py assets/icons/app_icon_fg.png 512
 
       - name: Flutter create (keep app source)
         run: |
@@ -58,73 +54,78 @@ jobs:
           cp -a /tmp/jagx_assets/. assets/ 2>/dev/null || true
           cp -a /tmp/jagx_scripts/. scripts/ 2>/dev/null || true
           python3 scripts/make_jagx_icon.py assets/icons/app_icon.png 512
-          python3 scripts/make_jagx_icon.py assets/icons/app_icon_fg.png 512
           test -f assets/icons/app_icon.png
 
-      - name: Patch Android (SDK 36 + signing + label)
+      - name: Force compileSdk 36 + label + signing
         run: |
+          cat > android/app/build.gradle.kts << 'EOF'
+          plugins {
+              id("com.android.application")
+              id("kotlin-android")
+              // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+              id("dev.flutter.flutter-gradle-plugin")
+          }
+
+          android {
+              namespace = "com.jagx.ai.jagx_ai"
+              compileSdk = 36
+              ndkVersion = flutter.ndkVersion
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_11
+                  targetCompatibility = JavaVersion.VERSION_11
+              }
+
+              kotlinOptions {
+                  jvmTarget = JavaVersion.VERSION_11.toString()
+              }
+
+              defaultConfig {
+                  applicationId = "com.jagx.ai.jagx_ai"
+                  minSdk = 24
+                  targetSdk = 36
+                  versionCode = flutter.versionCode
+                  versionName = flutter.versionName
+              }
+
+              buildTypes {
+                  release {
+                      // Debug keys so CI can produce an installable APK without a keystore secret
+                      signingConfig = signingConfigs.getByName("debug")
+                  }
+              }
+          }
+
+          flutter {
+              source = "../.."
+          }
+          EOF
+
           python3 << 'PY'
           import re
           from pathlib import Path
-
           man = Path("android/app/src/main/AndroidManifest.xml")
-          if man.exists():
-              m = man.read_text()
-              m = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', m)
-              if "android.permission.INTERNET" not in m:
-                  m = re.sub(
-                      r"(<manifest[^>]*>)",
-                      r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>',
-                      m,
-                      count=1,
-                  )
-              if "io.supabase.jagxai" not in m:
-                  intent = '''
+          m = man.read_text()
+          m = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', m)
+          if "android.permission.INTERNET" not in m:
+              m = re.sub(r"(<manifest[^>]*>)", r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>', m, count=1)
+          if "io.supabase.jagxai" not in m:
+              intent = '''
                   <intent-filter>
                       <action android:name="android.intent.action.VIEW"/>
                       <category android:name="android.intent.category.DEFAULT"/>
                       <category android:name="android.intent.category.BROWSABLE"/>
                       <data android:scheme="io.supabase.jagxai" android:host="login-callback"/>
                   </intent-filter>'''
-                  m = m.replace("</activity>", intent + "\n        </activity>", 1)
-              man.write_text(m)
-
-          for name in ("build.gradle.kts", "build.gradle"):
-              p = Path("android/app") / name
-              if not p.exists():
-                  continue
-              t = p.read_text()
-              # Force compileSdk / targetSdk 36 (file_picker needs it)
-              if name.endswith(".kts"):
-                  t = re.sub(r"compileSdk\s*=\s*[^\n]+", "compileSdk = 36", t)
-                  t = re.sub(r"targetSdk\s*=\s*[^\n]+", "targetSdk = 36", t)
-                  t = re.sub(r"minSdk\s*=\s*[^\n]+", "minSdk = 24", t)
-                  if "signingConfig" not in t and "release" in t:
-                      t = re.sub(
-                          r"(release\s*\{)",
-                          r'\1\n            signingConfig = signingConfigs.getByName("debug")',
-                          t,
-                          count=1,
-                      )
-              else:
-                  t = re.sub(r"compileSdk\s+[^\n]+", "compileSdk 36", t)
-                  t = re.sub(r"targetSdk\s+[^\n]+", "targetSdk 36", t)
-                  t = re.sub(r"minSdk\s+[^\n]+", "minSdk 24", t)
-                  if "signingConfig" not in t and "release" in t:
-                      t = re.sub(
-                          r"(release\s*\{)",
-                          r'\1\n            signingConfig signingConfigs.debug',
-                          t,
-                          count=1,
-                      )
-              p.write_text(t)
-              print("patched", p)
-              print(p.read_text()[:800])
+              m = m.replace("</activity>", intent + "\n        </activity>", 1)
+          man.write_text(m)
+          print("manifest ok")
+          print(Path("android/app/build.gradle.kts").read_text())
           PY
 
       - run: flutter pub get
 
-      - name: Apply launcher icons (force mipmaps)
+      - name: Force launcher icons
         run: |
           dart run flutter_launcher_icons || true
           for size_folder in "48:mipmap-mdpi" "72:mipmap-hdpi" "96:mipmap-xhdpi" "144:mipmap-xxhdpi" "192:mipmap-xxxhdpi"; do
@@ -137,21 +138,16 @@ jobs:
             cp "$dir/ic_launcher.png" "$dir/ic_launcher_foreground.png"
           done
           mkdir -p android/app/src/main/res/mipmap-anydpi-v26 android/app/src/main/res/values
-          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml << 'XML'
-          <?xml version="1.0" encoding="utf-8"?>
-          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@color/ic_launcher_background"/>
-              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
-          </adaptive-icon>
-          XML
+          printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' \
+            '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">' \
+            '    <background android:drawable="@color/ic_launcher_background"/>' \
+            '    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>' \
+            '</adaptive-icon>' > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
-          cat > android/app/src/main/res/values/colors.xml << 'XML'
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <color name="ic_launcher_background">#000000</color>
-          </resources>
-          XML
-          echo "Icons forced OK"
+          printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' \
+            '<resources>' \
+            '    <color name="ic_launcher_background">#000000</color>' \
+            '</resources>' > android/app/src/main/res/values/colors.xml
 
       - name: Build APK
         run: |
