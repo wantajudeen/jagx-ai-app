@@ -14,17 +14,16 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   final _email = TextEditingController();
-  final _password = TextEditingController();
+  final _otp = TextEditingController();
   final _name = TextEditingController();
-  bool _register = false;
+  bool _sent = false;
   bool _loading = false;
-  bool _obscure = true;
   String? _error;
 
   @override
   void dispose() {
     _email.dispose();
-    _password.dispose();
+    _otp.dispose();
     _name.dispose();
     super.dispose();
   }
@@ -35,56 +34,57 @@ class _AuthScreenState extends State<AuthScreen> {
     context.go(need ? '/onboarding' : '/chat');
   }
 
-  Future<void> _submit() async {
+  Future<void> _sendCode() async {
     final email = _email.text.trim();
-    final password = _password.text;
     if (email.isEmpty || !email.contains('@')) {
       setState(() => _error = 'Enter a valid email');
       return;
     }
-    if (password.length < 6) {
-      setState(() => _error = 'Password min 6 characters');
-      return;
-    }
-    if (_register && _name.text.trim().isEmpty) {
-      setState(() => _error = 'Name is required');
-      return;
-    }
-
     setState(() {
       _loading = true;
       _error = null;
     });
-
     try {
-      final client = Supabase.instance.client;
-      if (_register) {
-        final res = await client.auth.signUp(
-          email: email,
-          password: password,
-          data: {'name': _name.text.trim()},
-        );
-        if (res.session != null) {
-          await Profile.save(
-            name: _name.text.trim(),
-            dob: '',
-          );
-          await _afterLogin();
-          return;
-        }
-        setState(() {
-          _error = 'Check your email to confirm, then sign in.';
-          _register = false;
-        });
-      } else {
-        await client.auth.signInWithPassword(email: email, password: password);
-        await _afterLogin();
-      }
+      await Supabase.instance.client.auth.signInWithOtp(
+        email: email,
+        shouldCreateUser: true,
+      );
+      setState(() => _sent = true);
     } on AuthException catch (e) {
       setState(() => _error = e.message);
     } catch (_) {
       setState(() => _error =
-          'Auth failed. Check SUPABASE_URL and SUPABASE_ANON_KEY.');
+          'Could not send code. Check SUPABASE_URL / ANON_KEY and Email provider.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _verifyCode() async {
+    final email = _email.text.trim();
+    final token = _otp.text.trim();
+    if (token.length < 6) {
+      setState(() => _error = 'Enter the 6-digit code from your email');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await Supabase.instance.client.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: OtpType.email,
+      );
+      if (_name.text.trim().isNotEmpty) {
+        await Profile.save(name: _name.text.trim(), dob: '');
+      }
+      await _afterLogin();
+    } on AuthException catch (e) {
+      setState(() => _error = e.message);
+    } catch (_) {
+      setState(() => _error = 'Invalid or expired code. Request a new one.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -104,7 +104,7 @@ class _AuthScreenState extends State<AuthScreen> {
       setState(() => _error = e.message);
     } catch (_) {
       setState(() => _error =
-          'OAuth failed. Enable Google / X in Supabase Providers.');
+          'OAuth failed. Enable Google / X in Supabase and set redirect URL.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -131,62 +131,56 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                _register ? 'Create account' : 'Sign in to continue',
+                _sent
+                    ? 'Enter the code we emailed you'
+                    : 'Sign in with email code',
                 style: const TextStyle(fontSize: 16, color: Jx.muted),
               ),
               const SizedBox(height: 28),
-              _oauthBtn(
-                label: 'Continue with Google',
-                icon: Icons.g_mobiledata,
-                onTap: () => _oauth(OAuthProvider.google),
-              ),
+              _oauthBtn('Continue with Google', Icons.g_mobiledata,
+                  () => _oauth(OAuthProvider.google)),
               const SizedBox(height: 12),
               _oauthBtn(
-                label: 'Continue with X',
-                icon: Icons.close, // X mark style
-                onTap: () => _oauth(OAuthProvider.twitter),
-              ),
+                  'Continue with X', Icons.close, () => _oauth(OAuthProvider.twitter)),
               const SizedBox(height: 20),
               const Row(
                 children: [
                   Expanded(child: Divider(color: Jx.border)),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('or', style: TextStyle(color: Jx.dim)),
+                    child: Text('or email code', style: TextStyle(color: Jx.dim)),
                   ),
                   Expanded(child: Divider(color: Jx.border)),
                 ],
               ),
               const SizedBox(height: 20),
-              if (_register) ...[
-                _field(_name, 'Name', 'Taju'),
-                const SizedBox(height: 14),
-              ],
-              _field(_email, 'Email', 'you@example.com',
-                  keyboard: TextInputType.emailAddress),
-              const SizedBox(height: 14),
-              TextField(
-                controller: _password,
-                obscureText: _obscure,
-                style: const TextStyle(color: Jx.text),
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  labelStyle: const TextStyle(color: Jx.muted),
-                  filled: true,
-                  fillColor: Jx.card,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscure ? Icons.visibility_off : Icons.visibility,
-                      color: Jx.dim,
-                    ),
-                    onPressed: () => setState(() => _obscure = !_obscure),
-                  ),
+              if (!_sent) ...[
+                TextField(
+                  controller: _name,
+                  style: const TextStyle(color: Jx.text),
+                  decoration: _dec('Name (optional)', 'Taju'),
                 ),
-              ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  style: const TextStyle(color: Jx.text),
+                  decoration: _dec('Email', 'you@example.com'),
+                ),
+              ] else ...[
+                Text(
+                  _email.text,
+                  style: const TextStyle(color: Jx.muted, fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _otp,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                      color: Jx.text, letterSpacing: 4, fontSize: 20),
+                  decoration: _dec('6-digit code', '000000'),
+                ),
+              ],
               if (_error != null) ...[
                 const SizedBox(height: 12),
                 Text(_error!,
@@ -197,7 +191,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _loading ? null : _submit,
+                  onPressed: _loading
+                      ? null
+                      : (_sent ? _verifyCode : _sendCode),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Jx.accent,
                     foregroundColor: Colors.black,
@@ -213,27 +209,35 @@ class _AuthScreenState extends State<AuthScreen> {
                               strokeWidth: 2, color: Colors.black),
                         )
                       : Text(
-                          _register ? 'Create account' : 'Sign in',
+                          _sent ? 'Verify code' : 'Send code',
                           style: const TextStyle(
                               fontWeight: FontWeight.w600, fontSize: 16),
                         ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Center(
-                child: TextButton(
-                  onPressed: () => setState(() {
-                    _register = !_register;
-                    _error = null;
-                  }),
-                  child: Text(
-                    _register
-                        ? 'Already have an account? Sign in'
-                        : 'New here? Create account',
-                    style: const TextStyle(color: Jx.muted),
+              if (_sent) ...[
+                const SizedBox(height: 12),
+                Center(
+                  child: TextButton(
+                    onPressed: _loading
+                        ? null
+                        : () => setState(() {
+                              _sent = false;
+                              _otp.clear();
+                              _error = null;
+                            }),
+                    child: const Text('Use a different email',
+                        style: TextStyle(color: Jx.muted)),
                   ),
                 ),
-              ),
+                Center(
+                  child: TextButton(
+                    onPressed: _loading ? null : _sendCode,
+                    child: const Text('Resend code',
+                        style: TextStyle(color: Jx.muted)),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -241,11 +245,20 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  Widget _oauthBtn({
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+  InputDecoration _dec(String label, String hint) => InputDecoration(
+        labelText: label,
+        hintText: hint,
+        labelStyle: const TextStyle(color: Jx.muted),
+        hintStyle: const TextStyle(color: Jx.dim),
+        filled: true,
+        fillColor: Jx.card,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+      );
+
+  Widget _oauthBtn(String label, IconData icon, VoidCallback onTap) {
     return SizedBox(
       width: double.infinity,
       height: 48,
@@ -258,27 +271,6 @@ class _AuthScreenState extends State<AuthScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _field(TextEditingController c, String label, String hint,
-      {TextInputType? keyboard}) {
-    return TextField(
-      controller: c,
-      keyboardType: keyboard,
-      style: const TextStyle(color: Jx.text),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        labelStyle: const TextStyle(color: Jx.muted),
-        hintStyle: const TextStyle(color: Jx.dim),
-        filled: true,
-        fillColor: Jx.card,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
         ),
       ),
     );
