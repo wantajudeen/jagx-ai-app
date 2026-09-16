@@ -34,66 +34,110 @@ jobs:
             "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" \
             "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" > .env
 
-      - name: Generate JagX logo PNG (512)
+      - name: Generate JagX icon (angular J + circuit nodes)
         run: |
-          mkdir -p assets/icons
-          python3 << 'PY'
+          mkdir -p assets/icons scripts
+          cat > scripts/make_jagx_icon.py << 'PY'
+          #!/usr/bin/env python3
+          """JagX icon: sharp angular J + circuit traces/nodes (options 3+5)."""
           from struct import pack
-          import zlib
+          import zlib, math, sys
+          from pathlib import Path
 
           def chunk(tag, data):
               return pack(">I", len(data)) + tag + data + pack(">I", zlib.crc32(tag + data) & 0xffffffff)
 
-          def make_png(w, h, pixel_fn):
+          def dist(x, y, cx, cy):
+              return math.hypot(x - cx, y - cy)
+
+          def near_segment(x, y, x1, y1, x2, y2, thickness):
+              dx, dy = x2 - x1, y2 - y1
+              if dx == 0 and dy == 0:
+                  return dist(x, y, x1, y1) <= thickness
+              t = max(0.0, min(1.0, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy)))
+              px, py = x1 + t * dx, y1 + t * dy
+              return dist(x, y, px, py) <= thickness
+
+          def pixel(x, y, size):
+              sx = x * 512.0 / size
+              sy = y * 512.0 / size
+              fg = (250, 250, 250)
+              bg = (0, 0, 0)
+              th = 28
+              on = False
+              # Angular J (option 5)
+              if near_segment(sx, sy, 200, 120, 340, 120, th):
+                  on = True
+              if near_segment(sx, sy, 320, 120, 320, 340, th):
+                  on = True
+              if near_segment(sx, sy, 180, 340, 320, 340, th):
+                  on = True
+              if near_segment(sx, sy, 180, 280, 180, 340, th):
+                  on = True
+              # Circuit traces (option 3)
+              th2 = 3.5
+              for seg in [
+                  (280, 150, 280, 300),
+                  (360, 150, 360, 290),
+                  (200, 300, 200, 365),
+                  (240, 365, 300, 365),
+                  (300, 160, 300, 200),
+              ]:
+                  if near_segment(sx, sy, *seg, th2):
+                      on = True
+              nodes = [
+                  (200, 120), (280, 120), (340, 120), (320, 180),
+                  (320, 250), (320, 340), (250, 340), (180, 340),
+                  (180, 300), (360, 200), (280, 220), (360, 150),
+              ]
+              for nx, ny in nodes:
+                  if dist(sx, sy, nx, ny) <= 9:
+                      on = True
+              return fg if on else bg
+
+          def make_png(w, h):
               rows = []
               for y in range(h):
                   row = b"\x00"
                   for x in range(w):
-                      row += bytes(pixel_fn(x, y))
+                      row += bytes(pixel(x, y, w))
                   rows.append(row)
               raw = b"".join(rows)
               ihdr = pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)
-              return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
+              return (
+                  b"\x89PNG\r\n\x1a\n"
+                  + chunk(b"IHDR", ihdr)
+                  + chunk(b"IDAT", zlib.compress(raw, 9))
+                  + chunk(b"IEND", b"")
+              )
 
-          # Bold white J on pure black rounded-square feel (full square for adaptive crop)
-          def j_pixel(x, y, size=512):
-              # background black
-              bg = (0, 0, 0)
-              fg = (245, 245, 245)
-              # J geometry scaled to size
-              s = size / 512.0
-              # vertical stem
-              stem = (290 * s <= x <= 350 * s) and (110 * s <= y <= 360 * s)
-              # top bar
-              top = (180 * s <= x <= 350 * s) and (110 * s <= y <= 165 * s)
-              # bottom curve / hook of J
-              hook = (160 * s <= x <= 290 * s) and (320 * s <= y <= 390 * s)
-              left_leg = (160 * s <= x <= 210 * s) and (250 * s <= y <= 390 * s)
-              if stem or top or hook or left_leg:
-                  return fg
-              return bg
-
-          open("assets/icons/app_icon.png", "wb").write(make_png(512, 512, lambda x, y: j_pixel(x, y, 512)))
-          # also write foreground for adaptive
-          open("assets/icons/app_icon_fg.png", "wb").write(make_png(512, 512, lambda x, y: j_pixel(x, y, 512)))
-          print("icon bytes", len(open("assets/icons/app_icon.png", "rb").read()))
+          out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("assets/icons/app_icon.png")
+          size = int(sys.argv[2]) if len(sys.argv) > 2 else 512
+          out.parent.mkdir(parents=True, exist_ok=True)
+          data = make_png(size, size)
+          out.write_bytes(data)
+          print(f"wrote {out} ({len(data)} bytes, {size}x{size})")
           PY
+          python3 scripts/make_jagx_icon.py assets/icons/app_icon.png 512
+          python3 scripts/make_jagx_icon.py assets/icons/app_icon_fg.png 512
 
       - name: Flutter create (keep app source)
         run: |
           cp -a lib /tmp/jagx_lib
           cp pubspec.yaml /tmp/jagx_pubspec.yaml
           cp -a assets /tmp/jagx_assets 2>/dev/null || true
+          cp -a scripts /tmp/jagx_scripts 2>/dev/null || true
           flutter create . --project-name jagx_ai --org com.jagx.ai --platforms=android,web
           rm -rf lib
           cp -a /tmp/jagx_lib lib
           cp /tmp/jagx_pubspec.yaml pubspec.yaml
-          mkdir -p assets/icons
+          mkdir -p assets/icons scripts
           cp -a /tmp/jagx_assets/. assets/ 2>/dev/null || true
-          # regenerate icon after create in case assets were wiped
-          if [ ! -f assets/icons/app_icon.png ]; then
-            echo "icon missing after create" && exit 1
-          fi
+          cp -a /tmp/jagx_scripts/. scripts/ 2>/dev/null || true
+          # Always regenerate icon after create
+          python3 scripts/make_jagx_icon.py assets/icons/app_icon.png 512
+          python3 scripts/make_jagx_icon.py assets/icons/app_icon_fg.png 512
+          test -f assets/icons/app_icon.png
 
       - name: Soft patch manifest + debug signing
         run: |
@@ -105,7 +149,12 @@ jobs:
               m = man.read_text()
               m = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', m)
               if "android.permission.INTERNET" not in m:
-                  m = re.sub(r"(<manifest[^>]*>)", r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>', m, count=1)
+                  m = re.sub(
+                      r"(<manifest[^>]*>)",
+                      r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>',
+                      m,
+                      count=1,
+                  )
               if "io.supabase.jagxai" not in m:
                   intent = '''
                   <intent-filter>
@@ -118,68 +167,66 @@ jobs:
               man.write_text(m)
           for name in ("build.gradle.kts", "build.gradle"):
               p = Path("android/app") / name
-              if not p.exists(): continue
+              if not p.exists():
+                  continue
               t = p.read_text()
               if "signingConfig" not in t and "release" in t:
                   if name.endswith(".kts"):
-                      t = re.sub(r"(release\s*\{)", r'\1\n            signingConfig = signingConfigs.getByName("debug")', t, count=1)
+                      t = re.sub(
+                          r"(release\s*\{)",
+                          r'\1\n            signingConfig = signingConfigs.getByName("debug")',
+                          t,
+                          count=1,
+                      )
                   else:
-                      t = re.sub(r"(release\s*\{)", r'\1\n            signingConfig signingConfigs.debug', t, count=1)
+                      t = re.sub(
+                          r"(release\s*\{)",
+                          r'\1\n            signingConfig signingConfigs.debug',
+                          t,
+                          count=1,
+                      )
                   p.write_text(t)
           PY
 
       - run: flutter pub get
 
-      - name: Apply launcher icons (must succeed)
+      - name: Apply launcher icons (force mipmaps)
         run: |
-          dart run flutter_launcher_icons
-          # Force-overwrite any remaining Flutter defaults in mipmap folders
-          python3 << 'PY'
-          from pathlib import Path
-          import shutil, struct, zlib
-
-          def chunk(tag, data):
-              return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xffffffff)
-
-          def make_png(w, h):
-              rows = []
-              s = w / 512.0
-              for y in range(h):
-                  row = b"\x00"
-                  for x in range(w):
-                      stem = (290 * s <= x <= 350 * s) and (110 * s <= y <= 360 * s)
-                      top = (180 * s <= x <= 350 * s) and (110 * s <= y <= 165 * s)
-                      hook = (160 * s <= x <= 290 * s) and (320 * s <= y <= 390 * s)
-                      left_leg = (160 * s <= x <= 210 * s) and (250 * s <= y <= 390 * s)
-                      c = (245, 245, 245) if (stem or top or hook or left_leg) else (0, 0, 0)
-                      row += bytes(c)
-                  rows.append(row)
-              raw = b"".join(rows)
-              ihdr = struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)
-              return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
-
-          sizes = {
-              "mipmap-mdpi": 48,
-              "mipmap-hdpi": 72,
-              "mipmap-xhdpi": 96,
-              "mipmap-xxhdpi": 144,
-              "mipmap-xxxhdpi": 192,
-          }
-          res = Path("android/app/src/main/res")
-          for folder, size in sizes.items():
-              d = res / folder
-              d.mkdir(parents=True, exist_ok=True)
-              png = make_png(size, size)
-              for name in ("ic_launcher.png", "ic_launcher_round.png", "ic_launcher_foreground.png"):
-                  (d / name).write_bytes(png)
-                  print("wrote", d / name, len(png))
-          # adaptive background pure black
-          anydpi = res / "mipmap-anydpi-v26"
-          if anydpi.exists():
-              for f in anydpi.glob("*.xml"):
-                  print("adaptive xml", f)
-          print("icons forced")
-          PY
+          dart run flutter_launcher_icons || true
+          # Force every density with our angular+circuit J
+          for size_folder in "48:mipmap-mdpi" "72:mipmap-hdpi" "96:mipmap-xhdpi" "144:mipmap-xxhdpi" "192:mipmap-xxxhdpi"; do
+            size="${size_folder%%:*}"
+            folder="${size_folder##*:}"
+            dir="android/app/src/main/res/$folder"
+            mkdir -p "$dir"
+            python3 scripts/make_jagx_icon.py "$dir/ic_launcher.png" "$size"
+            cp "$dir/ic_launcher.png" "$dir/ic_launcher_round.png"
+            cp "$dir/ic_launcher.png" "$dir/ic_launcher_foreground.png"
+          done
+          # Adaptive XML: black background + our foreground
+          mkdir -p android/app/src/main/res/mipmap-anydpi-v26
+          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml << 'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background"/>
+              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+          </adaptive-icon>
+          XML
+          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml << 'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background"/>
+              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+          </adaptive-icon>
+          XML
+          mkdir -p android/app/src/main/res/values
+          cat > android/app/src/main/res/values/colors.xml << 'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="ic_launcher_background">#000000</color>
+          </resources>
+          XML
+          echo "Icons forced OK"
 
       - name: Build APK
         run: |
@@ -192,7 +239,7 @@ jobs:
           name: apk-build-log
           path: build_log.txt
 
-      - name: Copy APK for site + release
+      - name: Copy APK for release
         if: success()
         run: |
           mkdir -p downloads
@@ -213,7 +260,7 @@ jobs:
           tag_name: apk-latest
           name: JagX AI Android APK
           body: |
-            Latest JagX AI Android APK — JagX J icon (not Flutter).
+            JagX AI APK — angular circuit J icon (not Flutter).
             Uninstall old app first, then install JagX-AI.apk
           files: downloads/JagX-AI.apk
           make_latest: true
