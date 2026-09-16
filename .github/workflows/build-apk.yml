@@ -64,13 +64,11 @@ jobs:
           if [ -f android/app/build.gradle ]; then GRADLE=android/app/build.gradle; fi
           echo "Using $GRADLE"
           cat "$GRADLE"
-          # Force numeric SDK levels (file_picker needs app compileSdk >= 36)
           sed -i -E 's/compileSdk\s*=\s*[^\n]+/compileSdk = 36/' "$GRADLE" || true
           sed -i -E 's/targetSdk\s*=\s*[^\n]+/targetSdk = 36/' "$GRADLE" || true
           sed -i -E 's/minSdk\s*=\s*[^\n]+/minSdk = 24/' "$GRADLE" || true
           sed -i -E 's/compileSdkVersion\s+[^\n]+/compileSdkVersion 36/' "$GRADLE" || true
           sed -i -E 's/targetSdkVersion\s+[^\n]+/targetSdkVersion 36/' "$GRADLE" || true
-          # Release uses debug signing in CI
           if ! grep -q 'signingConfig' "$GRADLE"; then
             if [[ "$GRADLE" == *.kts ]]; then
               sed -i '/release {/a\            signingConfig = signingConfigs.getByName("debug")' "$GRADLE"
@@ -81,65 +79,56 @@ jobs:
           echo "---- after app gradle patch ----"
           cat "$GRADLE"
 
-          # Force compileSdk 36 on ALL subprojects (file_picker AAR metadata)
-          if [ -f android/build.gradle.kts ]; then
-            ROOTG=android/build.gradle.kts
-            if ! grep -q 'subprojects' "$ROOTG"; then
-              cat >> "$ROOTG" << 'KTS'
-
-subprojects {
-    afterEvaluate {
-        if (project.hasProperty("android")) {
-            project.extensions.findByName("android")?.let { ext ->
+          # Force compileSdk 36 on ALL subprojects via Python (safe, no heredoc issues)
+          python3 << 'PY'
+          from pathlib import Path
+          block = """
+          // JagX force compileSdk 36 for file_picker
+          subprojects { sub ->
+            sub.afterEvaluate {
+              if (sub.plugins.hasPlugin(\"com.android.application\") || sub.plugins.hasPlugin(\"com.android.library\")) {
                 try {
-                    val androidExt = ext as com.android.build.gradle.BaseExtension
-                    androidExt.compileSdkVersion(36)
-                } catch (e: Exception) {
-                    // ignore non-android subprojects
+                  sub.android.compileSdkVersion = 36
+                } catch (Throwable t) {
+                  try { sub.android.compileSdk = 36 } catch (Throwable t2) {}
                 }
+              }
             }
-        }
-    }
-}
-KTS
-            fi
-          elif [ -f android/build.gradle ]; then
-            ROOTG=android/build.gradle
-            if ! grep -q 'subprojects' "$ROOTG"; then
-              cat >> "$ROOTG" << 'GROOVY'
+          }
+          """
+          for name in ["android/build.gradle", "android/build.gradle.kts"]:
+            p = Path(name)
+            if p.exists() and "JagX force compileSdk" not in p.read_text():
+              if name.endswith(".kts"):
+                p.write_text(p.read_text() + """
+          subprojects {
+            afterEvaluate {
+              plugins.withId(\"com.android.application\") {
+                extensions.findByName(\"android\")?.let {
+                  try { (it as com.android.build.gradle.BaseExtension).compileSdkVersion(36) } catch (_: Exception) {}
+                }
+              }
+              plugins.withId(\"com.android.library\") {
+                extensions.findByName(\"android\")?.let {
+                  try { (it as com.android.build.gradle.BaseExtension).compileSdkVersion(36) } catch (_: Exception) {}
+                }
+              }
+            }
+          }
+          """)
+              else:
+                p.write_text(p.read_text() + block)
+              print("Patched", name)
+          Path("android/gradle.properties").parent.mkdir(parents=True, exist_ok=True)
+          with open("android/gradle.properties", "a") as f:
+            f.write("\nandroid.compileSdkVersion=36\n")
+          print("Done subproject force")
+          PY
 
-subprojects { subproject ->
-    subproject.afterEvaluate {
-        if (subproject.hasProperty("android")) {
-            try {
-                subproject.android {
-                    if (it.hasProperty("compileSdkVersion")) {
-                        compileSdkVersion 36
-                    }
-                    if (it.hasProperty("compileSdk")) {
-                        compileSdk 36
-                    }
-                }
-            } catch (Exception e) {
-                // ignore
-            }
-        }
-    }
-}
-GROOVY
-            fi
-          fi
           echo "---- root gradle ----"
           cat android/build.gradle* 2>/dev/null || true
 
-          # Also set in gradle.properties
-          mkdir -p android
-          echo "android.defaults.buildfeatures.buildconfig=true" >> android/gradle.properties
-          echo "android.nonTransitiveRClass=false" >> android/gradle.properties
-          echo "android.compileSdkVersion=36" >> android/gradle.properties || true
-
-          # Manifest
-          python3 - <<'PY'
+          python3 << 'PY'
           import re
           from pathlib import Path
           man = Path("android/app/src/main/AndroidManifest.xml")
