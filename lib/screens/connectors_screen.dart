@@ -14,14 +14,14 @@ class _ConnectorsScreenState extends State<ConnectorsScreen> {
   final Map<String, bool> _on = {};
 
   static const _items = [
-    ('github', 'GitHub', 'Repos, issues, PRs', Icons.code),
-    ('gmail', 'Gmail', 'Read & draft email', Icons.mail_outline),
-    ('drive', 'Google Drive', 'Files & docs', Icons.folder_outlined),
-    ('calendar', 'Calendar', 'Schedule & events', Icons.calendar_today),
-    ('notion', 'Notion', 'Notes & databases', Icons.note_outlined),
-    ('x', 'X (Twitter)', 'Posts & search', Icons.close),
-    ('slack', 'Slack', 'Workspace chat', Icons.chat_bubble_outline),
-    ('web', 'Web browser', 'Search the open web', Icons.language),
+    _Conn('github', 'GitHub', 'Repos, issues, PRs', Icons.code),
+    _Conn('gmail', 'Gmail', 'Read & draft email', Icons.mail_outline),
+    _Conn('drive', 'Google Drive', 'Files & docs', Icons.folder_outlined),
+    _Conn('calendar', 'Calendar', 'Schedule & events', Icons.calendar_today),
+    _Conn('notion', 'Notion', 'Notes & databases', Icons.note_outlined),
+    _Conn('x', 'X (Twitter)', 'Posts & search', Icons.close),
+    _Conn('slack', 'Slack', 'Workspace chat', Icons.chat_bubble_outline),
+    _Conn('web', 'Web browser', 'Search the open web', Icons.language),
   ];
 
   @override
@@ -34,20 +34,20 @@ class _ConnectorsScreenState extends State<ConnectorsScreen> {
     final p = await SharedPreferences.getInstance();
     setState(() {
       for (final e in _items) {
-        _on[e.\$1] = p.getBool('conn_\${e.\$1}') ?? false;
+        _on[e.id] = p.getBool('conn_${e.id}') ?? false;
       }
     });
   }
 
   Future<void> _toggle(String id, bool v) async {
     final p = await SharedPreferences.getInstance();
-    await p.setBool('conn_\$id', v);
+    await p.setBool('conn_$id', v);
     setState(() => _on[id] = v);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(v
-              ? 'Connector enabled (connect tokens in Settings)'
+              ? 'Connector enabled (tokens via Supabase / Settings)'
               : 'Connector off'),
           backgroundColor: Jx.card,
         ),
@@ -64,12 +64,11 @@ class _ConnectorsScreenState extends State<ConnectorsScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
-            'Link tools JagX Bot can use. OAuth tokens are configured in Supabase / Settings.',
+            'Link tools JagX Bot can use. Full OAuth wiring comes next.',
             style: TextStyle(color: Jx.muted, height: 1.4),
           ),
           const SizedBox(height: 16),
           ..._items.map((e) {
-            final id = e.\$1;
             return Container(
               margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
@@ -78,13 +77,13 @@ class _ConnectorsScreenState extends State<ConnectorsScreen> {
                 border: Border.all(color: Jx.border),
               ),
               child: SwitchListTile(
-                secondary: Icon(e.\$4, color: Jx.muted),
-                title: Text(e.\$2, style: const TextStyle(color: Jx.text)),
-                subtitle:
-                    Text(e.\$3, style: const TextStyle(color: Jx.dim, fontSize: 12)),
-                value: _on[id] ?? false,
+                secondary: Icon(e.icon, color: Jx.muted),
+                title: Text(e.title, style: const TextStyle(color: Jx.text)),
+                subtitle: Text(e.subtitle,
+                    style: const TextStyle(color: Jx.dim, fontSize: 12)),
+                value: _on[e.id] ?? false,
                 activeColor: Jx.accent,
-                onChanged: (v) => _toggle(id, v),
+                onChanged: (v) => _toggle(e.id, v),
               ),
             );
           }),
@@ -92,4 +91,12 @@ class _ConnectorsScreenState extends State<ConnectorsScreen> {
       ),
     );
   }
+}
+
+class _Conn {
+  const _Conn(this.id, this.title, this.subtitle, this.icon);
+  final String id;
+  final String title;
+  final String subtitle;
+  final IconData icon;
 }
