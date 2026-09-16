@@ -1,7 +1,7 @@
 name: jagx_ai
 description: JagX AI — Grok-style intelligence for Africa
 publish_to: "none"
-version: 2.5.0+8
+version: 2.7.0+9
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -24,6 +24,7 @@ dependencies:
   url_launcher: ^6.3.0
   file_picker: ^8.0.0
   image_picker: ^1.1.2
+  webview_flutter: ^4.8.0
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
