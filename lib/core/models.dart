@@ -25,7 +25,7 @@ class Models {
     JagxModel(
       id: 'jagx-0.4',
       name: 'JagX 0.4',
-      subtitle: 'Expert · deep reasoning',
+      subtitle: 'Expert · deep reasoning & code',
       badge: 'Expert',
     ),
     JagxModel(
@@ -37,13 +37,13 @@ class Models {
     JagxModel(
       id: 'bot',
       name: 'JagX Bot',
-      subtitle: 'AI teammate that does real work',
-      badge: 'New',
+      subtitle: 'Agents that plan, code, research',
+      badge: 'Bot',
     ),
     JagxModel(
       id: 'oracle',
       name: 'Oracle',
-      subtitle: 'Full agent',
+      subtitle: 'Full agent — coming soon',
       badge: 'Soon',
       comingSoon: true,
     ),
