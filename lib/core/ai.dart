@@ -67,4 +67,47 @@ Finance: education and analysis only; always include risk warnings. No live trad
       return 'JagX AI is temporarily unavailable. Check API key and try again.';
     }
   }
+
+  /// Image generation via OpenRouter (Flux / SD when available)
+  static Future<String?> imagine(String prompt) async {
+    final key = Env.openRouterKey;
+    if (key.isEmpty) return null;
+
+    try {
+      final res = await _dio.post(
+        'https://openrouter.ai/api/v1/chat/completions',
+        options: Options(headers: {
+          'Authorization': 'Bearer $key',
+          'HTTP-Referer': 'https://jagxai.name.ng',
+          'X-Title': 'JagX AI',
+          'Content-Type': 'application/json',
+        }),
+        data: {
+          'model': 'black-forest-labs/flux-1-schnell',
+          'messages': [
+            {
+              'role': 'user',
+              'content': prompt,
+            }
+          ],
+          'modalities': ['image', 'text'],
+        },
+      );
+
+      final msg = res.data['choices']?[0]?['message'];
+      // OpenRouter image responses may put URLs in content or images array
+      final images = msg?['images'] as List?;
+      if (images != null && images.isNotEmpty) {
+        final url = images.first['image_url']?['url'] ?? images.first['url'];
+        if (url is String && url.isNotEmpty) return url;
+      }
+      final content = msg?['content']?.toString() ?? '';
+      final match = RegExp(r'https?://[^\s)\]"]+').firstMatch(content);
+      if (match != null) return match.group(0);
+      return null;
+    } catch (_) {
+      // Fallback: return null so UI shows polite message
+      return null;
+    }
+  }
 }
