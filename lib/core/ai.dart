@@ -11,29 +11,24 @@ class Ai {
 
   static const _baseSystem = '''
 You are JagX AI by JagX & JRILICENSE — Africa-first multipurpose intelligence.
-Never name OpenAI, Claude, GPT, Grok, xAI, Llama, Gemini, DeepSeek, or other AI brands.
+Never name OpenAI, Claude, GPT, Grok, xAI, Llama, Gemini, DeepSeek, Qwen, or other AI brands.
 Identity: only JagX AI by JagX & JRILICENSE.
 Be clear, useful, strong at code and African context (Naira, Nigeria, Pidgin when appropriate).
 Finance: education and analysis only; always include risk warnings. No live trading claims.
+If the user asks to generate or draw an image, reply with a short caption and a line starting with IMAGE_PROMPT:
 ''';
 
-  /// OpenRouter model IDs — distinct power per JagX product line
+  /// FREE OpenRouter models only for Ask / Build
   static String _model(String id) {
     switch (id) {
       case 'jagx-0.3':
-        // Fast everyday
-        return 'google/gemini-2.0-flash-001';
+        return 'meta-llama/llama-3.3-8b-instruct:free';
       case 'jagx-0.4':
-        // Expert reasoning & code
-        return 'deepseek/deepseek-chat';
+        return 'qwen/qwen3-32b:free';
       case 'forge':
-        // Strongest regular
-        return 'qwen/qwen-2.5-72b-instruct';
-      case 'bot':
-        // Agentic teammate
-        return 'deepseek/deepseek-r1';
+        return 'nvidia/llama-3.3-nemotron-super-49b-v1:free';
       default:
-        return 'google/gemini-2.0-flash-001';
+        return 'openrouter/free';
     }
   }
 
@@ -43,7 +38,7 @@ Finance: education and analysis only; always include risk warnings. No live trad
     String? agentId,
   }) async {
     if (modelId == 'oracle') {
-      return 'Oracle is **Coming soon**. Use JagX Bot, Forge, or JagX 0.4.';
+      return 'Oracle is **Coming soon**. Use Forge, JagX 0.4, or open **JagX Bot**.';
     }
 
     final key = Env.openRouterKey;
@@ -52,21 +47,43 @@ Finance: education and analysis only; always include risk warnings. No live trad
     }
 
     var system = _baseSystem;
-    if (modelId == 'bot' && agentId != null) {
-      final a = Agents.byId(agentId);
-      system =
-          '$system\n\nActive agent: **${a.name}** (${a.role}).\n${a.systemHint}';
-    } else if (modelId == 'bot') {
-      system = '''$system
+    var model = _model(modelId);
 
-You are JagX Bot with named agents: Atlas (plan), Nova (code), Mira (research), Kofi (finance), Zara (design), Rex (GitHub).
-Say which agent is speaking when useful, e.g. **Nova:** ...
-''';
-    } else if (modelId == 'forge' || modelId == 'jagx-0.4') {
-      system =
-          '$system\nPrefer complete, production-ready answers for code and architecture.';
+    if (agentId != null) {
+      final a = Agents.byId(agentId);
+      system = '$_baseSystem\n\nActive agent: **${a.name}** (${a.role}).\n${a.systemHint}';
+      model = a.openRouterModel;
     }
 
+    return _complete(key: key, model: model, system: system, messages: messages);
+  }
+
+  /// Call a specific Bot agent by id (always free model).
+  static Future<String> agentChat({
+    required String agentId,
+    required List<Map<String, String>> messages,
+  }) async {
+    final key = Env.openRouterKey;
+    if (key.isEmpty) {
+      return 'OpenRouter key missing. Add OPENROUTER_API_KEY and rebuild.';
+    }
+    final a = Agents.byId(agentId);
+    final system =
+        '$_baseSystem\n\nYou are **${a.name}** (${a.role}) of JagX Bot.\n${a.systemHint}';
+    return _complete(
+      key: key,
+      model: a.openRouterModel,
+      system: system,
+      messages: messages,
+    );
+  }
+
+  static Future<String> _complete({
+    required String key,
+    required String model,
+    required String system,
+    required List<Map<String, String>> messages,
+  }) async {
     try {
       final res = await _dio.post(
         'https://openrouter.ai/api/v1/chat/completions',
@@ -77,13 +94,13 @@ Say which agent is speaking when useful, e.g. **Nova:** ...
           'Content-Type': 'application/json',
         }),
         data: {
-          'model': _model(modelId),
+          'model': model,
           'messages': [
             {'role': 'system', 'content': system},
             ...messages,
           ],
-          'temperature': modelId == 'jagx-0.3' ? 0.7 : 0.3,
-          'max_tokens': modelId == 'jagx-0.3' ? 4096 : 12000,
+          'temperature': 0.35,
+          'max_tokens': 8192,
         },
       );
 
@@ -91,30 +108,33 @@ Say which agent is speaking when useful, e.g. **Nova:** ...
       if (choices is List && choices.isNotEmpty) {
         final msg = choices[0]['message'];
         final content = msg?['content']?.toString();
-        // Some models put reasoning in a separate field
         if (content != null && content.trim().isNotEmpty) return content;
         final reasoning = msg?['reasoning']?.toString();
         if (reasoning != null && reasoning.trim().isNotEmpty) return reasoning;
       }
-      return 'No response from JagX. Try again or switch model.';
+      // Fallback free router
+      return _complete(
+        key: key,
+        model: 'openrouter/free',
+        system: system,
+        messages: messages,
+      );
     } on DioException catch (e) {
       final body = e.response?.data?.toString() ?? e.message ?? '';
       if (body.contains('401') || body.contains('Unauthorized')) {
         return 'API key rejected. Check OPENROUTER_API_KEY in secrets and rebuild.';
       }
-      if (body.contains('402') || body.contains('credits')) {
-        return 'OpenRouter credits low. Top up at openrouter.ai then retry.';
+      if (body.contains('rate') || (e.response?.statusCode == 429)) {
+        return 'Free model rate limit. Wait a moment and try again.';
       }
       return 'JagX could not reach the model. (${e.response?.statusCode ?? 'network'})';
-    } catch (e) {
+    } catch (_) {
       return 'JagX is temporarily unavailable. Try again.';
     }
   }
 
   static Future<String?> imagine(String prompt) async {
     final encoded = Uri.encodeComponent(prompt);
-    final pollinations =
-        'https://image.pollinations.ai/prompt/$encoded?width=1024&height=1024&nologo=true';
-    return pollinations;
+    return 'https://image.pollinations.ai/prompt/$encoded?width=1024&height=1024&nologo=true';
   }
 }

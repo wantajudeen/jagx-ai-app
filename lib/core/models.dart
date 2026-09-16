@@ -14,6 +14,7 @@ class JagxModel {
   final bool comingSoon;
 }
 
+/// Models users can pick in Ask / Build — Bot is a separate screen, not listed here.
 class Models {
   static const list = [
     JagxModel(
@@ -33,12 +34,6 @@ class Models {
       name: 'Forge',
       subtitle: 'Most powerful regular model',
       badge: 'Power',
-    ),
-    JagxModel(
-      id: 'bot',
-      name: 'JagX Bot',
-      subtitle: 'Agents that plan, code, research',
-      badge: 'Bot',
     ),
     JagxModel(
       id: 'oracle',
