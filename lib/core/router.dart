@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../screens/auth_screen.dart';
 import '../screens/chat_screen.dart';
 import '../screens/connectors_screen.dart';
+import '../screens/github_connect_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/premium_screen.dart';
 import '../screens/settings_screen.dart';
@@ -45,6 +46,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/connectors', builder: (_, __) => const ConnectorsScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/premium', builder: (_, __) => const PremiumScreen()),
+      GoRoute(path: '/github', builder: (_, __) => const GithubConnectScreen()),
     ],
   );
 });
