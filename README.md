@@ -1,29 +1,41 @@
 # JagX AI
 
-**Nigeria-first multi-purpose AI** — native Android app built with **Kotlin + Jetpack Compose**.
+**Nigeria-first multi-purpose AI** — native **Kotlin + Jetpack Compose**.
 
-## Features (in progress)
+## Platforms
+
+| Platform | Status | Artifact |
+|----------|--------|----------|
+| **Android** | Building now | `JagX-AI.apk` + `JagX-AI.jagx` |
+| **Windows** | Next | Compose Multiplatform desktop |
+| **macOS** | Next | Compose Multiplatform desktop |
+| **Linux** | Next | Compose Multiplatform desktop |
+| **iOS** | Next | Compose Multiplatform (macOS runner) |
+| **Web** | Live | GitHub Pages (`index.html`) |
+
+## Features (shipping)
 - Dark Grok-style UI
 - Ask / Imagine / Build / Bot tabs
 - Named multi-agent system (free OpenRouter models)
 - Image generation
 - Company & finance planner
-- Supabase auth (coming)
 - Custom angular circuit J icon
+- Supabase auth (next)
 
-## Build
+## Download
+
+- **Android APK**: [Releases](https://github.com/wantajudeen/jagx-ai-app/releases) → `apk-latest`
+- Or Actions → latest green run → Artifacts → `JagX-AI-Android-APK`
+
+## Build locally
 
 ```bash
 ./gradlew assembleRelease
 ```
 
-APK is produced automatically by GitHub Actions on every push to `main`.
-
-Download the latest APK from the [Releases](https://github.com/wantajudeen/jagx-ai-app/releases) page or the Actions artifact.
-
 ## Stack
-- Kotlin
+- Kotlin 2.0
 - Jetpack Compose + Material 3
 - Navigation Compose
-- OkHttp + Coroutines (OpenRouter)
+- OkHttp + Coroutines
 - GitHub Actions CI

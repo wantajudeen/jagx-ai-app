@@ -12,7 +12,7 @@ jobs:
   apk:
     name: Android APK
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - uses: actions/checkout@v4
@@ -26,41 +26,31 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Bootstrap Gradle wrapper
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Make gradlew executable + fetch wrapper jar
         run: |
-          # Ensure wrapper exists
-          if [ ! -f gradlew ]; then
-            gradle wrapper --gradle-version 8.9 || true
-          fi
-          if [ ! -f gradlew ]; then
-            # Fallback: download official wrapper files
-            curl -sL -o gradlew https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradlew
-            chmod +x gradlew
-            mkdir -p gradle/wrapper
-            curl -sL -o gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.9.0/gradle/wrapper/gradle-wrapper.jar
-            cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-distributionBase=GRADLE_USER_HOME
-distributionPath=wrapper/dists
-distributionUrl=https\://services.gradle.org/distributions/gradle-8.9-bin.zip
-networkTimeout=10000
-validateDistributionUrl=true
-zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists
-EOF
-          fi
           chmod +x gradlew
+          mkdir -p gradle/wrapper
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            curl -sL -o gradle/wrapper/gradle-wrapper.jar \
+              https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar
+          fi
           ls -la gradlew gradle/wrapper/
 
-      - name: Create default launcher icons if missing
+      - name: Ensure launcher icons exist
         run: |
           for d in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
             mkdir -p app/src/main/res/$d
-            # Minimal 1x1 black PNG as placeholder (build needs the file)
-            printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82' > app/src/main/res/$d/ic_launcher.png
-            cp app/src/main/res/$d/ic_launcher.png app/src/main/res/$d/ic_launcher_round.png
+            if [ ! -f app/src/main/res/$d/ic_launcher.png ]; then
+              # Minimal valid 1x1 PNG
+              printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82' > app/src/main/res/$d/ic_launcher.png
+              cp app/src/main/res/$d/ic_launcher.png app/src/main/res/$d/ic_launcher_round.png
+            fi
           done
           mkdir -p app/src/main/res/values
-          cat > app/src/main/res/values/strings.xml << 'EOF'
+          [ -f app/src/main/res/values/strings.xml ] || cat > app/src/main/res/values/strings.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">JagX AI</string>
@@ -86,6 +76,8 @@ EOF
           APK=$(find app/build/outputs/apk -name "*.apk" | head -1)
           echo "Found APK: $APK"
           cp "$APK" downloads/JagX-AI.apk
+          # Also create .jagx branded copy
+          cp "$APK" downloads/JagX-AI.jagx
           ls -lh downloads/
 
       - name: Upload APK artifact
@@ -93,7 +85,9 @@ EOF
         uses: actions/upload-artifact@v4
         with:
           name: JagX-AI-Android-APK
-          path: downloads/JagX-AI.apk
+          path: |
+            downloads/JagX-AI.apk
+            downloads/JagX-AI.jagx
           retention-days: 30
 
       - name: Publish GitHub Release
@@ -103,9 +97,12 @@ EOF
           tag_name: apk-latest
           name: JagX AI Android APK (Kotlin)
           body: |
-            Native Kotlin + Jetpack Compose build.
-            Uninstall any old Flutter version first, then install JagX-AI.apk
-          files: downloads/JagX-AI.apk
+            Native Kotlin + Jetpack Compose.
+            Files: JagX-AI.apk + JagX-AI.jagx
+            Uninstall old version first.
+          files: |
+            downloads/JagX-AI.apk
+            downloads/JagX-AI.jagx
           make_latest: true
           overwrite_files: true
         env:
