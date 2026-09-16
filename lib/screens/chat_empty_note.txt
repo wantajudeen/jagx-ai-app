@@ -1,0 +1,1 @@
+chips removed in chat empty - use logo + greeting only
