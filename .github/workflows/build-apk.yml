@@ -32,7 +32,7 @@ jobs:
           OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
           EOF
 
-      - name: Generate JagX app icon PNG
+      - name: Generate JagX app icon
         run: |
           mkdir -p assets/icons
           python3 << 'PY'
@@ -47,7 +47,6 @@ jobs:
               for x in range(w):
                   r2 = (x - 256) ** 2 + (y - 256) ** 2
                   on = False
-                  # Stylized J
                   if 290 <= x <= 340 and 120 <= y <= 340: on = True
                   if 180 <= x <= 340 and 120 <= y <= 160: on = True
                   if 180 <= x <= 280 and 320 <= y <= 380: on = True
@@ -65,28 +64,34 @@ jobs:
           ihdr = pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)
           png = b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', ihdr) + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b'')
           open('assets/icons/app_icon.png', 'wb').write(png)
-          print('icon ok', len(png))
           PY
-          test -f assets/icons/app_icon.png
 
-      - name: Ensure Android platform
+      - name: Flutter create android if missing
         run: |
           if [ ! -d android ]; then
             flutter create . --project-name jagx_ai --org com.jagx.ai --platforms=android,web
           fi
 
-      - name: App label JagX AI
+      - name: Patch Android SDK + label
         run: |
           if [ -f android/app/src/main/AndroidManifest.xml ]; then
             sed -i 's/android:label="[^"]*"/android:label="JagX AI"/' android/app/src/main/AndroidManifest.xml || true
           fi
+          for f in android/app/build.gradle.kts android/app/build.gradle; do
+            if [ -f "$f" ]; then
+              sed -i 's/compileSdk = .*/compileSdk = 35/' "$f" || true
+              sed -i 's/targetSdk = .*/targetSdk = 35/' "$f" || true
+              sed -i 's/minSdk = .*/minSdk = 24/' "$f" || true
+            fi
+          done
 
       - run: flutter pub get
 
-      - name: Apply launcher icons (overwrite Flutter default)
-        run: dart run flutter_launcher_icons
+      - name: Launcher icons
+        run: dart run flutter_launcher_icons || true
 
-      - run: flutter build apk --release
+      - name: Build release APK
+        run: flutter build apk --release
 
       - uses: actions/upload-artifact@v4
         with:
