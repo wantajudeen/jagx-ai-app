@@ -62,10 +62,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const Divider(color: Jx.border),
           _tile(Icons.link, 'Connectors', () => context.push('/connectors')),
+          _tile(Icons.workspace_premium_outlined, 'Premium',
+              () => context.push('/premium')),
           _tile(Icons.palette_outlined, 'Appearance', () {}),
           _tile(Icons.notifications_outlined, 'Notifications', () {}),
           _tile(Icons.security_outlined, 'Privacy', () {}),
-          _tile(Icons.workspace_premium_outlined, 'Premium', () {}),
           _tile(Icons.help_outline, 'Help', () {}),
           const Divider(color: Jx.border),
           ListTile(
@@ -82,7 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Padding(
             padding: EdgeInsets.all(24),
             child: Center(
-              child: Text('JagX AI · 2.1.0',
+              child: Text('JagX AI · 2.2.0',
                   style: TextStyle(color: Jx.dim, fontSize: 12)),
             ),
           ),
