@@ -56,52 +56,32 @@ jobs:
           python3 scripts/make_jagx_icon.py assets/icons/app_icon.png 512
           test -f assets/icons/app_icon.png
 
-      - name: Force compileSdk 36 + label + signing
+      - name: Patch Android SDK 36 + label + release signing
         run: |
-          cat > android/app/build.gradle.kts << 'EOF'
-          plugins {
-              id("com.android.application")
-              id("kotlin-android")
-              // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-              id("dev.flutter.flutter-gradle-plugin")
-          }
-
-          android {
-              namespace = "com.jagx.ai.jagx_ai"
-              compileSdk = 36
-              ndkVersion = flutter.ndkVersion
-
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_11
-                  targetCompatibility = JavaVersion.VERSION_11
-              }
-
-              kotlinOptions {
-                  jvmTarget = JavaVersion.VERSION_11.toString()
-              }
-
-              defaultConfig {
-                  applicationId = "com.jagx.ai.jagx_ai"
-                  minSdk = 24
-                  targetSdk = 36
-                  versionCode = flutter.versionCode
-                  versionName = flutter.versionName
-              }
-
-              buildTypes {
-                  release {
-                      // Debug keys so CI can produce an installable APK without a keystore secret
-                      signingConfig = signingConfigs.getByName("debug")
-                  }
-              }
-          }
-
-          flutter {
-              source = "../.."
-          }
-          EOF
-
-          python3 << 'PY'
+          set -e
+          GRADLE=""
+          if [ -f android/app/build.gradle.kts ]; then GRADLE=android/app/build.gradle.kts; fi
+          if [ -f android/app/build.gradle ]; then GRADLE=android/app/build.gradle; fi
+          echo "Using $GRADLE"
+          cat "$GRADLE"
+          # Force numeric SDK levels (file_picker needs app compileSdk >= 36)
+          sed -i -E 's/compileSdk\s*=\s*[^\n]+/compileSdk = 36/' "$GRADLE" || true
+          sed -i -E 's/targetSdk\s*=\s*[^\n]+/targetSdk = 36/' "$GRADLE" || true
+          sed -i -E 's/minSdk\s*=\s*[^\n]+/minSdk = 24/' "$GRADLE" || true
+          sed -i -E 's/compileSdkVersion\s+[^\n]+/compileSdkVersion 36/' "$GRADLE" || true
+          sed -i -E 's/targetSdkVersion\s+[^\n]+/targetSdkVersion 36/' "$GRADLE" || true
+          # Release uses debug signing in CI
+          if ! grep -q 'signingConfig' "$GRADLE"; then
+            if [[ "$GRADLE" == *.kts ]]; then
+              sed -i '/release {/a\            signingConfig = signingConfigs.getByName("debug")' "$GRADLE"
+            else
+              sed -i '/release {/a\            signingConfig signingConfigs.debug' "$GRADLE"
+            fi
+          fi
+          echo "---- after patch ----"
+          cat "$GRADLE"
+          # Manifest
+          python3 - <<'PY'
           import re
           from pathlib import Path
           man = Path("android/app/src/main/AndroidManifest.xml")
@@ -119,8 +99,6 @@ jobs:
                   </intent-filter>'''
               m = m.replace("</activity>", intent + "\n        </activity>", 1)
           man.write_text(m)
-          print("manifest ok")
-          print(Path("android/app/build.gradle.kts").read_text())
           PY
 
       - run: flutter pub get
