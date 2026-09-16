@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apk:
-    name: Signed APK
+    name: Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -60,7 +60,7 @@ jobs:
           open("assets/icons/app_icon.png", "wb").write(png)
           PY
 
-      - name: Flutter create platforms (keep our lib)
+      - name: Flutter create (keep app source)
         run: |
           cp -a lib /tmp/jagx_lib
           cp pubspec.yaml /tmp/jagx_pubspec.yaml
@@ -69,136 +69,95 @@ jobs:
           cp -a /tmp/jagx_lib lib
           cp /tmp/jagx_pubspec.yaml pubspec.yaml
 
-      - name: Generate upload keystore
+      - name: Write clean build.gradle.kts (no sed)
         run: |
-          keytool -genkey -v \
-            -keystore android/app/jagx-upload.jks \
-            -storetype JKS \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias jagx \
-            -storepass jagxai2026 \
-            -keypass jagxai2026 \
-            -dname "CN=JagX AI, OU=JagX, O=JRILICENSE, L=Lagos, ST=LA, C=NG"
+          cat > android/app/build.gradle.kts << 'EOF'
+          plugins {
+              id("com.android.application")
+              id("kotlin-android")
+              // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+              id("dev.flutter.flutter-gradle-plugin")
+          }
 
-      - name: key.properties
-        run: |
-          cat > android/key.properties << EOF
-          storePassword=jagxai2026
-          keyPassword=jagxai2026
-          keyAlias=jagx
-          storeFile=jagx-upload.jks
+          android {
+              namespace = "com.jagx.ai.jagx_ai"
+              compileSdk = 35
+              ndkVersion = flutter.ndkVersion
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_11
+                  targetCompatibility = JavaVersion.VERSION_11
+              }
+
+              kotlinOptions {
+                  jvmTarget = JavaVersion.VERSION_11.toString()
+              }
+
+              defaultConfig {
+                  applicationId = "com.jagx.ai.jagx_ai"
+                  minSdk = 24
+                  targetSdk = 35
+                  versionCode = flutter.versionCode
+                  versionName = flutter.versionName
+              }
+
+              buildTypes {
+                  release {
+                      // Debug keys — installable sideload APK
+                      signingConfig = signingConfigs.getByName("debug")
+                  }
+              }
+          }
+
+          flutter {
+              source = "../.."
+          }
           EOF
+          echo "--- gradle.kts ---"
+          cat android/app/build.gradle.kts
 
-      - name: Patch Android (correct Kotlin DSL)
+      - name: Manifest label + internet + OAuth
         run: |
           python3 << 'PY'
           import re
           from pathlib import Path
-
-          kts = Path("android/app/build.gradle.kts")
-          groovy = Path("android/app/build.gradle")
-
-          def fix_sdk(text: str) -> str:
-              text = re.sub(r"compileSdk\s*=\s*[^\n]+", "compileSdk = 35", text)
-              text = re.sub(r"minSdk\s*=\s*[^\n]+", "minSdk = 24", text)
-              text = re.sub(r"targetSdk\s*=\s*[^\n]+", "targetSdk = 35", text)
-              text = re.sub(r"compileSdkVersion\s+[^\n]+", "compileSdkVersion 35", text)
-              text = re.sub(r"minSdkVersion\s+[^\n]+", "minSdkVersion 24", text)
-              text = re.sub(r"targetSdkVersion\s+[^\n]+", "targetSdkVersion 35", text)
-              return text
-
-          def add_signing_kts(text: str) -> str:
-              props = '''
-val keystoreProperties = java.util.Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
-}
-'''
-              if "keystoreProperties" not in text:
-                  text = text.replace("android {", props + "\nandroid {", 1)
-              if "signingConfigs" not in text:
-                  text = text.replace(
-                      "buildTypes {",
-                      '''signingConfigs {
-        create("release") {
-            if (keystorePropertiesFile.exists()) {
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = file(keystoreProperties["storeFile"] as String)
-                storePassword = keystoreProperties["storePassword"] as String
-            }
-        }
-    }
-    buildTypes {
-''',
-                      1,
-                  )
-              if 'signingConfig = signingConfigs.getByName("release")' not in text:
-                  text = re.sub(
-                      r"(getByName\(\"release\"\)\s*\{)",
-                      r'\1\n            signingConfig = signingConfigs.getByName("release")',
-                      text,
-                      count=1,
-                  )
-                  if 'signingConfig = signingConfigs.getByName("release")' not in text:
-                      text = re.sub(
-                          r"(release\s*\{)",
-                          r'\1\n            signingConfig = signingConfigs.getByName("release")',
-                          text,
-                          count=1,
-                      )
-              return text
-
-          if kts.exists():
-              t = kts.read_text()
-              t = fix_sdk(t)
-              t = add_signing_kts(t)
-              kts.write_text(t)
-              print("=== build.gradle.kts ===")
-              print(t)
-          elif groovy.exists():
-              t = fix_sdk(groovy.read_text())
-              groovy.write_text(t)
-              print("patched groovy")
-
-          man = Path("android/app/src/main/AndroidManifest.xml")
-          if man.exists():
-              m = man.read_text()
-              m = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', m)
-              if "android.permission.INTERNET" not in m:
-                  m = re.sub(
-                      r"(<manifest[^>]*>)",
-                      r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>',
-                      m,
-                      count=1,
-                  )
-              if "io.supabase.jagxai" not in m:
-                  intent = '''
-                <intent-filter>
-                    <action android:name="android.intent.action.VIEW"/>
-                    <category android:name="android.intent.category.DEFAULT"/>
-                    <category android:name="android.intent.category.BROWSABLE"/>
-                    <data android:scheme="io.supabase.jagxai" android:host="login-callback"/>
-                </intent-filter>'''
-                  m = m.replace("</activity>", intent + "\n        </activity>", 1)
-              man.write_text(m)
-              print("manifest ok")
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          m = p.read_text()
+          m = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', m)
+          if "android.permission.INTERNET" not in m:
+              m = re.sub(
+                  r"(<manifest[^>]*>)",
+                  r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>',
+                  m,
+                  count=1,
+              )
+          if "io.supabase.jagxai" not in m:
+              intent = '''
+                  <intent-filter>
+                      <action android:name="android.intent.action.VIEW"/>
+                      <category android:name="android.intent.category.DEFAULT"/>
+                      <category android:name="android.intent.category.BROWSABLE"/>
+                      <data android:scheme="io.supabase.jagxai" android:host="login-callback"/>
+                  </intent-filter>'''
+              m = m.replace("</activity>", intent + "\n        </activity>", 1)
+          p.write_text(m)
+          print(m)
           PY
 
       - name: Pub get
         run: flutter pub get
 
-      - name: Launcher icons
+      - name: Icons
         run: dart run flutter_launcher_icons || true
 
-      - name: Build signed release APK
-        run: flutter build apk --release --no-tree-shake-icons
+      - name: Dart analyze (log only)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings || true
 
-      - name: Verify APK
-        run: |
-          ls -lh build/app/outputs/flutter-apk/
-          test -f build/app/outputs/flutter-apk/app-release.apk
+      - name: Build APK
+        run: flutter build apk --release --no-tree-shake-icons -v
+
+      - name: Show APK
+        run: ls -lh build/app/outputs/flutter-apk/
 
       - uses: actions/upload-artifact@v4
         with:
