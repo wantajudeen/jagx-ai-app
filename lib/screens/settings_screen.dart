@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/auth.dart';
 import '../core/profile.dart';
 import '../core/theme.dart';
 
@@ -15,6 +16,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String _name = '';
   String _email = '';
+  bool _guest = true;
 
   @override
   void initState() {
@@ -24,9 +26,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _load() async {
     final n = await Profile.name();
+    final e = await Auth.sessionEmail();
+    final g = await Auth.isGuest();
     setState(() {
       _name = n ?? '';
-      _email = '';
+      _email = e ?? '';
+      _guest = g || (e == null || e.isEmpty);
     });
   }
 
@@ -40,6 +45,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             backgroundColor: Jx.card),
       );
     }
+  }
+
+  Future<void> _signOut() async {
+    await Auth.signOut();
+    if (mounted) context.go('/auth');
   }
 
   @override
@@ -67,7 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 CircleAvatar(
                   radius: 26,
-                  backgroundColor: const Color(0xFF2E7D32),
+                  backgroundColor: const Color(0xFF7C3AED),
                   child: Text(
                     (_name.isNotEmpty ? _name : 'J')[0].toUpperCase(),
                     style: const TextStyle(
@@ -86,26 +96,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               color: Jx.text,
                               fontWeight: FontWeight.w600,
                               fontSize: 16)),
-                      Text(_email.isEmpty ? 'Guest mode' : _email,
+                      Text(
+                          _guest
+                              ? 'Guest mode'
+                              : (_email.isEmpty ? 'Signed in' : _email),
                           style: const TextStyle(color: Jx.muted, fontSize: 13),
                           overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chevron_right, color: Jx.dim),
+                  icon: const Icon(Icons.edit_outlined, color: Jx.dim),
                   onPressed: () => context.push('/onboarding'),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
+          _section('Account'),
+          _card([
+            if (_guest)
+              _row(Icons.login, 'Sign in / Create account', null,
+                  () => context.go('/auth'))
+            else
+              _row(Icons.logout, 'Sign out', _email, _signOut),
+          ]),
+          const SizedBox(height: 16),
           _section('App'),
           _card([
-            _row(Icons.contrast, 'Appearance', 'Dark',
-                () => _toast('Dark theme is default')),
-            _row(Icons.language, 'App language', 'English', () {}),
-            _row(Icons.tune, 'Advanced', null, () {}),
+            _row(Icons.contrast, 'Appearance', 'Dark', () {}),
+            _row(Icons.language, 'App language', 'Follows chat language', () {}),
           ]),
           const SizedBox(height: 16),
           _section('JagX'),
@@ -116,9 +136,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 () => context.push('/github')),
             _row(Icons.workspace_premium_outlined, 'Premium', null,
                 () => context.push('/premium')),
-            _row(Icons.smart_toy_outlined, 'JagX Bot agents', null, () {
-              context.pop();
-            }),
+            _row(Icons.smart_toy_outlined, 'JagX Bot', null,
+                () => context.push('/bot')),
           ]),
           const SizedBox(height: 16),
           _section('Data & information'),
@@ -127,38 +146,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _row(Icons.description_outlined, 'Terms of Use', null,
                 () => context.push('/terms')),
             _row(Icons.lock_outline, 'Privacy Policy', null,
-                () => context.push('/terms')),
-            _row(Icons.bug_report_outlined, 'Report a problem', null,
-                () => _toast('Email support via your JagX channel')),
+                () => context.push('/privacy')),
           ]),
-          const SizedBox(height: 16),
-          Container(
-            decoration: BoxDecoration(
-              color: Jx.card,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: ListTile(
-              leading: const Icon(Icons.logout, color: Colors.redAccent),
-              title: const Text('Back to chat',
-                  style: TextStyle(color: Colors.redAccent)),
-              onTap: () {
-                if (context.mounted) context.go('/chat');
-              },
-            ),
-          ),
           const SizedBox(height: 24),
           const Center(
-            child: Text('JagX AI · 2.9.0 · JagX & JRILICENSE',
+            child: Text('JagX AI · 3.1.0 · JagX & JRILICENSE',
                 style: TextStyle(color: Jx.dim, fontSize: 12)),
           ),
         ],
       ),
-    );
-  }
-
-  void _toast(String m) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(m), backgroundColor: Jx.card),
     );
   }
 
