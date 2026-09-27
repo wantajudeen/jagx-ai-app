@@ -30,6 +30,9 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Install Pillow (icon generator)
+        run: pip3 install --user pillow
+
       - name: Ensure .env exists for asset bundle
         run: |
           if [ ! -f .env ]; then
@@ -42,7 +45,8 @@ JAGX_API_KEY=
 EOT
           fi
           if [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
-            sed -i "s|^OPENROUTER_API_KEY=.*|OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}|" .env || echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env
+            grep -q '^OPENROUTER_API_KEY=' .env || echo 'OPENROUTER_API_KEY=' >> .env
+            sed -i "s|^OPENROUTER_API_KEY=.*|OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}|" .env
           fi
           if [ -n "${{ secrets.JAGX_API_KEY }}" ]; then
             grep -q '^JAGX_API_KEY=' .env || echo 'JAGX_API_KEY=' >> .env
