@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/auth.dart';
+import '../core/profile.dart';
 import '../core/theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -18,15 +20,24 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _c = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700));
     _fade = CurvedAnimation(parent: _c, curve: Curves.easeOut);
     _c.forward();
     _go();
   }
 
   Future<void> _go() async {
-    await Future.delayed(const Duration(milliseconds: 900));
+    await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
+    if (!await Auth.hasChosenEntry()) {
+      context.go('/auth');
+      return;
+    }
+    if (await Profile.needsOnboarding()) {
+      context.go('/onboarding');
+      return;
+    }
     context.go('/chat');
   }
 
@@ -56,13 +67,6 @@ class _SplashScreenState extends State<SplashScreen>
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Jx.accent.withOpacity(0.35),
-                      blurRadius: 28,
-                      spreadRadius: 2,
-                    ),
-                  ],
                 ),
                 child: const Center(
                   child: Text(
@@ -82,7 +86,6 @@ class _SplashScreenState extends State<SplashScreen>
                   fontSize: 30,
                   fontWeight: FontWeight.w700,
                   color: Jx.text,
-                  letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 8),
@@ -96,7 +99,7 @@ class _SplashScreenState extends State<SplashScreen>
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.2,
-                  color: Jx.accent,
+                  color: Color(0xFF7C3AED),
                 ),
               ),
             ],
