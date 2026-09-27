@@ -8,11 +8,7 @@ class Profile {
   static Future<bool> needsOnboarding() async {
     final p = await SharedPreferences.getInstance();
     final name = p.getString(_kName);
-    final dob = p.getString(_kDob);
-    return name == null ||
-        name.trim().isEmpty ||
-        dob == null ||
-        dob.trim().isEmpty;
+    return name == null || name.trim().isEmpty;
   }
 
   static Future<String?> name() async {
