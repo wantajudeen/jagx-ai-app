@@ -32,8 +32,9 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Env + icon + android
+      - name: Prepare project
         run: |
+          set -e
           python3 -m pip install --user pillow
           mkdir -p assets/icons
           python3 - << 'PY'
@@ -43,39 +44,48 @@ i=Image.new('RGBA',(s,s),(0,0,0,255))
 d=ImageDraw.Draw(i)
 d.ellipse([90,90,s-90,s-90],outline=(255,255,255,255),width=20)
 try: f=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',480)
-except: f=ImageFont.load_default()
+except Exception: f=ImageFont.load_default()
 b=d.textbbox((0,0),'J',font=f)
 d.text(((s-(b[2]-b[0]))/2-b[0],(s-(b[3]-b[1]))/2-b[1]-20),'J',font=f,fill=(255,255,255,255))
 i.save('assets/icons/app_icon.png')
+print('icon ok')
 PY
           printf '%s\n' \
             "JAGX_API_KEY=${JAGX_API_KEY}" \
             "JAGX_API_BASE=${JAGX_API_BASE:-https://jagx-ai-v2.onrender.com}" \
             "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}" > .env
-          rm -rf android
+          # Ensure no stale android/
+          rm -rf android ios web linux macos windows
           flutter create --org com.jagx --project-name jagx_ai --platforms=android .
 
-      - run: flutter pub get
+      - name: Pub get
+        run: flutter pub get
 
-      - name: Android SDK 35
+      - name: Analyze (fail on error)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee analyze.txt || true
+        # soft: still try build; analyze helps logs
+
+      - name: Patch compileSdk 35
         run: |
           python3 - << 'PY'
 from pathlib import Path
 import re
 for rel in ('android/app/build.gradle','android/app/build.gradle.kts'):
     p=Path(rel)
-    if not p.exists(): continue
+    if not p.exists():
+        print('missing', rel); continue
     t=p.read_text()
     t=re.sub(r'compileSdk\s*=\s*flutter\.compileSdkVersion','compileSdk = 35',t)
     t=re.sub(r'compileSdk\s*=\s*\d+','compileSdk = 35',t)
     t=re.sub(r'minSdk\s*=\s*flutter\.minSdkVersion','minSdk = 24',t)
     t=re.sub(r'minSdk\s*=\s*\d+','minSdk = 24',t)
     t=re.sub(r'targetSdk\s*=\s*flutter\.targetSdkVersion','targetSdk = 35',t)
+    t=re.sub(r'targetSdk\s*=\s*\d+','targetSdk = 35',t)
     p.write_text(t)
     print('patched', rel)
 root=Path('android/build.gradle')
-if root.exists() and 'compileSdkVersion(35)' not in root.read_text():
-    root.write_text(root.read_text()+'''
+if root.exists():
+    extra='''
 subprojects { sub ->
   sub.afterEvaluate {
     def a = sub.extensions.findByName('android')
@@ -85,29 +95,42 @@ subprojects { sub ->
     }
   }
 }
-''')
+'''
+    if 'compileSdkVersion(35)' not in root.read_text():
+        root.write_text(root.read_text()+extra)
+print('done')
 PY
 
-      - run: dart run flutter_launcher_icons || true
+      - name: Launcher icons
+        run: dart run flutter_launcher_icons || true
 
-      - name: Build APK
+      - name: Build release APK
         run: |
+          set -o pipefail
           flutter build apk --release 2>&1 | tee build_log.txt
+          ls -la build/app/outputs/flutter-apk/
           test -f build/app/outputs/flutter-apk/app-release.apk
           cp build/app/outputs/flutter-apk/app-release.apk JagX-AI.apk
+          ls -la JagX-AI.apk
 
-      - if: failure()
+      - name: Upload log on failure
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: flutter-build-log
-          path: build_log.txt
+          path: |
+            build_log.txt
+            analyze.txt
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
         with:
           name: JagX-AI-Flutter-APK
           path: JagX-AI.apk
 
-      - if: success()
+      - name: Publish release
+        if: success()
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -115,5 +138,5 @@ PY
           tag_name: apk-latest
           name: JagX AI APK
           files: JagX-AI.apk
-          body: Public APK — no GitHub login needed.
+          body: Public APK — no GitHub account needed to download.
           make_latest: true

@@ -68,10 +68,10 @@ class _ChatScreenState extends State<ChatScreen>
 
   Future<void> _saveHistory() async {
     final p = await SharedPreferences.getInstance();
-    final data = _messages
-        .map((m) => {'text': m.text, 'user': m.user})
-        .toList();
-    await p.setString('jx_chat_history', jsonEncode(data));
+    await p.setString(
+      'jx_chat_history',
+      jsonEncode(_messages.map((m) => {'text': m.text, 'user': m.user}).toList()),
+    );
   }
 
   @override
@@ -103,7 +103,7 @@ class _ChatScreenState extends State<ChatScreen>
     if (_wantsImage(text) && !isBuild) {
       final url = await Ai.imagine(text);
       setState(() {
-        _messages.add(_Msg('Image ready:\n$url', false));
+        _messages.add(_Msg('Image: $url', false));
         _streaming = null;
         _loading = false;
       });
@@ -119,17 +119,15 @@ class _ChatScreenState extends State<ChatScreen>
             })
         .toList();
 
-    var modelId = _model.id;
-    if (isBuild) modelId = 'forge';
-
+    final modelId = isBuild ? 'forge' : _model.id;
     final reply = await Ai.chat(modelId: modelId, messages: history);
 
     var built = '';
-    const step = 16;
+    const step = 20;
     for (var i = 0; i < reply.length; i += step) {
       built = reply.substring(0, (i + step).clamp(0, reply.length));
       setState(() => _streaming = built);
-      await Future.delayed(const Duration(milliseconds: 6));
+      await Future.delayed(const Duration(milliseconds: 4));
     }
 
     setState(() {
@@ -159,8 +157,8 @@ class _ChatScreenState extends State<ChatScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
         _scroll.animateTo(
-          _scroll.position.maxScrollExtent + 120,
-          duration: const Duration(milliseconds: 200),
+          _scroll.position.maxScrollExtent + 80,
+          duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
         );
       }
@@ -183,15 +181,14 @@ class _ChatScreenState extends State<ChatScreen>
                   )),
               subtitle: Text(m.subtitle,
                   style: const TextStyle(color: Jx.muted, fontSize: 12)),
-              onTap: m.comingSoon
-                  ? () {
-                      Navigator.pop(context);
-                      _toast('Oracle is Coming soon');
-                    }
-                  : () {
-                      setState(() => _model = m);
-                      Navigator.pop(context);
-                    },
+              onTap: () {
+                Navigator.pop(context);
+                if (m.comingSoon) {
+                  _toast('Oracle is Coming soon');
+                } else {
+                  setState(() => _model = m);
+                }
+              },
             );
           }).toList(),
         ),
@@ -263,11 +260,7 @@ class _ChatScreenState extends State<ChatScreen>
           indicatorColor: Jx.accent,
           labelColor: Jx.text,
           unselectedLabelColor: Jx.muted,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-          tabs: const [
-            Tab(text: 'Ask'),
-            Tab(text: 'Build'),
-          ],
+          tabs: const [Tab(text: 'Ask'), Tab(text: 'Build')],
         ),
         actions: [
           IconButton(
