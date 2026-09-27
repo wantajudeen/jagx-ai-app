@@ -46,9 +46,7 @@ class _ConnectorsScreenState extends State<ConnectorsScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(v
-              ? 'Connector enabled (tokens via Supabase / Settings)'
-              : 'Connector off'),
+          content: Text(v ? 'Connector enabled' : 'Connector off'),
           backgroundColor: Jx.card,
         ),
       );
@@ -82,7 +80,6 @@ class _ConnectorsScreenState extends State<ConnectorsScreen> {
                 subtitle: Text(e.subtitle,
                     style: const TextStyle(color: Jx.dim, fontSize: 12)),
                 value: _on[e.id] ?? false,
-                activeThumbColor: Jx.accent,
                 onChanged: (v) => _toggle(e.id, v),
               ),
             );
