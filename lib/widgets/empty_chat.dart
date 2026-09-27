@@ -12,13 +12,13 @@ class EmptyChat extends StatelessWidget {
     required this.onPrompt,
   });
 
-  static const _prompts = [
-    ('Write code', 'Write a clean Python function that sorts a list of dicts by key'),
-    ('Explain simply', 'Explain how APIs work like I am 12'),
-    ('Naira plan', 'Help me plan a small business budget in Naira for 3 months'),
-    ('Translate', 'Translate to Tagalog: What do you think about me?'),
-    ('Fix bug', 'Review this idea and suggest how to fix a Flutter build failure'),
-    ('Pidgin', 'Explain blockchain for me in Nigerian Pidgin'),
+  static const prompts = <List<String>>[
+    ['Write code', 'Write a clean Python function that sorts a list of dicts by key'],
+    ['Explain simply', 'Explain how APIs work like I am 12'],
+    ['Naira plan', 'Help me plan a small business budget in Naira for 3 months'],
+    ['Translate', 'Translate to Tagalog: What do you think about me?'],
+    ['Fix bug', 'Review this idea and suggest how to fix a Flutter build failure'],
+    ['Pidgin', 'Explain blockchain for me in Nigerian Pidgin'],
   ];
 
   @override
@@ -38,11 +38,14 @@ class EmptyChat extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
             ),
             child: const Center(
-              child: Text('J',
-                  style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white)),
+              child: Text(
+                'J',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
         ),
@@ -68,9 +71,9 @@ class EmptyChat extends StatelessWidget {
           runSpacing: 10,
           alignment: WrapAlignment.center,
           children: [
-            for (final p in _prompts)
+            for (final p in prompts)
               InkWell(
-                onTap: () => onPrompt(p.\$2),
+                onTap: () => onPrompt(p[1]),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   width: 160,
@@ -84,7 +87,7 @@ class EmptyChat extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        p.\$1,
+                        p[0],
                         style: const TextStyle(
                           color: Jx.accentSoft,
                           fontWeight: FontWeight.w600,
@@ -93,7 +96,7 @@ class EmptyChat extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        p.\$2,
+                        p[1],
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
