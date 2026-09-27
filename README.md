@@ -1,36 +1,19 @@
-# JagX AI (Flutter)
+# JagX AI (Flutter only)
 
-**Nigeria-first multipurpose AI** — Flutter (Dart) app by **JagX & JRILICENSE**.
+**Nigeria-first multipurpose AI** by **JagX & JRILICENSE**.
 
-## What this repo is
+This repo is **Flutter/Dart only**. All Kotlin/Gradle native modules were removed.
 
-| Layer | Status |
-|-------|--------|
-| **Flutter app** (`lib/`, `pubspec.yaml`) | **Primary** — Android APK via GitHub Actions |
-| **Web landing** (`index.html`) | GitHub Pages |
-| **Kotlin `app/` folder** | Legacy — not used for Flutter APK builds |
+## Build APK (GitHub Actions)
 
-## Why builds used to fail
+1. Repo → **Settings → Secrets and variables → Actions**
+   - `JAGX_API_KEY` = your permanent key from Render
+   - `JAGX_API_BASE` = `https://jagx-ai-v2.onrender.com` (optional)
+   - `OPENROUTER_API_KEY` = optional fallback
+2. **Actions → Build Flutter Android APK → Run workflow**
+3. Download artifact **JagX-AI-Flutter-APK**
 
-CI was running **Gradle Kotlin** (`./gradlew assembleRelease`) while the real UI lives in **Flutter**. Manifest also referenced a missing `@drawable/ic_launcher`. That is fixed: CI now builds with **Flutter**.
-
-## Build (CI)
-
-Push to `main` or run **Actions → Build Flutter Android APK → Run workflow**.
-
-Artifact: **JagX-AI-Flutter-APK** → `app-release.apk`
-
-### Required GitHub Secrets
-
-Repo → **Settings → Secrets and variables → Actions**
-
-| Secret | Purpose |
-|--------|---------|
-| `JAGX_API_KEY` | Permanent key from Render backend `/create-key` |
-| `JAGX_API_BASE` | Optional, default `https://jagx-ai-v2.onrender.com` |
-| `OPENROUTER_API_KEY` | Optional fallback |
-
-## Local build
+## Local
 
 ```bash
 flutter pub get
@@ -38,12 +21,13 @@ dart run flutter_launcher_icons
 flutter build apk --release
 ```
 
-APK path: `build/app/outputs/flutter-apk/app-release.apk`
+## Features
+- Dark violet UI (Grok-style)
+- Chat with suggestion chips
+- Works **without login** if Supabase is not configured
+- Talks to **JagX Render backend** first, then OpenRouter
+- Multilingual
+- Bot / settings / premium screens
 
-## App icon
-
-Dark **J** badge (`assets/icons/app_icon.png`) applied with `flutter_launcher_icons` (Android launcher icon).
-
-## Backend
-
-Chat prefers **JagX Backend** on Render (`POST /chat` + header `x-api-key`), then OpenRouter free models.
+## Icon
+Launcher **J** badge generated in CI (`assets/icons/app_icon.png`).

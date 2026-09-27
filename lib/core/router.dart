@@ -28,7 +28,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     redirect: (context, state) async {
       final path = state.matchedLocation;
-      if (!_hasSupabase) return null;
+
+      // No Supabase configured → open chat freely (no login wall)
+      if (!_hasSupabase) {
+        if (path == '/' || path == '/auth') return '/chat';
+        return null;
+      }
 
       final session = Supabase.instance.client.auth.currentSession;
       final loggedIn = session != null;
