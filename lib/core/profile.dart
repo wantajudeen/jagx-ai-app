@@ -1,5 +1,4 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Profile {
   static const _kName = 'jx_display_name';
@@ -15,12 +14,7 @@ class Profile {
     final p = await SharedPreferences.getInstance();
     final local = p.getString(_kName);
     if (local != null && local.isNotEmpty) return local;
-    try {
-      final meta = Supabase.instance.client.auth.currentUser?.userMetadata;
-      return meta?['name'] as String?;
-    } catch (_) {
-      return null;
-    }
+    return null;
   }
 
   static Future<String?> dob() async {
@@ -34,14 +28,6 @@ class Profile {
     if (dob.trim().isNotEmpty) {
       await p.setString(_kDob, dob);
     }
-    try {
-      await Supabase.instance.client.auth.updateUser(
-        UserAttributes(data: {
-          'name': name.trim(),
-          if (dob.trim().isNotEmpty) 'date_of_birth': dob,
-        }),
-      );
-    } catch (_) {}
   }
 
   static String greeting() {
