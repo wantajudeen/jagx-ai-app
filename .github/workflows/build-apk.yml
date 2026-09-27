@@ -37,69 +37,18 @@ jobs:
           set -e
           python3 -m pip install --user pillow
           mkdir -p assets/icons
-          python3 - << 'PY'
-from PIL import Image, ImageDraw, ImageFont
-s=1024
-i=Image.new('RGBA',(s,s),(0,0,0,255))
-d=ImageDraw.Draw(i)
-d.ellipse([90,90,s-90,s-90],outline=(255,255,255,255),width=20)
-try: f=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',480)
-except Exception: f=ImageFont.load_default()
-b=d.textbbox((0,0),'J',font=f)
-d.text(((s-(b[2]-b[0]))/2-b[0],(s-(b[3]-b[1]))/2-b[1]-20),'J',font=f,fill=(255,255,255,255))
-i.save('assets/icons/app_icon.png')
-print('icon ok')
-PY
-          printf '%s\n' \
-            "JAGX_API_KEY=${JAGX_API_KEY}" \
-            "JAGX_API_BASE=${JAGX_API_BASE:-https://jagx-ai-v2.onrender.com}" \
-            "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}" > .env
-          # Ensure no stale android/
+          python3 tooling/make_icon.py
+          echo "JAGX_API_KEY=${JAGX_API_KEY}" > .env
+          echo "JAGX_API_BASE=${JAGX_API_BASE:-https://jagx-ai-v2.onrender.com}" >> .env
+          echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}" >> .env
           rm -rf android ios web linux macos windows
           flutter create --org com.jagx --project-name jagx_ai --platforms=android .
 
       - name: Pub get
         run: flutter pub get
 
-      - name: Analyze (fail on error)
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee analyze.txt || true
-        # soft: still try build; analyze helps logs
-
       - name: Patch compileSdk 35
-        run: |
-          python3 - << 'PY'
-from pathlib import Path
-import re
-for rel in ('android/app/build.gradle','android/app/build.gradle.kts'):
-    p=Path(rel)
-    if not p.exists():
-        print('missing', rel); continue
-    t=p.read_text()
-    t=re.sub(r'compileSdk\s*=\s*flutter\.compileSdkVersion','compileSdk = 35',t)
-    t=re.sub(r'compileSdk\s*=\s*\d+','compileSdk = 35',t)
-    t=re.sub(r'minSdk\s*=\s*flutter\.minSdkVersion','minSdk = 24',t)
-    t=re.sub(r'minSdk\s*=\s*\d+','minSdk = 24',t)
-    t=re.sub(r'targetSdk\s*=\s*flutter\.targetSdkVersion','targetSdk = 35',t)
-    t=re.sub(r'targetSdk\s*=\s*\d+','targetSdk = 35',t)
-    p.write_text(t)
-    print('patched', rel)
-root=Path('android/build.gradle')
-if root.exists():
-    extra='''
-subprojects { sub ->
-  sub.afterEvaluate {
-    def a = sub.extensions.findByName('android')
-    if (a != null) {
-      try { a.compileSdkVersion(35) } catch (Throwable ignored) {}
-      try { a.compileSdk = 35 } catch (Throwable ignored) {}
-    }
-  }
-}
-'''
-    if 'compileSdkVersion(35)' not in root.read_text():
-        root.write_text(root.read_text()+extra)
-print('done')
-PY
+        run: python3 tooling/patch_sdk.py
 
       - name: Launcher icons
         run: dart run flutter_launcher_icons || true
@@ -118,9 +67,7 @@ PY
         uses: actions/upload-artifact@v4
         with:
           name: flutter-build-log
-          path: |
-            build_log.txt
-            analyze.txt
+          path: build_log.txt
 
       - name: Upload APK
         if: success()
