@@ -32,7 +32,6 @@ class _SplashScreenState extends State<SplashScreen>
       final session = Supabase.instance.client.auth.currentSession;
       context.go(session != null ? '/chat' : '/auth');
     } catch (_) {
-      // No Supabase → straight into chat
       context.go('/chat');
     }
   }
@@ -65,7 +64,7 @@ class _SplashScreenState extends State<SplashScreen>
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Jx.accent.withValues(alpha: 0.35),
+                      color: Jx.accent.withOpacity(0.35),
                       blurRadius: 28,
                       spreadRadius: 2,
                     ),

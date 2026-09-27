@@ -3,26 +3,43 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 
 class EmptyChat extends StatelessWidget {
-  final String greeting;
-  final void Function(String prompt) onPrompt;
+  /// 0 = Ask, 2 = Build (matches previous API)
+  final int mode;
+  final String? hello;
+  final void Function(String prompt)? onPrompt;
 
   const EmptyChat({
     super.key,
-    required this.greeting,
-    required this.onPrompt,
+    this.mode = 0,
+    this.hello,
+    this.onPrompt,
   });
 
-  static const prompts = <List<String>>[
-    ['Write code', 'Write a clean Python function that sorts a list of dicts by key'],
-    ['Explain simply', 'Explain how APIs work like I am 12'],
-    ['Naira plan', 'Help me plan a small business budget in Naira for 3 months'],
-    ['Translate', 'Translate to Tagalog: What do you think about me?'],
-    ['Fix bug', 'Review this idea and suggest how to fix a Flutter build failure'],
-    ['Pidgin', 'Explain blockchain for me in Nigerian Pidgin'],
-  ];
+  List<List<String>> get _prompts {
+    if (mode == 2) {
+      return const [
+        ['Landing page', 'Build a modern landing page for a fintech startup in Nigeria'],
+        ['Flutter UI', 'Generate a Flutter dark chat screen with message bubbles'],
+        ['API server', 'Write a FastAPI backend with /chat and API key auth'],
+        ['SQL schema', 'Design a Postgres schema for users, chats, and messages'],
+      ];
+    }
+    return const [
+      ['Write code', 'Write a clean Python function that sorts a list of dicts by key'],
+      ['Explain simply', 'Explain how APIs work like I am 12'],
+      ['Naira plan', 'Help me plan a small business budget in Naira for 3 months'],
+      ['Translate', 'Translate to Tagalog: What do you think about me?'],
+      ['Fix bug', 'How do I fix a Flutter APK build failure on GitHub Actions?'],
+      ['Pidgin', 'Explain blockchain for me in Nigerian Pidgin'],
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
+    final title = (hello == null || hello!.isEmpty)
+        ? (mode == 2 ? 'What should we build?' : 'How can JagX help?')
+        : hello!;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
       children: [
@@ -51,7 +68,7 @@ class EmptyChat extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         Text(
-          greeting.isEmpty ? 'How can JagX help?' : greeting,
+          title,
           textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 22,
@@ -60,10 +77,12 @@ class EmptyChat extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Ask anything — code, business, languages, ideas.',
+        Text(
+          mode == 2
+              ? 'Describe an app, site, or API — JagX will help you build it.'
+              : 'Ask anything — code, business, languages, ideas.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Jx.muted, fontSize: 14),
+          style: const TextStyle(color: Jx.muted, fontSize: 14),
         ),
         const SizedBox(height: 28),
         Wrap(
@@ -71,9 +90,9 @@ class EmptyChat extends StatelessWidget {
           runSpacing: 10,
           alignment: WrapAlignment.center,
           children: [
-            for (final p in prompts)
+            for (final p in _prompts)
               InkWell(
-                onTap: () => onPrompt(p[1]),
+                onTap: onPrompt == null ? null : () => onPrompt!(p[1]),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   width: 160,

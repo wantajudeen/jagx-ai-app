@@ -11,7 +11,7 @@ class Jx {
   static const text = Color(0xFFF4F4F5);
   static const muted = Color(0xFF9CA3AF);
   static const dim = Color(0xFF6B7280);
-  static const accent = Color(0xFF8B5CF6); // violet
+  static const accent = Color(0xFF8B5CF6);
   static const accentSoft = Color(0xFFA78BFA);
   static const userBubble = Color(0xFF1E1B2E);
   static const aiBubble = Color(0xFF111114);
@@ -76,7 +76,7 @@ class JagxTheme {
       dividerColor: Jx.border,
       chipTheme: ChipThemeData(
         backgroundColor: Jx.card,
-        selectedColor: Jx.accent.withValues(alpha: 0.25),
+        selectedColor: Jx.accent.withOpacity(0.25),
         labelStyle: const TextStyle(color: Jx.text, fontSize: 13),
         side: const BorderSide(color: Jx.border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
