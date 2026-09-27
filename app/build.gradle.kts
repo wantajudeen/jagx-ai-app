@@ -12,13 +12,18 @@ android {
         applicationId = "com.jagx.ai"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 12
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        val jagxKey = (System.getenv("JAGX_API_KEY") ?: project.findProperty("JAGX_API_KEY") as? String ?: "").replace("\"", "")
+        val jagxBase = (System.getenv("JAGX_API_BASE") ?: "https://jagx-ai-v2.onrender.com").replace("\"", "")
+        buildConfigField("String", "JAGX_API_KEY", "\"$jagxKey\"")
+        buildConfigField("String", "JAGX_API_BASE", "\"$jagxBase\"")
     }
 
     buildTypes {
@@ -28,7 +33,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Debug signing for CI so APK installs immediately
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -41,6 +45,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -65,7 +70,6 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.8.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
-    // Networking (OpenRouter + image gen)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
