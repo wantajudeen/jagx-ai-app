@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/theme.dart';
 
@@ -28,12 +27,7 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _go() async {
     await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
-    try {
-      final session = Supabase.instance.client.auth.currentSession;
-      context.go(session != null ? '/chat' : '/auth');
-    } catch (_) {
-      context.go('/chat');
-    }
+    context.go('/chat');
   }
 
   @override

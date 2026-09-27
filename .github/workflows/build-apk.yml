@@ -39,16 +39,11 @@ jobs:
 
       - name: Write .env for Flutter assets
         run: |
-          echo "SUPABASE_URL=" > .env
-          echo "SUPABASE_ANON_KEY=" >> .env
-          echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}" >> .env
-          if [ -n "$JAGX_API_BASE" ]; then
-            echo "JAGX_API_BASE=${JAGX_API_BASE}" >> .env
-          else
-            echo "JAGX_API_BASE=https://jagx-ai-v2.onrender.com" >> .env
-          fi
-          echo "JAGX_API_KEY=${JAGX_API_KEY}" >> .env
-          echo "Env keys written:"
+          {
+            echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}"
+            echo "JAGX_API_BASE=${JAGX_API_BASE:-https://jagx-ai-v2.onrender.com}"
+            echo "JAGX_API_KEY=${JAGX_API_KEY}"
+          } > .env
           cut -d= -f1 .env
 
       - name: Create icon + Android platform
@@ -70,114 +65,60 @@ d.text(((size - tw) / 2 - bbox[0], (size - th) / 2 - bbox[1] - 20), "J", font=fo
 img.save("assets/icons/app_icon.png")
 print("icon ok")
 PY
-          # Always regenerate android/ with this Flutter version (clean template)
           rm -rf android
           flutter create --org com.jagx --project-name jagx_ai --platforms=android .
 
       - name: Flutter pub get
         run: flutter pub get
 
-      - name: Patch Android Gradle (compileSdk 35 + plugins)
+      - name: Patch Android Gradle (compileSdk 35)
         run: |
           python3 - << 'PY'
 from pathlib import Path
 import re
 
-def patch_app_gradle(path: Path):
+def patch(path: Path):
     if not path.exists():
-        print("missing", path)
         return
     t = path.read_text()
     t = re.sub(r"compileSdk\s*=\s*flutter\.compileSdkVersion", "compileSdk = 35", t)
     t = re.sub(r"compileSdk\s*=\s*\d+", "compileSdk = 35", t)
-    t = re.sub(r"compileSdkVersion\s+\d+", "compileSdkVersion 35", t)
     t = re.sub(r"minSdk\s*=\s*flutter\.minSdkVersion", "minSdk = 24", t)
     t = re.sub(r"minSdk\s*=\s*\d+", "minSdk = 24", t)
     t = re.sub(r"targetSdk\s*=\s*flutter\.targetSdkVersion", "targetSdk = 35", t)
     t = re.sub(r"targetSdk\s*=\s*\d+", "targetSdk = 35", t)
-    # Java 17
-    if "sourceCompatibility" not in t:
-        t = t.replace(
-            "android {",
-            "android {\n    compileOptions {\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }\n    kotlinOptions {\n        jvmTarget = \"17\"\n    }",
-            1,
-        )
     path.write_text(t)
     print("patched", path)
 
-patch_app_gradle(Path("android/app/build.gradle"))
-patch_app_gradle(Path("android/app/build.gradle.kts"))
+patch(Path("android/app/build.gradle"))
+patch(Path("android/app/build.gradle.kts"))
 
-# Force compileSdk for every Android library plugin (fixes app_links etc.)
-fix_gradle = Path("android/build.gradle")
-root_kts = Path("android/build.gradle.kts")
-force = '''
+root = Path("android/build.gradle")
+if root.exists():
+    extra = """
 
-// JagX: force compileSdk on all Android subprojects (app_links, etc.)
 subprojects { sub ->
     sub.afterEvaluate {
         def androidExt = sub.extensions.findByName("android")
         if (androidExt != null) {
             try { androidExt.compileSdkVersion(35) } catch (Throwable ignored) {}
             try { androidExt.compileSdk = 35 } catch (Throwable ignored) {}
-            try {
-                if (androidExt.hasProperty("namespace") && androidExt.namespace == null) {
-                    // leave namespace as package provides
-                }
-            } catch (Throwable ignored) {}
-            try {
-                androidExt.compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_17
-                    targetCompatibility JavaVersion.VERSION_17
-                }
-            } catch (Throwable ignored) {}
         }
     }
 }
-'''
-
-if root_gradle.exists():
-    text = root_gradle.read_text()
-    if "force compileSdk" not in text:
-        root_gradle.write_text(text + force)
-        print("appended subprojects fix to build.gradle")
-elif root_kts.exists():
-    text = root_kts.read_text()
-    force_kts = '''
-
-// JagX: force compileSdk on all Android subprojects
-subprojects {
-    afterEvaluate {
-        val androidExt = extensions.findByName("android")
-        if (androidExt != null) {
-            try {
-                val m = androidExt.javaClass.methods.find { it.name == "setCompileSdkVersion" || it.name == "setCompileSdk" }
-                // Groovy-compatible via Extra
-            } catch (_: Throwable) {}
-        }
-    }
-}
-'''
-    # For .kts use a simpler allprojects approach via gradle.properties + settings
-    print("kts root present; using gradle.properties + settings only")
-else:
-    print("no root build.gradle")
+"""
+    if "compileSdkVersion(35)" not in root.read_text():
+        root.write_text(root.read_text() + extra)
 
 props = Path("android/gradle.properties")
-extra_props = "\nandroid.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=512m\n"
+line = "\norg.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=512m\nandroid.useAndroidX=true\n"
 if props.exists():
     t = props.read_text()
     if "MaxMetaspaceSize" not in t:
-        props.write_text(t + extra_props)
+        props.write_text(t + line)
 else:
-    props.write_text(extra_props.lstrip())
-print("gradle.properties ready")
-
-# settings.gradle ensure plugin loader
-for sp in [Path("android/settings.gradle"), Path("android/settings.gradle.kts")]:
-    if sp.exists():
-        print("settings:", sp.name)
-        print(sp.read_text()[:400])
+    props.write_text(line)
+print("gradle patch done")
 PY
 
       - name: Generate launcher icons
@@ -185,8 +126,9 @@ PY
 
       - name: Build release APK
         run: |
-          flutter build apk --release --verbose 2>&1 | tee build_log.txt
+          flutter build apk --release 2>&1 | tee build_log.txt
           test -f build/app/outputs/flutter-apk/app-release.apk
+          cp build/app/outputs/flutter-apk/app-release.apk JagX-AI.apk
 
       - name: Upload build log on failure
         if: failure()
@@ -199,17 +141,23 @@ PY
         uses: actions/upload-artifact@v4
         with:
           name: JagX-AI-Flutter-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
+          path: |
+            JagX-AI.apk
+            build/app/outputs/flutter-apk/app-release.apk
 
-      - name: Publish GitHub Release
+      - name: Publish public GitHub Release (no login needed to download)
         if: success()
-        continue-on-error: true
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: apk-latest
           name: JagX AI APK (latest)
-          files: build/app/outputs/flutter-apk/app-release.apk
-          body: Flutter APK by JagX and JRILICENSE.
+          files: JagX-AI.apk
+          body: |
+            Public Android APK — **no GitHub account needed** to download.
+
+            Direct link: https://github.com/wantajudeen/jagx-ai-app/releases/download/apk-latest/JagX-AI.apk
+
+            Built by JagX & JRILICENSE.
+          make_latest: true
