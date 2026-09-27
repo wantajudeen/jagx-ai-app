@@ -14,150 +14,106 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 55
     env:
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       JAGX_API_KEY: ${{ secrets.JAGX_API_KEY }}
       JAGX_API_BASE: ${{ secrets.JAGX_API_BASE }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.27.4"
           channel: stable
           cache: true
 
-      - name: Install Pillow
-        run: python3 -m pip install --user pillow
-
-      - name: Write .env for Flutter assets
+      - name: Env + icon + android
         run: |
-          {
-            echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}"
-            echo "JAGX_API_BASE=${JAGX_API_BASE:-https://jagx-ai-v2.onrender.com}"
-            echo "JAGX_API_KEY=${JAGX_API_KEY}"
-          } > .env
-          cut -d= -f1 .env
-
-      - name: Create icon + Android platform
-        run: |
+          python3 -m pip install --user pillow
           mkdir -p assets/icons
           python3 - << 'PY'
 from PIL import Image, ImageDraw, ImageFont
-size = 1024
-img = Image.new("RGBA", (size, size), (0, 0, 0, 255))
-d = ImageDraw.Draw(img)
-d.ellipse([80, 80, size - 80, size - 80], outline=(124, 58, 237, 255), width=28)
-try:
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 520)
-except Exception:
-    font = ImageFont.load_default()
-bbox = d.textbbox((0, 0), "J", font=font)
-tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-d.text(((size - tw) / 2 - bbox[0], (size - th) / 2 - bbox[1] - 20), "J", font=font, fill=(255, 255, 255, 255))
-img.save("assets/icons/app_icon.png")
-print("icon ok")
+s=1024
+i=Image.new('RGBA',(s,s),(0,0,0,255))
+d=ImageDraw.Draw(i)
+d.ellipse([90,90,s-90,s-90],outline=(255,255,255,255),width=20)
+try: f=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',480)
+except: f=ImageFont.load_default()
+b=d.textbbox((0,0),'J',font=f)
+d.text(((s-(b[2]-b[0]))/2-b[0],(s-(b[3]-b[1]))/2-b[1]-20),'J',font=f,fill=(255,255,255,255))
+i.save('assets/icons/app_icon.png')
 PY
+          printf '%s\n' \
+            "JAGX_API_KEY=${JAGX_API_KEY}" \
+            "JAGX_API_BASE=${JAGX_API_BASE:-https://jagx-ai-v2.onrender.com}" \
+            "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}" > .env
           rm -rf android
           flutter create --org com.jagx --project-name jagx_ai --platforms=android .
 
-      - name: Flutter pub get
-        run: flutter pub get
+      - run: flutter pub get
 
-      - name: Patch Android Gradle (compileSdk 35)
+      - name: Android SDK 35
         run: |
           python3 - << 'PY'
 from pathlib import Path
 import re
-
-def patch(path: Path):
-    if not path.exists():
-        return
-    t = path.read_text()
-    t = re.sub(r"compileSdk\s*=\s*flutter\.compileSdkVersion", "compileSdk = 35", t)
-    t = re.sub(r"compileSdk\s*=\s*\d+", "compileSdk = 35", t)
-    t = re.sub(r"minSdk\s*=\s*flutter\.minSdkVersion", "minSdk = 24", t)
-    t = re.sub(r"minSdk\s*=\s*\d+", "minSdk = 24", t)
-    t = re.sub(r"targetSdk\s*=\s*flutter\.targetSdkVersion", "targetSdk = 35", t)
-    t = re.sub(r"targetSdk\s*=\s*\d+", "targetSdk = 35", t)
-    path.write_text(t)
-    print("patched", path)
-
-patch(Path("android/app/build.gradle"))
-patch(Path("android/app/build.gradle.kts"))
-
-root = Path("android/build.gradle")
-if root.exists():
-    extra = """
-
+for rel in ('android/app/build.gradle','android/app/build.gradle.kts'):
+    p=Path(rel)
+    if not p.exists(): continue
+    t=p.read_text()
+    t=re.sub(r'compileSdk\s*=\s*flutter\.compileSdkVersion','compileSdk = 35',t)
+    t=re.sub(r'compileSdk\s*=\s*\d+','compileSdk = 35',t)
+    t=re.sub(r'minSdk\s*=\s*flutter\.minSdkVersion','minSdk = 24',t)
+    t=re.sub(r'minSdk\s*=\s*\d+','minSdk = 24',t)
+    t=re.sub(r'targetSdk\s*=\s*flutter\.targetSdkVersion','targetSdk = 35',t)
+    p.write_text(t)
+    print('patched', rel)
+root=Path('android/build.gradle')
+if root.exists() and 'compileSdkVersion(35)' not in root.read_text():
+    root.write_text(root.read_text()+'''
 subprojects { sub ->
-    sub.afterEvaluate {
-        def androidExt = sub.extensions.findByName("android")
-        if (androidExt != null) {
-            try { androidExt.compileSdkVersion(35) } catch (Throwable ignored) {}
-            try { androidExt.compileSdk = 35 } catch (Throwable ignored) {}
-        }
+  sub.afterEvaluate {
+    def a = sub.extensions.findByName('android')
+    if (a != null) {
+      try { a.compileSdkVersion(35) } catch (Throwable ignored) {}
+      try { a.compileSdk = 35 } catch (Throwable ignored) {}
     }
+  }
 }
-"""
-    if "compileSdkVersion(35)" not in root.read_text():
-        root.write_text(root.read_text() + extra)
-
-props = Path("android/gradle.properties")
-line = "\norg.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=512m\nandroid.useAndroidX=true\n"
-if props.exists():
-    t = props.read_text()
-    if "MaxMetaspaceSize" not in t:
-        props.write_text(t + line)
-else:
-    props.write_text(line)
-print("gradle patch done")
+''')
 PY
 
-      - name: Generate launcher icons
-        run: dart run flutter_launcher_icons || true
+      - run: dart run flutter_launcher_icons || true
 
-      - name: Build release APK
+      - name: Build APK
         run: |
           flutter build apk --release 2>&1 | tee build_log.txt
           test -f build/app/outputs/flutter-apk/app-release.apk
           cp build/app/outputs/flutter-apk/app-release.apk JagX-AI.apk
 
-      - name: Upload build log on failure
-        if: failure()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: flutter-build-log
           path: build_log.txt
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: JagX-AI-Flutter-APK
-          path: |
-            JagX-AI.apk
-            build/app/outputs/flutter-apk/app-release.apk
+          path: JagX-AI.apk
 
-      - name: Publish public GitHub Release (no login needed to download)
-        if: success()
+      - if: success()
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: apk-latest
-          name: JagX AI APK (latest)
+          name: JagX AI APK
           files: JagX-AI.apk
-          body: |
-            Public Android APK — **no GitHub account needed** to download.
-
-            Direct link: https://github.com/wantajudeen/jagx-ai-app/releases/download/apk-latest/JagX-AI.apk
-
-            Built by JagX & JRILICENSE.
+          body: Public APK — no GitHub login needed.
           make_latest: true
