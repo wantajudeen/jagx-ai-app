@@ -1,16 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/ai.dart';
 import '../core/models.dart';
@@ -35,8 +28,6 @@ class _ChatScreenState extends State<ChatScreen>
   bool _loading = false;
   String? _streaming;
   String? _hello;
-  String? _attachedName;
-  String? _attachedPath;
 
   @override
   void initState() {
@@ -65,14 +56,12 @@ class _ChatScreenState extends State<ChatScreen>
     try {
       final list = jsonDecode(raw) as List;
       setState(() {
-        _messages.clear();
-        for (final e in list) {
-          _messages.add(_Msg(
-            e['text'] as String? ?? '',
-            e['user'] as bool? ?? false,
-            imageUrl: e['imageUrl'] as String?,
-          ));
-        }
+        _messages
+          ..clear()
+          ..addAll(list.map((e) => _Msg(
+                e['text'] as String? ?? '',
+                e['user'] as bool? ?? false,
+              )));
       });
     } catch (_) {}
   }
@@ -80,11 +69,7 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _saveHistory() async {
     final p = await SharedPreferences.getInstance();
     final data = _messages
-        .map((m) => {
-              'text': m.text,
-              'user': m.user,
-              if (m.imageUrl != null) 'imageUrl': m.imageUrl,
-            })
+        .map((m) => {'text': m.text, 'user': m.user})
         .toList();
     await p.setString('jx_chat_history', jsonEncode(data));
   }
@@ -97,103 +82,9 @@ class _ChatScreenState extends State<ChatScreen>
     super.dispose();
   }
 
-  Future<void> _pickFiles() async {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Jx.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined, color: Jx.muted),
-              title: const Text('Photo library', style: TextStyle(color: Jx.text)),
-              onTap: () async {
-                Navigator.pop(context);
-                final x = await ImagePicker().pickImage(source: ImageSource.gallery);
-                if (x != null) {
-                  setState(() {
-                    _attachedPath = x.path;
-                    _attachedName = x.name;
-                  });
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt_outlined, color: Jx.muted),
-              title: const Text('Camera', style: TextStyle(color: Jx.text)),
-              onTap: () async {
-                Navigator.pop(context);
-                final x = await ImagePicker().pickImage(source: ImageSource.camera);
-                if (x != null) {
-                  setState(() {
-                    _attachedPath = x.path;
-                    _attachedName = x.name;
-                  });
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.insert_drive_file_outlined, color: Jx.muted),
-              title: const Text('Files', style: TextStyle(color: Jx.text)),
-              onTap: () async {
-                Navigator.pop(context);
-                final r = await FilePicker.platform.pickFiles();
-                if (r != null && r.files.single.path != null) {
-                  setState(() {
-                    _attachedPath = r.files.single.path;
-                    _attachedName = r.files.single.name;
-                  });
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.smart_toy_outlined, color: Jx.muted),
-              title: const Text('Open JagX Bot', style: TextStyle(color: Jx.text)),
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/bot');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.code, color: Jx.muted),
-              title: const Text('Connect GitHub', style: TextStyle(color: Jx.text)),
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/github');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.link, color: Jx.muted),
-              title: const Text('Connectors', style: TextStyle(color: Jx.text)),
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/connectors');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  bool _wantsImage(String text) {
-    final t = text.toLowerCase();
-    return t.contains('imagine') ||
-        t.contains('generate image') ||
-        t.contains('draw ') ||
-        t.contains('create an image') ||
-        t.contains('picture of') ||
-        t.contains('image of');
-  }
-
   Future<void> _send([String? override]) async {
-    var text = (override ?? _controller.text).trim();
-    if ((text.isEmpty && _attachedName == null) || _loading) return;
-
+    final text = (override ?? _controller.text).trim();
+    if (text.isEmpty || _loading) return;
     if (_model.comingSoon) {
       _toast('Oracle is Coming soon');
       return;
@@ -201,27 +92,18 @@ class _ChatScreenState extends State<ChatScreen>
 
     final isBuild = _tabs.index == 1;
 
-    if (_attachedName != null) {
-      text = text.isEmpty
-          ? 'I attached a file: $_attachedName. Help me with it.'
-          : '$text\n\n[Attached: $_attachedName]';
-    }
-
     setState(() {
       _messages.add(_Msg(text, true));
       _controller.clear();
-      _attachedName = null;
-      _attachedPath = null;
       _loading = true;
       _streaming = '';
     });
     _scrollDown();
 
-    // Inline image generation (no separate Imagine tab)
     if (_wantsImage(text) && !isBuild) {
       final url = await Ai.imagine(text);
       setState(() {
-        _messages.add(_Msg('Here’s an image for that.', false, imageUrl: url));
+        _messages.add(_Msg('Image ready:\n$url', false));
         _streaming = null;
         _loading = false;
       });
@@ -231,7 +113,6 @@ class _ChatScreenState extends State<ChatScreen>
     }
 
     final history = _messages
-        .where((m) => m.imageUrl == null)
         .map((m) => {
               'role': m.user ? 'user' : 'assistant',
               'content': m.text,
@@ -243,29 +124,29 @@ class _ChatScreenState extends State<ChatScreen>
 
     final reply = await Ai.chat(modelId: modelId, messages: history);
 
-    // Secondary image if model returned IMAGE_PROMPT:
-    final imgLine = RegExp(r'IMAGE_PROMPT:\s*(.+)', caseSensitive: false)
-        .firstMatch(reply);
-    String? extraImage;
-    if (imgLine != null) {
-      extraImage = await Ai.imagine(imgLine.group(1)!.trim());
-    }
-
     var built = '';
-    const step = 12;
+    const step = 16;
     for (var i = 0; i < reply.length; i += step) {
       built = reply.substring(0, (i + step).clamp(0, reply.length));
       setState(() => _streaming = built);
-      await Future.delayed(const Duration(milliseconds: 8));
+      await Future.delayed(const Duration(milliseconds: 6));
     }
 
     setState(() {
-      _messages.add(_Msg(reply, false, imageUrl: extraImage));
+      _messages.add(_Msg(reply, false));
       _streaming = null;
       _loading = false;
     });
     await _saveHistory();
     _scrollDown();
+  }
+
+  bool _wantsImage(String text) {
+    final t = text.toLowerCase();
+    return t.contains('imagine') ||
+        t.contains('generate image') ||
+        t.contains('draw ') ||
+        t.contains('create an image');
   }
 
   void _toast(String m) {
@@ -302,9 +183,6 @@ class _ChatScreenState extends State<ChatScreen>
                   )),
               subtitle: Text(m.subtitle,
                   style: const TextStyle(color: Jx.muted, fontSize: 12)),
-              trailing: m.badge != null
-                  ? Text(m.badge!, style: const TextStyle(color: Jx.dim, fontSize: 11))
-                  : null,
               onTap: m.comingSoon
                   ? () {
                       Navigator.pop(context);
@@ -321,22 +199,61 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  Future<void> _newChat() async {
+    setState(() {
+      _messages.clear();
+      _streaming = null;
+    });
+    final p = await SharedPreferences.getInstance();
+    await p.remove('jx_chat_history');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final mode = _tabs.index; // 0 ask 1 build
+    final mode = _tabs.index;
     final chip = _model.badge ?? _model.name;
 
     return Scaffold(
       backgroundColor: Jx.bg,
-      drawer: _Drawer(
-        onNew: () async {
-          setState(() {
-            _messages.clear();
-            _streaming = null;
-          });
-          final p = await SharedPreferences.getInstance();
-          await p.remove('jx_chat_history');
-        },
+      drawer: Drawer(
+        backgroundColor: Jx.surface,
+        child: SafeArea(
+          child: ListView(
+            children: [
+              const ListTile(
+                title: Text('JagX AI',
+                    style: TextStyle(
+                        color: Jx.text, fontWeight: FontWeight.w700)),
+                subtitle: Text('JagX & JRILICENSE',
+                    style: TextStyle(color: Jx.muted)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, color: Jx.muted),
+                title: const Text('New chat', style: TextStyle(color: Jx.text)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _newChat();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.smart_toy_outlined, color: Jx.muted),
+                title: const Text('JagX Bot', style: TextStyle(color: Jx.text)),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/bot');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.settings_outlined, color: Jx.muted),
+                title: const Text('Settings', style: TextStyle(color: Jx.text)),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/settings');
+                },
+              ),
+            ],
+          ),
+        ),
       ),
       appBar: AppBar(
         backgroundColor: Jx.bg,
@@ -354,20 +271,8 @@ class _ChatScreenState extends State<ChatScreen>
         ),
         actions: [
           IconButton(
-            tooltip: 'JagX Bot',
-            icon: const Icon(Icons.smart_toy_outlined, color: Jx.muted),
-            onPressed: () => context.push('/bot'),
-          ),
-          IconButton(
             icon: const Icon(Icons.edit_outlined, color: Jx.muted),
-            onPressed: () async {
-              setState(() {
-                _messages.clear();
-                _streaming = null;
-              });
-              final p = await SharedPreferences.getInstance();
-              await p.remove('jx_chat_history');
-            },
+            onPressed: _newChat,
           ),
         ],
       ),
@@ -375,10 +280,18 @@ class _ChatScreenState extends State<ChatScreen>
         children: [
           Expanded(
             child: _messages.isEmpty && _streaming == null
-                ? EmptyChat(mode: mode == 1 ? 2 : 0, hello: _hello)
+                ? EmptyChat(
+                    mode: mode == 1 ? 2 : 0,
+                    hello: _hello,
+                    onPrompt: (s) {
+                      _controller.text = s;
+                      _send();
+                    },
+                  )
                 : ListView(
                     controller: _scroll,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     children: [
                       ..._messages.map((m) => _Bubble(m)),
                       if (_streaming != null)
@@ -386,36 +299,6 @@ class _ChatScreenState extends State<ChatScreen>
                     ],
                   ),
           ),
-          if (_attachedName != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Jx.card,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Jx.border),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.attach_file, size: 16, color: Jx.muted),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(_attachedName!,
-                          style: const TextStyle(color: Jx.text, fontSize: 13),
-                          overflow: TextOverflow.ellipsis),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 16, color: Jx.dim),
-                      onPressed: () => setState(() {
-                        _attachedName = null;
-                        _attachedPath = null;
-                      }),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
@@ -427,10 +310,6 @@ class _ChatScreenState extends State<ChatScreen>
                 ),
                 child: Row(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.add, color: Jx.muted),
-                      onPressed: _pickFiles,
-                    ),
                     Expanded(
                       child: TextField(
                         controller: _controller,
@@ -441,32 +320,22 @@ class _ChatScreenState extends State<ChatScreen>
                         onSubmitted: (_) => _send(),
                         decoration: InputDecoration(
                           hintText: mode == 1
-                              ? 'Describe the app or site to build…'
-                              : 'Ask anything (or say “generate image…”)',
+                              ? 'Describe what to build…'
+                              : 'Ask anything…',
                           hintStyle: const TextStyle(color: Jx.dim),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                         ),
                       ),
                     ),
                     GestureDetector(
                       onTap: _pickModel,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1A1A1A),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Jx.border),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.bolt, size: 14, color: Jx.muted),
-                            const SizedBox(width: 4),
-                            Text(chip, style: const TextStyle(fontSize: 12, color: Jx.text)),
-                            const Icon(Icons.keyboard_arrow_down, size: 14, color: Jx.dim),
-                          ],
-                        ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(chip,
+                            style: const TextStyle(
+                                fontSize: 12, color: Jx.muted)),
                       ),
                     ),
                     IconButton(
@@ -488,28 +357,15 @@ class _ChatScreenState extends State<ChatScreen>
 }
 
 class _Msg {
-  _Msg(this.text, this.user, {this.imageUrl});
+  _Msg(this.text, this.user);
   final String text;
   final bool user;
-  final String? imageUrl;
 }
 
 class _Bubble extends StatelessWidget {
   const _Bubble(this.msg, {this.streaming = false});
   final _Msg msg;
   final bool streaming;
-
-  Future<void> _shareImage(BuildContext context) async {
-    final url = msg.imageUrl;
-    if (url == null) return;
-    try {
-      final res = await http.get(Uri.parse(url));
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/jagx_${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await file.writeAsBytes(res.bodyBytes);
-      await Share.shareXFiles([XFile(file.path)], text: 'Imagined with JagX AI');
-    } catch (_) {}
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -518,36 +374,15 @@ class _Bubble extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.88),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.88),
         decoration: BoxDecoration(
-          color: msg.user ? Jx.card : Colors.transparent,
+          color: msg.user ? Jx.userBubble : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (msg.imageUrl != null) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  msg.imageUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 160,
-                    color: Jx.card,
-                    child: const Center(
-                      child: Text('Image unavailable', style: TextStyle(color: Jx.muted)),
-                    ),
-                  ),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () => _shareImage(context),
-                icon: const Icon(Icons.download, size: 16, color: Jx.muted),
-                label: const Text('Save / Share',
-                    style: TextStyle(color: Jx.muted, fontSize: 12)),
-              ),
-            ],
             SelectableText(
               msg.text,
               style: const TextStyle(color: Jx.text, fontSize: 15, height: 1.45),
@@ -557,117 +392,10 @@ class _Bubble extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: IconButton(
                   icon: const Icon(Icons.copy, size: 16, color: Jx.dim),
-                  onPressed: () => Clipboard.setData(ClipboardData(text: msg.text)),
+                  onPressed: () =>
+                      Clipboard.setData(ClipboardData(text: msg.text)),
                 ),
               ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Drawer extends StatelessWidget {
-  const _Drawer({required this.onNew});
-  final VoidCallback onNew;
-
-  @override
-  Widget build(BuildContext context) {
-    String email = 'JagX User';
-    try {
-      email = Supabase.instance.client.auth.currentUser?.email ?? email;
-    } catch (_) {}
-
-    return Drawer(
-      backgroundColor: const Color(0xFF0A0A0A),
-      child: SafeArea(
-        child: ListView(
-          children: [
-            ListTile(
-              leading: CircleAvatar(
-                backgroundColor: const Color(0xFF2E7D32),
-                child: Text(email[0].toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
-              title: Text(email,
-                  style: const TextStyle(color: Jx.text, fontSize: 14),
-                  overflow: TextOverflow.ellipsis),
-            ),
-            const Divider(color: Jx.border),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined, color: Jx.muted),
-              title: const Text('New chat', style: TextStyle(color: Jx.text)),
-              onTap: () {
-                onNew();
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.smart_toy_outlined, color: Jx.muted),
-              title: const Text('JagX Bot', style: TextStyle(color: Jx.text)),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Jx.border,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text('Agents', style: TextStyle(color: Jx.muted, fontSize: 11)),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/bot');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.code, color: Jx.muted),
-              title: const Text('Connect GitHub', style: TextStyle(color: Jx.text)),
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/github');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.link, color: Jx.muted),
-              title: const Text('Connectors', style: TextStyle(color: Jx.text)),
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/connectors');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.workspace_premium_outlined, color: Jx.muted),
-              title: const Text('Premium', style: TextStyle(color: Jx.text)),
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/premium');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_outlined, color: Jx.muted),
-              title: const Text('Settings', style: TextStyle(color: Jx.text)),
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/settings');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.description_outlined, color: Jx.muted),
-              title: const Text('Terms & Privacy', style: TextStyle(color: Jx.text)),
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/terms');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.redAccent),
-              title: const Text('Sign out', style: TextStyle(color: Colors.redAccent)),
-              onTap: () async {
-                try {
-                  await Supabase.instance.client.auth.signOut();
-                } catch (_) {}
-                if (context.mounted) context.go('/auth');
-              },
-            ),
           ],
         ),
       ),
