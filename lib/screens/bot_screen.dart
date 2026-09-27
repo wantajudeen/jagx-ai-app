@@ -63,7 +63,7 @@ class _BotScreenState extends State<BotScreen> {
           createdAt: DateTime.now(),
         );
     task.status = 'running';
-    await BotTaskStore.save(task);
+    await BotTaskStore.update(task);
 
     try {
       _log('Planning…');
@@ -99,8 +99,11 @@ class _BotScreenState extends State<BotScreen> {
             );
 
       task.status = 'done';
-      task.logs = List<String>.from(_liveLog)..add('Done');
-      await BotTaskStore.save(task);
+      task.logs
+        ..clear()
+        ..addAll(_liveLog)
+        ..add('Done');
+      await BotTaskStore.update(task);
 
       if (mounted) {
         setState(() {
@@ -111,7 +114,7 @@ class _BotScreenState extends State<BotScreen> {
       await _reloadTasks();
     } catch (e) {
       task.status = 'failed';
-      await BotTaskStore.save(task);
+      await BotTaskStore.update(task);
       _log('Failed: $e');
       if (mounted) setState(() => _running = false);
     }
