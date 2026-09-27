@@ -9,6 +9,7 @@ import '../screens/connectors_screen.dart';
 import '../screens/github_connect_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/premium_screen.dart';
+import '../screens/privacy_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/terms_screen.dart';
@@ -28,19 +29,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     redirect: (context, state) async {
       final path = state.matchedLocation;
+      const public = {'/', '/auth', '/terms', '/privacy'};
 
-      // No Supabase configured → open chat freely (no login wall)
       if (!_hasSupabase) {
-        if (path == '/' || path == '/auth') return '/chat';
+        if (path == '/') return '/auth';
         return null;
       }
 
       final session = Supabase.instance.client.auth.currentSession;
       final loggedIn = session != null;
 
-      if (!loggedIn && path != '/' && path != '/auth' && path != '/terms') {
-        return '/auth';
-      }
+      if (!loggedIn && !public.contains(path)) return '/auth';
       if (loggedIn && (path == '/auth' || path == '/')) {
         final need = await Profile.needsOnboarding();
         return need ? '/onboarding' : '/chat';
@@ -58,6 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/premium', builder: (_, __) => const PremiumScreen()),
       GoRoute(path: '/github', builder: (_, __) => const GithubConnectScreen()),
       GoRoute(path: '/terms', builder: (_, __) => const TermsScreen()),
+      GoRoute(path: '/privacy', builder: (_, __) => const PrivacyScreen()),
     ],
   );
 });

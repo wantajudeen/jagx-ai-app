@@ -12,7 +12,11 @@ jobs:
   apk:
     name: Flutter APK
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      JAGX_API_KEY: ${{ secrets.JAGX_API_KEY }}
+      JAGX_API_BASE: ${{ secrets.JAGX_API_BASE }}
 
     steps:
       - uses: actions/checkout@v4
@@ -30,58 +34,29 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Install Pillow (icon generator)
-        run: pip3 install --user pillow
+      - name: Install Pillow
+        run: python3 -m pip install --user pillow
 
-      - name: Ensure .env exists for asset bundle
+      - name: Write .env for Flutter assets
         run: |
-          if [ ! -f .env ]; then
-            cat > .env << 'EOT'
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-OPENROUTER_API_KEY=
-JAGX_API_BASE=https://jagx-ai-v2.onrender.com
-JAGX_API_KEY=
-EOT
+          echo "SUPABASE_URL=" > .env
+          echo "SUPABASE_ANON_KEY=" >> .env
+          echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}" >> .env
+          if [ -n "$JAGX_API_BASE" ]; then
+            echo "JAGX_API_BASE=${JAGX_API_BASE}" >> .env
+          else
+            echo "JAGX_API_BASE=https://jagx-ai-v2.onrender.com" >> .env
           fi
-          if [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
-            grep -q '^OPENROUTER_API_KEY=' .env || echo 'OPENROUTER_API_KEY=' >> .env
-            sed -i "s|^OPENROUTER_API_KEY=.*|OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}|" .env
-          fi
-          if [ -n "${{ secrets.JAGX_API_KEY }}" ]; then
-            grep -q '^JAGX_API_KEY=' .env || echo 'JAGX_API_KEY=' >> .env
-            sed -i "s|^JAGX_API_KEY=.*|JAGX_API_KEY=${{ secrets.JAGX_API_KEY }}|" .env
-          fi
-          if [ -n "${{ secrets.JAGX_API_BASE }}" ]; then
-            grep -q '^JAGX_API_BASE=' .env || echo 'JAGX_API_BASE=' >> .env
-            sed -i "s|^JAGX_API_BASE=.*|JAGX_API_BASE=${{ secrets.JAGX_API_BASE }}|" .env
-          fi
-          echo "Env keys present (values hidden):"
-          cut -d= -f1 .env || true
+          echo "JAGX_API_KEY=${JAGX_API_KEY}" >> .env
+          echo "Env keys written:"
+          cut -d= -f1 .env
 
-      - name: Ensure Android platform + icon asset
+      - name: Create icon + Android platform
         run: |
-          mkdir -p assets/icons
-          if [ ! -f assets/icons/app_icon.png ]; then
-            python3 - << 'PY'
-from PIL import Image, ImageDraw, ImageFont
-size=1024
-img=Image.new('RGBA',(size,size),(0,0,0,255))
-d=ImageDraw.Draw(img)
-d.ellipse([80,80,size-80,size-80], outline=(124,58,237,255), width=28)
-try:
-  font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',520)
-except Exception:
-  font=ImageFont.load_default()
-bbox=d.textbbox((0,0),'J',font=font)
-tw,th=bbox[2]-bbox[0],bbox[3]-bbox[1]
-d.text(((size-tw)/2-bbox[0], (size-th)/2-bbox[1]-20),'J',font=font,fill=(255,255,255,255))
-img.save('assets/icons/app_icon.png')
-print('icon created')
-PY
-          fi
+          mkdir -p assets/icons scripts
+          python3 scripts/generate_icon.py || python3 -c "from PIL import Image,ImageDraw; s=1024; i=Image.new('RGBA',(s,s),(0,0,0,255)); d=ImageDraw.Draw(i); d.ellipse((80,80,s-80,s-80),outline=(124,58,237,255),width=28); d.text((420,280),'J',fill=(255,255,255,255)); i.save('assets/icons/app_icon.png')"
           if [ ! -d android ]; then
-            flutter create --platforms=android,web .
+            flutter create --org com.jagx --project-name jagx_ai --platforms=android .
           fi
 
       - name: Flutter pub get
@@ -100,14 +75,14 @@ PY
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
 
-      - name: Publish to GitHub Release (optional)
+      - name: Publish GitHub Release
         if: success()
+        continue-on-error: true
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: apk-latest
           name: JagX AI APK (latest)
           files: build/app/outputs/flutter-apk/app-release.apk
-          body: Flutter release APK built from main. JagX and JRILICENSE.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
+          body: Flutter APK by JagX and JRILICENSE.
