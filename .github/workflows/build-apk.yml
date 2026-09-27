@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Flutter Android APK
 
 on:
   push:
@@ -10,111 +10,100 @@ permissions:
 
 jobs:
   apk:
-    name: Android APK
+    name: Flutter APK
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Android licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Make gradlew executable + fetch wrapper jar
-        run: |
-          chmod +x gradlew || true
-          mkdir -p gradle/wrapper
-          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-            curl -sL -o gradle/wrapper/gradle-wrapper.jar \
-              https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar
-          fi
-          # Ensure properties exist
-          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-distributionBase=GRADLE_USER_HOME
-distributionPath=wrapper/dists
-distributionUrl=https\://services.gradle.org/distributions/gradle-8.9-bin.zip
-networkTimeout=10000
-validateDistributionUrl=true
-zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists
-EOF
-          ls -la gradlew gradle/wrapper/
-
-      - name: Generate JagX icons (angular J + circuit)
-        run: |
-          python3 scripts/make_jagx_icon.py /tmp/icon512.png 512
-          for pair in "48:mipmap-mdpi" "72:mipmap-hdpi" "96:mipmap-xhdpi" "144:mipmap-xxhdpi" "192:mipmap-xxxhdpi"; do
-            size="${pair%%:*}"
-            folder="${pair##*:}"
-            mkdir -p "app/src/main/res/$folder"
-            python3 scripts/make_jagx_icon.py "app/src/main/res/$folder/ic_launcher.png" "$size"
-            cp "app/src/main/res/$folder/ic_launcher.png" "app/src/main/res/$folder/ic_launcher_round.png"
-          done
-          mkdir -p app/src/main/res/values
-          cat > app/src/main/res/values/strings.xml << 'EOF'
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">JagX AI</string>
-</resources>
-EOF
-          echo "Icons ready"
-          ls -la app/src/main/res/mipmap-*/
-
-      - name: Build Release APK
-        run: |
-          set -o pipefail
-          ./gradlew assembleRelease --stacktrace --no-daemon 2>&1 | tee build_log.txt
-
-      - name: Upload build log on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          name: apk-build-log
-          path: build_log.txt
+          flutter-version: "3.24.5"
+          channel: stable
+          cache: true
 
-      - name: Prepare APK + .jagx
-        if: success()
+      - name: Ensure .env exists for asset bundle
         run: |
-          mkdir -p downloads
-          APK=$(find app/build/outputs/apk -name "*.apk" | head -1)
-          echo "Found APK: $APK"
-          cp "$APK" downloads/JagX-AI.apk
-          cp "$APK" downloads/JagX-AI.jagx
-          ls -lh downloads/
+          if [ ! -f .env ]; then
+            cat > .env << 'EOT'
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+OPENROUTER_API_KEY=
+JAGX_API_BASE=https://jagx-ai-v2.onrender.com
+JAGX_API_KEY=
+EOT
+          fi
+          if [ -n "${{ secrets.OPENROUTER_API_KEY }}" ]; then
+            sed -i "s|^OPENROUTER_API_KEY=.*|OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}|" .env || echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env
+          fi
+          if [ -n "${{ secrets.JAGX_API_KEY }}" ]; then
+            grep -q '^JAGX_API_KEY=' .env || echo 'JAGX_API_KEY=' >> .env
+            sed -i "s|^JAGX_API_KEY=.*|JAGX_API_KEY=${{ secrets.JAGX_API_KEY }}|" .env
+          fi
+          if [ -n "${{ secrets.JAGX_API_BASE }}" ]; then
+            grep -q '^JAGX_API_BASE=' .env || echo 'JAGX_API_BASE=' >> .env
+            sed -i "s|^JAGX_API_BASE=.*|JAGX_API_BASE=${{ secrets.JAGX_API_BASE }}|" .env
+          fi
+          echo "Env keys present (values hidden):"
+          cut -d= -f1 .env || true
+
+      - name: Ensure Android platform + icon asset
+        run: |
+          mkdir -p assets/icons
+          if [ ! -f assets/icons/app_icon.png ]; then
+            python3 - << 'PY'
+from PIL import Image, ImageDraw, ImageFont
+size=1024
+img=Image.new('RGBA',(size,size),(0,0,0,255))
+d=ImageDraw.Draw(img)
+d.ellipse([80,80,size-80,size-80], outline=(124,58,237,255), width=28)
+try:
+  font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',520)
+except Exception:
+  font=ImageFont.load_default()
+bbox=d.textbbox((0,0),'J',font=font)
+tw,th=bbox[2]-bbox[0],bbox[3]-bbox[1]
+d.text(((size-tw)/2-bbox[0], (size-th)/2-bbox[1]-20),'J',font=font,fill=(255,255,255,255))
+img.save('assets/icons/app_icon.png')
+print('icon created')
+PY
+          fi
+          if [ ! -d android ]; then
+            flutter create --platforms=android,web .
+          fi
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons || true
+
+      - name: Build release APK
+        run: flutter build apk --release
 
       - name: Upload APK artifact
-        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: JagX-AI-Android-APK
-          path: |
-            downloads/JagX-AI.apk
-            downloads/JagX-AI.jagx
-          retention-days: 30
+          name: JagX-AI-Flutter-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
 
-      - name: Publish GitHub Release
+      - name: Publish to GitHub Release (optional)
         if: success()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
-          name: JagX AI Android APK (Kotlin)
-          body: |
-            Native Kotlin + Jetpack Compose + OpenRouter chat.
-            Files: JagX-AI.apk + JagX-AI.jagx (JagX OS package)
-            Uninstall old version first, then install.
-          files: |
-            downloads/JagX-AI.apk
-            downloads/JagX-AI.jagx
-          make_latest: true
-          overwrite_files: true
+          name: JagX AI APK (latest)
+          files: build/app/outputs/flutter-apk/app-release.apk
+          body: Flutter release APK built from main. JagX and JRILICENSE.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true

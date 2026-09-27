@@ -1,41 +1,49 @@
-# JagX AI
+# JagX AI (Flutter)
 
-**Nigeria-first multi-purpose AI** — native **Kotlin + Jetpack Compose**.
+**Nigeria-first multipurpose AI** — Flutter (Dart) app by **JagX & JRILICENSE**.
 
-## Platforms
+## What this repo is
 
-| Platform | Status | Artifact |
-|----------|--------|----------|
-| **Android** | Building now | `JagX-AI.apk` + `JagX-AI.jagx` |
-| **Windows** | Next | Compose Multiplatform desktop |
-| **macOS** | Next | Compose Multiplatform desktop |
-| **Linux** | Next | Compose Multiplatform desktop |
-| **iOS** | Next | Compose Multiplatform (macOS runner) |
-| **Web** | Live | GitHub Pages (`index.html`) |
+| Layer | Status |
+|-------|--------|
+| **Flutter app** (`lib/`, `pubspec.yaml`) | **Primary** — Android APK via GitHub Actions |
+| **Web landing** (`index.html`) | GitHub Pages |
+| **Kotlin `app/` folder** | Legacy — not used for Flutter APK builds |
 
-## Features (shipping)
-- Dark Grok-style UI
-- Ask / Imagine / Build / Bot tabs
-- Named multi-agent system (free OpenRouter models)
-- Image generation
-- Company & finance planner
-- Custom angular circuit J icon
-- Supabase auth (next)
+## Why builds used to fail
 
-## Download
+CI was running **Gradle Kotlin** (`./gradlew assembleRelease`) while the real UI lives in **Flutter**. Manifest also referenced a missing `@drawable/ic_launcher`. That is fixed: CI now builds with **Flutter**.
 
-- **Android APK**: [Releases](https://github.com/wantajudeen/jagx-ai-app/releases) → `apk-latest`
-- Or Actions → latest green run → Artifacts → `JagX-AI-Android-APK`
+## Build (CI)
 
-## Build locally
+Push to `main` or run **Actions → Build Flutter Android APK → Run workflow**.
+
+Artifact: **JagX-AI-Flutter-APK** → `app-release.apk`
+
+### Required GitHub Secrets
+
+Repo → **Settings → Secrets and variables → Actions**
+
+| Secret | Purpose |
+|--------|---------|
+| `JAGX_API_KEY` | Permanent key from Render backend `/create-key` |
+| `JAGX_API_BASE` | Optional, default `https://jagx-ai-v2.onrender.com` |
+| `OPENROUTER_API_KEY` | Optional fallback |
+
+## Local build
 
 ```bash
-./gradlew assembleRelease
+flutter pub get
+dart run flutter_launcher_icons
+flutter build apk --release
 ```
 
-## Stack
-- Kotlin 2.0
-- Jetpack Compose + Material 3
-- Navigation Compose
-- OkHttp + Coroutines
-- GitHub Actions CI
+APK path: `build/app/outputs/flutter-apk/app-release.apk`
+
+## App icon
+
+Dark **J** badge (`assets/icons/app_icon.png`) applied with `flutter_launcher_icons` (Android launcher icon).
+
+## Backend
+
+Chat prefers **JagX Backend** on Render (`POST /chat` + header `x-api-key`), then OpenRouter free models.
