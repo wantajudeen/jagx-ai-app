@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/profile.dart';
 import '../core/theme.dart';
@@ -25,13 +24,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _load() async {
     final n = await Profile.name();
-    String e = '';
-    try {
-      e = Supabase.instance.client.auth.currentUser?.email ?? '';
-    } catch (_) {}
     setState(() {
       _name = n ?? '';
-      _email = e;
+      _email = '';
     });
   }
 
@@ -62,7 +57,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          // Profile
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -92,7 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               color: Jx.text,
                               fontWeight: FontWeight.w600,
                               fontSize: 16)),
-                      Text(_email,
+                      Text(_email.isEmpty ? 'Guest mode' : _email,
                           style: const TextStyle(color: Jx.muted, fontSize: 13),
                           overflow: TextOverflow.ellipsis),
                     ],
@@ -145,19 +139,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             child: ListTile(
               leading: const Icon(Icons.logout, color: Colors.redAccent),
-              title: const Text('Sign out',
+              title: const Text('Back to chat',
                   style: TextStyle(color: Colors.redAccent)),
-              onTap: () async {
-                try {
-                  await Supabase.instance.client.auth.signOut();
-                } catch (_) {}
-                if (context.mounted) context.go('/auth');
+              onTap: () {
+                if (context.mounted) context.go('/chat');
               },
             ),
           ),
           const SizedBox(height: 24),
           const Center(
-            child: Text('JagX AI · 2.6.0 · JagX & JRILICENSE',
+            child: Text('JagX AI · 2.9.0 · JagX & JRILICENSE',
                 style: TextStyle(color: Jx.dim, fontSize: 12)),
           ),
         ],
