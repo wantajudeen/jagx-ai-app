@@ -81,7 +81,6 @@ class _BotScreenState extends State<BotScreen> {
           ? goal
           : '$goal\n\nWEB CONTEXT:\n$research';
 
-      // Multi-agent pass: Nimbus coordinates when user picks orchestrator
       String reply;
       if (_agent.id == 'nimbus') {
         _log('Atlas planning…');
@@ -160,7 +159,7 @@ class _BotScreenState extends State<BotScreen> {
                     style: const TextStyle(
                         color: Jx.text, fontWeight: FontWeight.w600)),
                 trailing: sel
-                    ? const Icon(Icons.check, color: Jx.accent)
+                    ? const Icon(Icons.check, color: Jx.text)
                     : null,
                 onTap: () {
                   setState(() => _agent = a);
@@ -194,8 +193,7 @@ class _BotScreenState extends State<BotScreen> {
           TextButton.icon(
             onPressed: _pickAgent,
             icon: Text(_agent.emoji),
-            label: Text(_agent.name,
-                style: const TextStyle(color: Jx.text)),
+            label: Text(_agent.name, style: const TextStyle(color: Jx.text)),
           ),
         ],
       ),
@@ -208,12 +206,7 @@ class _BotScreenState extends State<BotScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Jx.accent.withOpacity(0.15),
-                        Jx.violet.withOpacity(0.12),
-                      ],
-                    ),
+                    color: Jx.card,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Jx.border),
                   ),
@@ -229,8 +222,9 @@ class _BotScreenState extends State<BotScreen> {
                       ),
                       const SizedBox(height: 6),
                       const Text(
-                        'Multi-agent workspace. Nimbus orchestrates Atlas → specialists for hard goals.',
-                        style: TextStyle(color: Jx.muted, fontSize: 13, height: 1.4),
+                        'Multi-agent workspace. Nimbus orchestrates specialists for hard goals.',
+                        style: TextStyle(
+                            color: Jx.muted, fontSize: 13, height: 1.4),
                       ),
                     ],
                   ),
@@ -314,7 +308,7 @@ class _BotScreenState extends State<BotScreen> {
                       onPressed: _running ? null : _start,
                       icon: Icon(
                         Icons.play_arrow_rounded,
-                        color: _running ? Jx.dim : Jx.accent,
+                        color: _running ? Jx.dim : Jx.text,
                       ),
                     ),
                   ],

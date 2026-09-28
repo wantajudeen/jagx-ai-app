@@ -1,7 +1,7 @@
 name: jagx_ai
 description: JagX AI by JagX and JRILICENSE
 publish_to: "none"
-version: 3.5.0+19
+version: 3.6.0+20
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -36,7 +36,7 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: assets/icons/app_icon.png
-  adaptive_icon_background: "#000000"
+  adaptive_icon_background: "#050814"
   adaptive_icon_foreground: assets/icons/app_icon.png
 
 flutter:

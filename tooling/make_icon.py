@@ -1,60 +1,53 @@
-"""Professional JagX app icon — abstract geometric mark, not a letter."""
+"""Unique interlocking JX monogram — tech style, not a copy of any third-party logo."""
 from PIL import Image, ImageDraw, ImageFilter
 from pathlib import Path
 import math
 
 Path("assets/icons").mkdir(parents=True, exist_ok=True)
 s = 1024
-i = Image.new("RGBA", (s, s), (0, 0, 0, 255))
-d = ImageDraw.Draw(i)
+bg = Image.new("RGBA", (s, s), (5, 8, 20, 255))
+d0 = ImageDraw.Draw(bg)
+d0.rounded_rectangle([40, 40, s - 40, s - 40], radius=220, fill=(8, 10, 24, 255))
 
-# Soft rounded container
-d.rounded_rectangle([36, 36, s - 36, s - 36], radius=230, fill=(12, 12, 12, 255))
+L = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+md = ImageDraw.Draw(L)
 
-cx, cy = s / 2, s / 2
+def thick_line(x1, y1, x2, y2, w, color):
+    dx, dy = x2 - x1, y2 - y1
+    length = math.hypot(dx, dy) or 1
+    px, py = -dy / length * w / 2, dx / length * w / 2
+    md.polygon(
+        [(x1 + px, y1 + py), (x1 - px, y1 - py), (x2 - px, y2 - py), (x2 + px, y2 + py)],
+        fill=color,
+    )
 
-def poly(pts, fill=None, outline=None, width=1):
-    d.polygon(pts, fill=fill, outline=outline)
+# J stem + top bar (cyan-blue)
+md.rounded_rectangle([320, 250, 430, 600], radius=36, fill=(40, 140, 255, 255))
+md.rounded_rectangle([320, 240, 540, 340], radius=32, fill=(50, 170, 255, 255))
+# J hook
+md.arc([230, 500, 450, 780], start=5, end=175, fill=(60, 120, 255, 255), width=95)
 
-# Outer hex (professional geometric frame)
-r_out = 310
-hex_pts = []
-for k in range(6):
-    a = math.radians(30 + k * 60)
-    hex_pts.append((cx + r_out * math.cos(a), cy + r_out * math.sin(a)))
-d.line(hex_pts + [hex_pts[0]], fill=(55, 55, 55, 255), width=6)
+# Interlocking X (violet) — unique proportions
+thick_line(490, 270, 760, 710, 82, (150, 70, 255, 255))
+thick_line(760, 270, 490, 710, 82, (190, 80, 255, 255))
+thick_line(505, 285, 745, 690, 18, (220, 160, 255, 160))
 
-# Inner glowing diamond / rhombus (core mark)
-r_in = 150
-diamond = [
-    (cx, cy - r_in),
-    (cx + r_in * 0.85, cy),
-    (cx, cy + r_in),
-    (cx - r_in * 0.85, cy),
-]
-poly(diamond, fill=(235, 235, 235, 255))
+# Unique single orbit (different path than common templates)
+O = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+od = ImageDraw.Draw(O)
+for i in range(48):
+    t = i / 47
+    ang = math.radians(-25 + t * 230)
+    x = 512 + 330 * math.cos(ang)
+    y = 500 + 250 * math.sin(ang)
+    r = 7
+    od.ellipse([x - r, y - r, x + r, y + r], fill=(50 + int(80 * t), 160, 255, 210))
+od.ellipse([770, 290, 845, 365], fill=(80, 200, 255, 255))
+O = O.filter(ImageFilter.GaussianBlur(0.6))
 
-# Smaller inner cut (negative space diamond) for depth
-r_cut = 55
-cut = [
-    (cx, cy - r_cut),
-    (cx + r_cut * 0.85, cy),
-    (cx, cy + r_cut),
-    (cx - r_cut * 0.85, cy),
-]
-poly(cut, fill=(12, 12, 12, 255))
-
-# Three soft nodes on a rising arc (suggests network / intelligence)
-nodes = [
-    (cx - 210, cy + 40),
-    (cx - 40, cy - 200),
-    (cx + 200, cy - 20),
-]
-for n in nodes:
-    d.ellipse([n[0] - 18, n[1] - 18, n[0] + 18, n[1] + 18], fill=(200, 200, 200, 255))
-# connect nodes lightly
-d.line([nodes[0], nodes[1]], fill=(90, 90, 90, 255), width=4)
-d.line([nodes[1], nodes[2]], fill=(90, 90, 90, 255), width=4)
-
-i.save("assets/icons/app_icon.png")
-print("icon ok")
+glow = L.filter(ImageFilter.GaussianBlur(16))
+out = Image.alpha_composite(bg, glow)
+out = Image.alpha_composite(out, O)
+out = Image.alpha_composite(out, L)
+out.save("assets/icons/app_icon.png")
+print("jx monogram icon ok")
