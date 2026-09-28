@@ -1,1 +1,314 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Cache-Control" content="no-cache"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>JagX AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#000;--card:#141414;--line:#2a2a2a;--text:#f2f2f2;--muted:#9a9a9a;--dim:#6a6a6a}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+button,input,textarea{font:inherit;color:inherit;border:none;background:none}button{cursor:pointer}
+.top{height:52px;display:flex;align-items:center;gap:8px;padding:0 10px}
+.icon-btn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center}
+.tabs{flex:1;display:flex;justify-content:center;gap:20px}
+.tab{font-size:15px;font-weight:600;color:var(--dim);padding:8px 4px;position:relative}
+.tab.on{color:var(--text)}.tab.on::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:#fff}
+.main{flex:1;min-height:0;display:flex;flex-direction:column;width:100%;max-width:720px;margin:0 auto}
+.thread{flex:1;overflow-y:auto;padding:16px}
+.empty{height:100%;display:flex;align-items:center;justify-content:center;color:#555;font-weight:600;font-size:18px;letter-spacing:.08em}
+.msg{margin:0 0 18px}.msg.user{display:flex;justify-content:flex-end}
+.bubble{max-width:min(100%,640px);font-size:15px;line-height:1.55;word-break:break-word;overflow-wrap:anywhere}
+.msg.user .bubble{background:#1a1a1a;border-radius:18px;padding:10px 14px;white-space:pre-wrap}
+.msg.bot .bubble{padding:2px 0}
+.msg.bot .bubble table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;display:block;overflow-x:auto}
+.msg.bot .bubble th,.msg.bot .bubble td{border:1px solid #2a2a2a;padding:8px 10px;text-align:left}
+.msg.bot .bubble th{background:#141414;font-weight:600}
+.msg.bot .bubble ul,.msg.bot .bubble ol{margin:8px 0 8px 18px}.msg.bot .bubble p{margin:0 0 10px}
+.actions-row{display:flex;gap:6px;margin-top:8px}.actions-row button{font-size:12px;color:var(--dim);padding:4px 8px;border-radius:8px}
+pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0;font-size:13px;position:relative}
+pre.code .copy{position:absolute;top:8px;right:8px;font-size:11px;color:var(--muted);background:#161616;border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+img.gen{max-width:min(100%,360px);border-radius:14px;margin:10px 0;display:block}
+.thinking{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin:4px 0 12px}
+.composer-wrap{padding:8px 14px 14px}.composer{background:var(--card);border-radius:24px;padding:10px 12px}
+.composer textarea{width:100%;outline:0;resize:none;max-height:140px;font-size:15px;padding:4px 2px}
+.bar{display:flex;align-items:center;gap:6px;margin-top:4px}
+.plus{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--muted);font-size:20px}
+.chip{font-size:12px;color:var(--muted);background:#0a0a0a;border-radius:999px;padding:6px 10px;font-weight:600}
+.send{width:34px;height:34px;border-radius:50%;background:#fff;color:#000;margin-left:auto;display:grid;place-items:center;font-weight:700}
+.send:disabled{opacity:.35}.foot{text-align:center;color:var(--dim);font-size:11px;margin-top:8px}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30;display:none}.scrim.open{display:block}
+.drawer{position:fixed;left:0;top:0;bottom:0;width:min(300px,86vw);background:#0c0c0c;border-right:1px solid var(--line);z-index:31;transform:translateX(-105%);transition:transform .2s;padding:16px 10px;overflow-y:auto}
+.drawer.open{transform:translateX(0)}
+.drawer .who{display:flex;align-items:center;gap:10px;padding:10px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.drawer .av{width:36px;height:36px;border-radius:50%;background:#1a1a1a;display:grid;place-items:center;font-weight:600}
+.drawer .item{width:100%;text-align:left;padding:12px 10px;border-radius:12px;font-size:14px}
+.drawer .item:hover{background:#1a1a1a}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;z-index:40;padding:16px}
+.modal.open{display:flex}
+.card{width:100%;max-width:380px;background:#111;border:1px solid var(--line);border-radius:16px;padding:22px 18px}
+.card h2{font-size:18px;margin-bottom:4px}.card .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+.card label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.card input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0a0a0a}
+.card .full{width:100%;margin-top:12px;height:42px;border-radius:11px;font-weight:600}
+.card .ghost{border:1px solid var(--line)}.card .solid{background:#fff;color:#000}
+.err{color:#f87171;font-size:13px;margin-top:10px}.ok{color:#86efac;font-size:13px;margin-top:10px}
+.or{text-align:center;color:var(--dim);font-size:12px;margin:12px 0}.switch{text-align:center;margin-top:12px;font-size:13px;color:var(--muted)}
+.locked .composer{opacity:.5;pointer-events:none}
+.panel{display:none;padding:20px 16px;overflow-y:auto;flex:1}.panel.open{display:block}
+.panel h3{margin-bottom:8px}.panel p{color:var(--muted);font-size:13px;margin-bottom:12px}
+.panel .box{background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header class="top">
+  <button class="icon-btn" type="button" id="btnMenu">☰</button>
+  <div class="tabs">
+    <button class="tab on" type="button" id="tabAsk">Ask</button>
+    <button class="tab" type="button" id="tabBuild">Build</button>
+  </div>
+  <button class="icon-btn" type="button" id="btnNew">✎</button>
+</header>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="who"><div class="av" id="av">J</div><div id="userChip">Guest</div></div>
+  <button class="item" type="button" id="dNew">＋ New chat</button>
+  <button class="item" type="button" id="dBot">✦ JagX Bot</button>
+  <button class="item" type="button" id="dConn">⬡ Connectors</button>
+  <button class="item" type="button" id="dSet">⚙ Settings</button>
+  <button class="item" type="button" id="dDl">↓ Get app</button>
+  <button class="item" type="button" id="btnAuth">Sign in</button>
+</aside>
+<main class="main locked" id="main">
+  <div class="thread" id="thread"><div class="empty" id="empty">JX</div></div>
+  <div class="panel" id="panelBot"><h3>JagX Bot</h3><p>Multi-agent team. Full runner is in the Android app.</p><div class="box"><b>Nimbus</b> Orchestrator</div><div class="box"><b>Atlas</b> Planner</div><div class="box"><b>Nova</b> Coder</div><div class="box"><b>Mira</b> Research</div></div>
+  <div class="panel" id="panelConn"><h3>Connectors</h3><p>GitHub, Drive, Gmail, Notion — full OAuth in the app.</p></div>
+  <div class="panel" id="panelSet"><h3>Settings</h3><p>Model: Fast. History saved on device and account.</p></div>
+  <div class="composer-wrap" id="composerWrap">
+    <div class="composer">
+      <textarea id="input" rows="1" placeholder="Sign in to chat"></textarea>
+      <div class="bar">
+        <button class="plus" type="button" id="btnPlus">+</button>
+        <span class="chip">Fast</span>
+        <button class="send" type="button" id="send">↑</button>
+      </div>
+    </div>
+    <div class="foot">JagX AI · JagX & JRILICENSE</div>
+  </div>
+</main>
+<input type="file" id="filePick" accept="image/*,.pdf,.txt,.md,.csv" hidden/>
+<div class="modal" id="authModal"><div class="card">
+  <h2 id="authTitle">Sign in</h2>
+  <p class="sub">Sign in to chat and keep your history.</p>
+  <button class="full ghost" type="button" id="btnGoogle">Continue with Google</button>
+  <div class="or">or email</div>
+  <div id="nameWrap" style="display:none"><label>Full name</label><input id="authName"/></div>
+  <label>Email</label><input id="authEmail" type="email"/>
+  <label>Password</label><input id="authPass" type="password"/>
+  <div class="err" id="authErr" style="display:none"></div>
+  <div class="ok" id="authOk" style="display:none"></div>
+  <button class="full solid" type="button" id="authSubmit">Sign in</button>
+  <div class="switch"><button type="button" id="authToggle">New here? Create an account</button></div>
+</div></div>
+<div class="modal" id="dlModal"><div class="card">
+  <h2>Android app</h2>
+  <p class="sub">Public APK — no GitHub login.</p>
+  <a class="full solid" style="display:grid;place-items:center;text-decoration:none" href="https://github.com/wantajudeen/jagx-ai-app/releases/download/apk-latest/JagX-AI.apk">Download APK</a>
+  <button class="full ghost" type="button" id="dlClose" style="margin-top:8px">Close</button>
+</div></div>
+<script>
+(function(){
+  var API='https://jagx-ai-v2.onrender.com';
+  var SUPABASE_URL='https://xxxyqzuwvavqsccnlkxa.supabase.co';
+  var SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4eHlxenV3dmF2cXNjY25sa3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjY4MDcsImV4cCI6MjEwNTE0MjgwN30.pd3D3ULeR90gM7HB8xAlERr8swUyc_aJaIxDqc-vH2Y';
+  var supabase=null,session=null,history=[],modeSignUp=false,mode='ask',pendingFile=null;
+  var thinkEl=null,thinkTimer=null,thinkStart=0;
+  var thread=document.getElementById('thread'),empty=document.getElementById('empty');
+  var input=document.getElementById('input'),sendBtn=document.getElementById('send'),main=document.getElementById('main');
+  var authModal=document.getElementById('authModal'),authErr=document.getElementById('authErr'),authOk=document.getElementById('authOk');
+  var drawer=document.getElementById('drawer'),scrim=document.getElementById('scrim');
+  function showErr(m){authErr.style.display='block';authErr.textContent=m;authOk.style.display='none'}
+  function showOk(m){authOk.style.display='block';authOk.textContent=m;authErr.style.display='none'}
+  function openDrawer(){drawer.classList.add('open');scrim.classList.add('open')}
+  function closeDrawer(){drawer.classList.remove('open');scrim.classList.remove('open')}
+  function setSession(s){
+    session=s;
+    if(s){main.classList.remove('locked');authModal.classList.remove('open');
+      input.placeholder=mode==='build'?'Describe what to build…':'Ask anything';
+      var u=s.user||{},label=u.email||(u.user_metadata&&u.user_metadata.full_name)||'Signed in';
+      document.getElementById('userChip').textContent=label;
+      document.getElementById('av').textContent=(label[0]||'J').toUpperCase();
+      document.getElementById('btnAuth').textContent='Sign out';loadHistory();
+    } else {main.classList.add('locked');authModal.classList.add('open');
+      input.placeholder='Sign in to chat';document.getElementById('userChip').textContent='Guest';
+      document.getElementById('av').textContent='J';document.getElementById('btnAuth').textContent='Sign in';}
+  }
+  function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+  async function boot(){
+    try{await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');}catch(e){try{await loadScript('https://unpkg.com/@supabase/supabase-js@2');}catch(e2){return showErr('Auth library failed');}}
+    if(!window.supabase)return showErr('Auth missing');
+    try{supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+      var r=await supabase.auth.getSession();setSession(r.data&&r.data.session);
+      supabase.auth.onAuthStateChange(function(_e,s){setSession(s);});
+    }catch(e){showErr(String(e.message||e));}
+  }
+  document.getElementById('btnMenu').onclick=openDrawer;scrim.onclick=closeDrawer;
+  document.getElementById('dNew').onclick=function(){closeDrawer();newChat();};
+  document.getElementById('btnNew').onclick=newChat;
+  document.getElementById('dBot').onclick=function(){closeDrawer();showPanel('panelBot');};
+  document.getElementById('dConn').onclick=function(){closeDrawer();showPanel('panelConn');};
+  document.getElementById('dSet').onclick=function(){closeDrawer();showPanel('panelSet');};
+  document.getElementById('dDl').onclick=function(){closeDrawer();document.getElementById('dlModal').classList.add('open');};
+  document.getElementById('dlClose').onclick=function(){document.getElementById('dlModal').classList.remove('open');};
+  function showPanel(id){document.getElementById('thread').style.display='none';document.getElementById('composerWrap').style.display='none';
+    ['panelBot','panelConn','panelSet'].forEach(function(p){document.getElementById(p).classList.toggle('open',p===id);});}
+  function showChat(){document.getElementById('thread').style.display='';document.getElementById('composerWrap').style.display='';
+    ['panelBot','panelConn','panelSet'].forEach(function(p){document.getElementById(p).classList.remove('open');});}
+  document.getElementById('tabAsk').onclick=function(){mode='ask';this.classList.add('on');document.getElementById('tabBuild').classList.remove('on');
+    input.placeholder=session?'Ask anything':'Sign in to chat';showChat();};
+  document.getElementById('tabBuild').onclick=function(){mode='build';this.classList.add('on');document.getElementById('tabAsk').classList.remove('on');
+    input.placeholder=session?'Describe what to build…':'Sign in to chat';showChat();};
+  document.getElementById('authToggle').onclick=function(){modeSignUp=!modeSignUp;
+    document.getElementById('authTitle').textContent=modeSignUp?'Create account':'Sign in';
+    document.getElementById('authSubmit').textContent=modeSignUp?'Create account':'Sign in';
+    document.getElementById('authToggle').textContent=modeSignUp?'Already have an account? Sign in':'New here? Create an account';
+    document.getElementById('nameWrap').style.display=modeSignUp?'block':'none';};
+  document.getElementById('authSubmit').onclick=async function(){
+    if(!supabase)return showErr('Auth loading…');
+    var email=(document.getElementById('authEmail').value||'').trim(),password=document.getElementById('authPass').value||'';
+    var name=(document.getElementById('authName').value||'').trim();
+    if(!email||!password)return showErr('Email and password required');
+    try{
+      if(modeSignUp){if(!name)return showErr('Enter your name');
+        var up=await supabase.auth.signUp({email:email,password:password,options:{data:{full_name:name}}});
+        if(up.error)return showErr(up.error.message);if(!up.data.session)return showOk('Check email to confirm, then sign in.');setSession(up.data.session);
+      } else {var inn=await supabase.auth.signInWithPassword({email:email,password:password});
+        if(inn.error)return showErr(inn.error.message);setSession(inn.data.session);}
+    }catch(e){showErr(String(e.message||e));}
+  };
+  document.getElementById('btnGoogle').onclick=async function(){
+    if(!supabase)return showErr('Auth loading…');
+    var r=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin}});
+    if(r.error)showErr(r.error.message);
+  };
+  document.getElementById('btnAuth').onclick=async function(){
+    closeDrawer();
+    if(session&&supabase){await supabase.auth.signOut();setSession(null);history=[];renderAll();}
+    else authModal.classList.add('open');
+  };
+  document.getElementById('btnPlus').onclick=function(){document.getElementById('filePick').click();};
+  document.getElementById('filePick').onchange=function(e){var f=e.target.files&&e.target.files[0];if(f)pendingFile=f;};
+  function storageKey(){var id=session&&session.user&&session.user.id;return id?('jx_hist_'+id):'jx_hist_guest';}
+  function saveHistory(){try{localStorage.setItem(storageKey(),JSON.stringify(history));}catch(e){}}
+  function loadHistory(){try{var raw=localStorage.getItem(storageKey());if(raw)history=JSON.parse(raw)||[];}catch(e){history=[];}renderAll();}
+  function newChat(){history=[];saveHistory();showChat();renderAll();}
+  function escapeHtml(s){return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>');}
+  function formatBot(text){
+    var raw=String(text||'');
+    raw=raw.replace(/<br\s*\/?>/gi,'\n').replace(/<\/?[^>]+>/g,'');
+    raw=raw.replace(/\*\*([^*]+)\*\*/g,'$1');
+    raw=raw.replace(/(^|[^\*])\*([^*\n]+)\*(?!\*)/g,'$1$2');
+    raw=raw.replace(/^#{1,6}\s+/gm,'');
+    var lines=raw.split('\n'),out=[],i=0;
+    while(i<lines.length){
+      var line=lines[i];
+      if(/^\s*\|.+\|\s*$/.test(line)){
+        var rows=[];
+        while(i<lines.length&&/^\s*\|.+\|\s*$/.test(lines[i])){
+          var cells=lines[i].trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(function(c){return c.trim();});
+          if(!cells.every(function(c){return /^:?-+:?$/.test(c)||c==='';}))rows.push(cells);
+          i++;
+        }
+        if(rows.length){
+          var h='<table><thead><tr>'+rows[0].map(function(c){return '<th>'+escapeHtml(c)+'</th>';}).join('')+'</tr></thead><tbody>';
+          for(var r=1;r<rows.length;r++)h+='<tr>'+rows[r].map(function(c){return '<td>'+escapeHtml(c)+'</td>';}).join('')+'</tr>';
+          h+='</tbody></table>';out.push(h);
+        }
+        continue;
+      }
+      if(/^\s*```/.test(line)){
+        var code=[];i++;
+        while(i<lines.length&&!/^\s*```/.test(lines[i])){code.push(lines[i]);i++;}
+        if(i<lines.length)i++;
+        out.push('<pre class="code"><button class="copy" type="button">Copy</button><code>'+escapeHtml(code.join('\n'))+'</code></pre>');
+        continue;
+      }
+      if(/^\s*[-*•]\s+/.test(line)){
+        var items=[];
+        while(i<lines.length&&/^\s*[-*•]\s+/.test(lines[i])){items.push('<li>'+escapeHtml(lines[i].replace(/^\s*[-*•]\s+/,''))+'</li>');i++;}
+        out.push('<ul>'+items.join('')+'</ul>');continue;
+      }
+      if(/^\s*\d+\.\s+/.test(line)){
+        var items2=[];
+        while(i<lines.length&&/^\s*\d+\.\s+/.test(lines[i])){items2.push('<li>'+escapeHtml(lines[i].replace(/^\s*\d+\.\s+/,''))+'</li>');i++;}
+        out.push('<ol>'+items2.join('')+'</ol>');continue;
+      }
+      if(line.trim()===''){out.push('<div style="height:8px"></div>');i++;continue;}
+      out.push('<p>'+escapeHtml(line)+'</p>');i++;
+    }
+    return out.join('');
+  }
+  function renderAll(){
+    thread.innerHTML='';
+    if(!history.length){thread.appendChild(empty);empty.style.display='';return;}
+    empty.style.display='none';
+    history.forEach(function(m){
+      var row=document.createElement('div');row.className='msg '+(m.role==='user'?'user':'bot');
+      var bub=document.createElement('div');bub.className='bubble';
+      if(m.role==='user')bub.textContent=m.content;
+      else if(m.image){bub.innerHTML='<img class="gen" src="'+escapeHtml(m.image)+'" alt=""/><div class="actions-row"><a download="jagx.png" href="'+escapeHtml(m.image)+'" target="_blank">Save</a></div>';}
+      else{
+        bub.innerHTML=formatBot(m.content);
+        bub.querySelectorAll('.copy').forEach(function(btn){
+          btn.onclick=function(){var code=btn.parentElement.querySelector('code');if(code)navigator.clipboard.writeText(code.textContent||'');btn.textContent='Copied';setTimeout(function(){btn.textContent='Copy';},1000);};
+        });
+        var meta=document.createElement('div');meta.className='actions-row';meta.innerHTML='<button type="button">Copy</button>';
+        meta.querySelector('button').onclick=function(){navigator.clipboard.writeText(m.content||'');this.textContent='Copied';var t=this;setTimeout(function(){t.textContent='Copy';},1000);};
+        bub.appendChild(meta);
+      }
+      row.appendChild(bub);thread.appendChild(row);
+    });
+    thread.scrollTop=thread.scrollHeight;
+  }
+  function startThinking(){
+    stopThinking();thinkStart=Date.now();
+    thinkEl=document.createElement('div');thinkEl.className='thinking';thinkEl.innerHTML='Thinking…';
+    thread.appendChild(thinkEl);
+    thinkTimer=setInterval(function(){var s=Math.floor((Date.now()-thinkStart)/1000);var m=Math.floor(s/60),r=s%60;
+      if(thinkEl)thinkEl.textContent='Thinking · '+(m?m+'m '+r+'s':r+'s');},400);
+  }
+  function stopThinking(){if(thinkTimer)clearInterval(thinkTimer);thinkTimer=null;if(thinkEl&&thinkEl.parentNode)thinkEl.parentNode.removeChild(thinkEl);thinkEl=null;}
+  function wantsImage(text){return /^\s*(draw|generate\s+(an?\s+)?(image|picture|photo|logo)|make\s+(an?\s+)?(image|picture|logo)|paint)\b/i.test(text);}
+  async function send(){
+    if(!session){authModal.classList.add('open');return;}
+    var text=(input.value||'').trim();
+    if((!text&&!pendingFile)||sendBtn.disabled)return;
+    if(pendingFile){text=text||('[File: '+pendingFile.name+']');pendingFile=null;}
+    input.value='';history.push({role:'user',content:text});renderAll();saveHistory();
+    sendBtn.disabled=true;startThinking();
+    try{
+      if(wantsImage(text)){
+        var prompt=text.replace(/^\s*(draw|generate|make|paint)\s*(me\s*)?(an?\s*)?(image|picture|photo|logo)?\s*(of\s*)?/i,'').trim()||text;
+        var url='https://image.pollinations.ai/prompt/'+encodeURIComponent(prompt)+'?width=1024&height=1024&nologo=true&seed='+Date.now();
+        stopThinking();history.push({role:'assistant',content:prompt,image:url});renderAll();saveHistory();
+      } else {
+        var body={message:mode==='build'?('Build this:\n'+text):text,history:history.filter(function(x){return !x.image;}).slice(0,-1).slice(-10)};
+        var r=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'jagx-984199d487c01240f4515157a11cd6b4'},body:JSON.stringify(body)});
+        var data=await r.json().catch(function(){return {};});
+        stopThinking();
+        history.push({role:'assistant',content:r.ok?(data.response||''):(data.detail||data.message||('Error '+r.status))});
+        renderAll();saveHistory();
+      }
+    }catch(e){stopThinking();history.push({role:'assistant',content:'Network issue — try again.'});renderAll();}
+    finally{sendBtn.disabled=false;input.focus();}
+  }
+  sendBtn.onclick=send;
+  input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+  boot();
+})();
+</script>
+</body>
+</html>
