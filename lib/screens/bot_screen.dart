@@ -18,6 +18,7 @@ class _BotScreenState extends State<BotScreen> {
   final _goal = TextEditingController();
   final List<String> _liveLog = [];
   bool _running = false;
+  bool _multi = true; // multi-agent like Grok Bot by default
   List<BotTask> _tasks = [];
   String? _result;
   Agent _agent = Agents.list.first;
@@ -44,10 +45,10 @@ class _BotScreenState extends State<BotScreen> {
     _goal.clear();
     final task = await BotTaskStore.enqueue(goal);
     await _reloadTasks();
-    await _runPipeline(goal, existing: task);
+    await _run(goal, existing: task);
   }
 
-  Future<void> _runPipeline(String goal, {BotTask? existing}) async {
+  Future<void> _run(String goal, {BotTask? existing}) async {
     setState(() {
       _running = true;
       _liveLog.clear();
@@ -66,55 +67,40 @@ class _BotScreenState extends State<BotScreen> {
     await BotTaskStore.update(task);
 
     try {
-      _log('${_agent.emoji} ${_agent.name} (${_agent.role}) engaged');
-      _log('Research pass…');
       String research = '';
       try {
+        _log('Pulse · web context…');
         research = await BrowserTool.search(goal);
         if (research.isNotEmpty) _log('Web context ready');
       } catch (_) {
-        _log('Research skipped');
+        _log('Web skipped');
       }
 
-      _log('Thinking…');
-      final prompt = research.isEmpty
-          ? goal
-          : '$goal\n\nWEB CONTEXT:\n$research';
-
       String reply;
-      if (_agent.id == 'nimbus') {
-        _log('Atlas planning…');
-        final plan = await Ai.agentChat(
-          agentId: 'atlas',
-          messages: [
-            {'role': 'user', 'content': 'Plan only:\n$prompt'}
-          ],
-        );
-        _log('Nova / Mira executing…');
-        reply = await Ai.agentChat(
-          agentId: 'nimbus',
-          messages: [
-            {
-              'role': 'user',
-              'content':
-                  'Goal:\n$prompt\n\nPlan from Atlas:\n$plan\n\nDeliver the final useful answer.'
-            }
-          ],
+      if (_multi || _agent.id == 'nimbus') {
+        reply = await Ai.multiAgentRun(
+          goal: goal,
+          webContext: research,
+          onLog: _log,
         );
       } else {
+        _log('${_agent.emoji} ${_agent.name} · ${_agent.role}');
+        final prompt = research.isEmpty
+            ? goal
+            : '$goal\n\nWEB CONTEXT:\n$research';
         reply = await Ai.agentChat(
           agentId: _agent.id,
           messages: [
             {'role': 'user', 'content': prompt}
           ],
         );
+        _log('Done');
       }
 
       task.status = 'done';
       task.logs
         ..clear()
-        ..addAll(_liveLog)
-        ..add('Done');
+        ..addAll(_liveLog);
       await BotTaskStore.update(task);
 
       if (mounted) {
@@ -136,37 +122,58 @@ class _BotScreenState extends State<BotScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Jx.card,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        maxChildSize: 0.92,
+        builder: (ctx, scroll) => ListView(
+          controller: scroll,
           children: [
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text('Choose agent',
+              child: Text('JagX Bot agents',
                   style: TextStyle(
                       color: Jx.text,
                       fontWeight: FontWeight.w700,
-                      fontSize: 16)),
+                      fontSize: 17)),
             ),
+            SwitchListTile(
+              title: const Text('Multi-agent team',
+                  style: TextStyle(color: Jx.text)),
+              subtitle: const Text(
+                  'Nimbus → Atlas → Nova → Mira → final answer',
+                  style: TextStyle(color: Jx.dim, fontSize: 12)),
+              value: _multi,
+              activeColor: Jx.text,
+              onChanged: (v) => setState(() => _multi = v),
+            ),
+            const Divider(color: Jx.border),
             ...Agents.list.map((a) {
-              final sel = a.id == _agent.id;
+              final sel = a.id == _agent.id && !_multi;
               return ListTile(
                 leading: Text(a.emoji, style: const TextStyle(fontSize: 22)),
                 title: Text('${a.name} · ${a.role}',
                     style: const TextStyle(
                         color: Jx.text, fontWeight: FontWeight.w600)),
+                subtitle: Text(a.description,
+                    style: const TextStyle(color: Jx.dim, fontSize: 12)),
                 trailing: sel
                     ? const Icon(Icons.check, color: Jx.text)
                     : null,
                 onTap: () {
-                  setState(() => _agent = a);
+                  setState(() {
+                    _agent = a;
+                    _multi = a.id == 'nimbus';
+                  });
                   Navigator.pop(context);
                 },
               );
             }),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -190,10 +197,14 @@ class _BotScreenState extends State<BotScreen> {
           onPressed: () => context.pop(),
         ),
         actions: [
-          TextButton.icon(
+          TextButton(
             onPressed: _pickAgent,
-            icon: Text(_agent.emoji),
-            label: Text(_agent.name, style: const TextStyle(color: Jx.text)),
+            child: Text(
+              _multi
+                  ? '🧠 Multi-agent'
+                  : '${_agent.emoji} ${_agent.name}',
+              style: const TextStyle(color: Jx.text),
+            ),
           ),
         ],
       ),
@@ -214,16 +225,20 @@ class _BotScreenState extends State<BotScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${_agent.emoji} ${_agent.name} · ${_agent.role}',
+                        _multi
+                            ? '🧠 Multi-agent team'
+                            : '${_agent.emoji} ${_agent.name} · ${_agent.role}',
                         style: const TextStyle(
                             color: Jx.text,
                             fontWeight: FontWeight.w700,
                             fontSize: 16),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        'Multi-agent workspace. Nimbus orchestrates specialists for hard goals.',
-                        style: TextStyle(
+                      Text(
+                        _multi
+                            ? 'Like Grok Bot: Nimbus leads Atlas (plan), Nova (code), Mira (research), then merges one answer. Uses OpenRouter when configured.'
+                            : _agent.description,
+                        style: const TextStyle(
                             color: Jx.muted, fontSize: 13, height: 1.4),
                       ),
                     ],
@@ -286,8 +301,8 @@ class _BotScreenState extends State<BotScreen> {
                 decoration: BoxDecoration(
                   color: Jx.card,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Jx.border),
                 ),
+                padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
                 child: Row(
                   children: [
                     Expanded(

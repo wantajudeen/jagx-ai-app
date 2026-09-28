@@ -28,7 +28,7 @@ class _ChatScreenState extends State<ChatScreen>
   final _controller = TextEditingController();
   final _scroll = ScrollController();
   late TabController _tabs;
-  JagxModel _model = Models.fast;
+  final _model = Models.fast;
   final List<_Msg> _messages = [];
   bool _loading = false;
   String? _streaming;
@@ -105,8 +105,7 @@ class _ChatScreenState extends State<ChatScreen>
           children: [
             ListTile(
               leading: const Icon(Icons.photo_outlined, color: Jx.text),
-              title: const Text('Photo',
-                  style: TextStyle(color: Jx.text)),
+              title: const Text('Photo', style: TextStyle(color: Jx.text)),
               onTap: () async {
                 Navigator.pop(ctx);
                 final img = await ImagePicker()
@@ -158,10 +157,6 @@ class _ChatScreenState extends State<ChatScreen>
     final text = (override ?? _controller.text).trim();
     final hasAttach = _pendingImage != null || _pendingFile != null;
     if ((text.isEmpty && !hasAttach) || _loading) return;
-    if (_model.comingSoon) {
-      _toast('Oracle is Coming soon');
-      return;
-    }
 
     final isBuild = _tabs.index == 1;
     var userLine = text;
@@ -175,11 +170,10 @@ class _ChatScreenState extends State<ChatScreen>
           : '$text\n[File: ${_pendingFile!.name}]';
     }
 
-    // Nudge for long-form exportable content
     var promptText = userLine;
     if (_wantsBook(text)) {
       promptText =
-          '$userLine\n\nWrite the full content in plain text, chapter by chapter if needed. No markdown bold stars.';
+          '$userLine\n\nWrite the full content in plain text. No markdown bold stars.';
     }
 
     setState(() {
@@ -248,40 +242,6 @@ class _ChatScreenState extends State<ChatScreen>
     });
   }
 
-  void _pickModel() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Jx.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: Models.list.map((m) {
-            return ListTile(
-              title: Text(m.name,
-                  style: TextStyle(
-                    color: m.comingSoon ? Jx.dim : Jx.text,
-                    fontWeight: FontWeight.w600,
-                  )),
-              subtitle: Text(m.subtitle,
-                  style: const TextStyle(color: Jx.muted, fontSize: 12)),
-              onTap: () {
-                Navigator.pop(context);
-                if (m.comingSoon) {
-                  _toast('Oracle is Coming soon');
-                } else {
-                  setState(() => _model = m);
-                }
-              },
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
   Future<void> _newChat() async {
     setState(() {
       _messages.clear();
@@ -296,11 +256,8 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _exportPdf(_Msg m) async {
     try {
       _toast('Building PDF…');
-      await ExportDoc.sharePdf(
-        title: 'JagX export',
-        body: m.text,
-      );
-    } catch (e) {
+      await ExportDoc.sharePdf(title: 'JagX export', body: m.text);
+    } catch (_) {
       _toast('Could not export PDF');
     }
   }
@@ -308,7 +265,6 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   Widget build(BuildContext context) {
     final isBuild = _tabs.index == 1;
-    final chip = _model.badge ?? 'Fast';
 
     return Scaffold(
       backgroundColor: Jx.bg,
@@ -331,7 +287,6 @@ class _ChatScreenState extends State<ChatScreen>
                 title: Text(_displayName,
                     style: const TextStyle(
                         color: Jx.text, fontWeight: FontWeight.w600)),
-                trailing: const Icon(Icons.chevron_right, color: Jx.dim),
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/settings');
@@ -340,8 +295,7 @@ class _ChatScreenState extends State<ChatScreen>
               const Divider(color: Jx.border),
               ListTile(
                 leading: const Icon(Icons.edit_outlined, color: Jx.muted),
-                title:
-                    const Text('New chat', style: TextStyle(color: Jx.text)),
+                title: const Text('New chat', style: TextStyle(color: Jx.text)),
                 onTap: () {
                   Navigator.pop(context);
                   _newChat();
@@ -349,8 +303,9 @@ class _ChatScreenState extends State<ChatScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.smart_toy_outlined, color: Jx.muted),
-                title:
-                    const Text('JagX Bot', style: TextStyle(color: Jx.text)),
+                title: const Text('JagX Bot', style: TextStyle(color: Jx.text)),
+                subtitle: const Text('Multi-agent team',
+                    style: TextStyle(color: Jx.dim, fontSize: 12)),
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/bot');
@@ -389,10 +344,7 @@ class _ChatScreenState extends State<ChatScreen>
           unselectedLabelColor: Jx.dim,
           labelStyle:
               const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-          tabs: const [
-            Tab(text: 'Ask'),
-            Tab(text: 'Build'),
-          ],
+          tabs: const [Tab(text: 'Ask'), Tab(text: 'Build')],
         ),
         actions: [
           IconButton(
@@ -422,7 +374,7 @@ class _ChatScreenState extends State<ChatScreen>
                       if (_loading && _streaming == null)
                         const Padding(
                           padding: EdgeInsets.only(left: 8, top: 8),
-                          child: JagxMark(size: 26, color: Color(0xFF6A6A6A)),
+                          child: JagxMark(size: 26, color: Color(0xFF5A5A5A)),
                         ),
                     ],
                   ),
@@ -448,8 +400,7 @@ class _ChatScreenState extends State<ChatScreen>
                           right: 0,
                           top: 0,
                           child: GestureDetector(
-                            onTap: () =>
-                                setState(() => _pendingImage = null),
+                            onTap: () => setState(() => _pendingImage = null),
                             child: const CircleAvatar(
                               radius: 10,
                               backgroundColor: Colors.black87,
@@ -464,14 +415,14 @@ class _ChatScreenState extends State<ChatScreen>
                     Chip(
                       backgroundColor: Jx.card,
                       label: Text(_pendingFile!.name,
-                          style: const TextStyle(
-                              color: Jx.text, fontSize: 12)),
-                      onDeleted: () =>
-                          setState(() => _pendingFile = null),
+                          style:
+                              const TextStyle(color: Jx.text, fontSize: 12)),
+                      onDeleted: () => setState(() => _pendingFile = null),
                     ),
                 ],
               ),
             ),
+          // Grok-style single box: text + (+ Fast send) all inside
           SafeArea(
             top: false,
             child: Padding(
@@ -481,7 +432,7 @@ class _ChatScreenState extends State<ChatScreen>
                   color: Jx.card,
                   borderRadius: BorderRadius.circular(28),
                 ),
-                padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
+                padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -500,34 +451,34 @@ class _ChatScreenState extends State<ChatScreen>
                         border: InputBorder.none,
                         filled: false,
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
+                            horizontal: 14, vertical: 6),
                       ),
                     ),
                     Row(
                       children: [
                         IconButton(
                           onPressed: _attach,
-                          icon: const Icon(Icons.add, color: Jx.muted),
+                          icon: const Icon(Icons.add, color: Jx.muted, size: 22),
+                          visualDensity: VisualDensity.compact,
                         ),
-                        GestureDetector(
-                          onTap: _pickModel,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Jx.surface,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(chip,
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Jx.muted)),
-                                const Icon(Icons.arrow_drop_down,
-                                    size: 16, color: Jx.dim),
-                              ],
-                            ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Jx.surface,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.bolt, size: 14, color: Jx.muted),
+                              SizedBox(width: 4),
+                              Text('Fast',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Jx.muted,
+                                      fontWeight: FontWeight.w600)),
+                            ],
                           ),
                         ),
                         const Spacer(),
@@ -548,7 +499,6 @@ class _ChatScreenState extends State<ChatScreen>
                             ),
                           ),
                         ),
-                        const SizedBox(width: 4),
                       ],
                     ),
                   ],
