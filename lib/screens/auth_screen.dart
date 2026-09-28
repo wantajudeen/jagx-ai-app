@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/auth.dart';
+import '../core/env.dart';
 import '../core/profile.dart';
 import '../core/theme.dart';
 
@@ -20,6 +22,21 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _busy = false;
   bool _hide = true;
   String? _error;
+  String? _info;
+
+  @override
+  void initState() {
+    super.initState();
+    if (Env.hasSupabase) {
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+        if (data.session != null && mounted) {
+          final need = await Profile.needsOnboarding();
+          if (!mounted) return;
+          context.go(need ? '/onboarding' : '/chat');
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -33,6 +50,7 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() {
       _busy = true;
       _error = null;
+      _info = null;
     });
     final err = _signUp
         ? await Auth.signUp(
@@ -46,9 +64,14 @@ class _AuthScreenState extends State<AuthScreen> {
           );
     if (!mounted) return;
     if (err != null) {
+      final confirm = err.toLowerCase().contains('check your email');
       setState(() {
         _busy = false;
-        _error = err;
+        if (confirm) {
+          _info = err;
+        } else {
+          _error = err;
+        }
       });
       return;
     }
@@ -57,12 +80,26 @@ class _AuthScreenState extends State<AuthScreen> {
     context.go(need ? '/onboarding' : '/chat');
   }
 
-  Future<void> _guest() async {
-    await Auth.continueAsGuest();
+  Future<void> _google() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+      _info = null;
+    });
+    final err = await Auth.signInWithGoogle();
     if (!mounted) return;
-    final need = await Profile.needsOnboarding();
-    if (!mounted) return;
-    context.go(need ? '/onboarding' : '/chat');
+    if (err != null) {
+      setState(() {
+        _busy = false;
+        _error = err;
+      });
+      return;
+    }
+    // Session may arrive via onAuthStateChange after browser redirect.
+    setState(() {
+      _busy = false;
+      _info = 'Finish Google sign-in in the browser, then return here.';
+    });
   }
 
   @override
@@ -101,11 +138,43 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'JagX AI · JagX & JRILICENSE',
+              'JagX AI · real account via Supabase',
               textAlign: TextAlign.center,
               style: TextStyle(color: Jx.muted),
             ),
-            const SizedBox(height: 28),
+            if (!Env.hasSupabase) ...[
+              const SizedBox(height: 12),
+              const Text(
+                'SUPABASE_URL / SUPABASE_ANON_KEY missing in this build.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.orangeAccent, fontSize: 12),
+              ),
+            ],
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: _busy || !Env.hasSupabase ? null : _google,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Jx.border),
+                  foregroundColor: Jx.text,
+                ),
+                icon: const Icon(Icons.g_mobiledata, size: 28),
+                label: const Text('Continue with Google'),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Row(
+              children: [
+                Expanded(child: Divider(color: Jx.border)),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Text('or email', style: TextStyle(color: Jx.dim, fontSize: 12)),
+                ),
+                Expanded(child: Divider(color: Jx.border)),
+              ],
+            ),
+            const SizedBox(height: 16),
             if (_signUp) ...[
               TextField(
                 controller: _name,
@@ -139,11 +208,15 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 12),
               Text(_error!, style: const TextStyle(color: Colors.redAccent)),
             ],
+            if (_info != null) ...[
+              const SizedBox(height: 12),
+              Text(_info!, style: const TextStyle(color: Color(0xFF86EFAC))),
+            ],
             const SizedBox(height: 20),
             SizedBox(
               height: 50,
               child: FilledButton(
-                onPressed: _busy ? null : _submit,
+                onPressed: _busy || !Env.hasSupabase ? null : _submit,
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.black,
@@ -164,6 +237,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   : () => setState(() {
                         _signUp = !_signUp;
                         _error = null;
+                        _info = null;
                       }),
               child: Text(
                 _signUp
@@ -171,11 +245,6 @@ class _AuthScreenState extends State<AuthScreen> {
                     : 'New here? Create an account',
                 style: const TextStyle(color: Jx.muted),
               ),
-            ),
-            TextButton(
-              onPressed: _busy ? null : _guest,
-              child: const Text('Continue as guest',
-                  style: TextStyle(color: Jx.text)),
             ),
             const SizedBox(height: 16),
             TextButton(
