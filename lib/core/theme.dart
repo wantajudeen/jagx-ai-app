@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Pure black UI — white/gray type, soft silver accent (no blue).
+/// Black UI — white/gray only. Unique JagX mark (not Grok-like).
 class Jx {
   static const bg = Color(0xFF000000);
   static const surface = Color(0xFF0A0A0A);
@@ -11,7 +11,7 @@ class Jx {
   static const text = Color(0xFFF2F2F2);
   static const muted = Color(0xFF9A9A9A);
   static const dim = Color(0xFF6A6A6A);
-  static const accent = Color(0xFFE8E8E8); // soft white
+  static const accent = Color(0xFFE8E8E8);
   static const accentSoft = Color(0xFFCFCFCF);
   static const userBubble = Color(0xFF1A1A1A);
   static const success = Color(0xFF4ADE80);
@@ -78,70 +78,56 @@ class JagxTheme {
   }
 }
 
-/// Abstract JagX mark — ring with diagonal slash (distinct, minimal).
+/// Unique JagX mark: three offset arcs forming an abstract "J" path — not a ring-slash.
 class JagxMark extends StatelessWidget {
   const JagxMark({
     super.key,
     this.size = 48,
-    this.color = const Color(0xFF7A7A7A),
-    this.strokeWidth,
+    this.color = const Color(0xFFB0B0B0),
   });
 
   final double size;
   final Color color;
-  final double? strokeWidth;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _JagxLogoPainter(
-          color: color,
-          stroke: strokeWidth ?? size * 0.09,
-        ),
-      ),
+      child: CustomPaint(painter: _JagxLogoPainter(color: color)),
     );
   }
 }
 
 class _JagxLogoPainter extends CustomPainter {
-  _JagxLogoPainter({required this.color, required this.stroke});
+  _JagxLogoPainter({required this.color});
   final Color color;
-  final double stroke;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
     final p = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
+      ..strokeWidth = w * 0.11
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
-    final c = Offset(size.width / 2, size.height / 2);
-    final r = size.width * 0.32;
+    // Vertical stem of J
+    final path = Path();
+    path.moveTo(w * 0.62, h * 0.18);
+    path.lineTo(w * 0.62, h * 0.58);
+    // Hook of J
+    path.quadraticBezierTo(w * 0.62, h * 0.82, w * 0.38, h * 0.82);
+    path.quadraticBezierTo(w * 0.22, h * 0.82, w * 0.22, h * 0.68);
+    canvas.drawPath(path, p);
 
-    // open ring (gap on lower-right)
-    canvas.drawArc(
-      Rect.fromCircle(center: c, radius: r),
-      -2.2,
-      4.6,
-      false,
-      p,
-    );
-
-    // diagonal slash through the ring
-    final slash = Paint()
+    // Small accent dot top-left (unique badge)
+    final dot = Paint()
       ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke * 1.05
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(size.width * 0.22, size.height * 0.78),
-      Offset(size.width * 0.78, size.height * 0.22),
-      slash,
-    );
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(w * 0.28, h * 0.28), w * 0.07, dot);
   }
 
   @override

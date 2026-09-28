@@ -11,9 +11,19 @@ class Ai {
   ));
 
   static const _baseSystem = '''
-You are JagX AI by JagX & JRILICENSE.
-Be clear and useful. Reply in the user's language.
-Never name other AI brands. You are only JagX AI.
+You are JagX AI by JagX and JRILICENSE.
+Write like a clear human tutor. Short sentences when possible.
+
+FORMATTING RULES (important):
+- Do NOT use markdown bold with asterisks (**like this**).
+- Do NOT wrap every heading in # or **.
+- For math: write steps in plain text. Example: Step 1: ... then the equation on its own line.
+- Prefer plain numbers and words over heavy symbols decoration.
+- Lists can use simple dashes or numbers: 1. 2. 3.
+- Never mention other AI brands. You are only JagX AI.
+
+When the user asks for a story, book chapter, essay, or PDF-ready text, write complete clean content they can export.
+Reply in the user's language.
 ''';
 
   static const _orModels = [
@@ -24,17 +34,28 @@ Never name other AI brands. You are only JagX AI.
     'openrouter/auto',
   ];
 
+  static String cleanOutput(String text) {
+    var t = text;
+    // strip common AI markdown bold/italic noise
+    t = t.replaceAllMapped(
+        RegExp(r'\*\*([^*]+)\*\*'), (m) => m.group(1) ?? '');
+    t = t.replaceAllMapped(
+        RegExp(r'(?<![\w*])\*([^*\n]+)\*(?![\w*])'), (m) => m.group(1) ?? '');
+    t = t.replaceAllMapped(RegExp(r'^#{1,6}\s+', multiLine: true), (m) => '');
+    return t.trim();
+  }
+
   static Future<String> chat({
     required String modelId,
     required List<Map<String, String>> messages,
     String? agentId,
   }) async {
     if (modelId == 'oracle') {
-      return 'Oracle is Coming soon. Use Forge, JagX 0.4, or JagX Bot.';
+      return 'Oracle is Coming soon. Use Forge or JagX Bot.';
     }
 
     final jagx = await _jagxChat(messages: messages);
-    if (jagx != null && jagx.trim().isNotEmpty) return jagx;
+    if (jagx != null && jagx.trim().isNotEmpty) return cleanOutput(jagx);
 
     final key = Env.openRouterKey.trim();
     if (key.isNotEmpty) {
@@ -49,7 +70,7 @@ Never name other AI brands. You are only JagX AI.
         system: system,
         messages: messages,
       );
-      if (or != null) return or;
+      if (or != null) return cleanOutput(or);
     }
 
     return _localFallback(messages);
@@ -92,7 +113,6 @@ Never name other AI brands. You are only JagX AI.
     final headers = <String, dynamic>{'Content-Type': 'application/json'};
     if (key.isNotEmpty) headers['x-api-key'] = key;
 
-    // Wake + retry (Render free tier sleeps).
     for (var attempt = 0; attempt < 3; attempt++) {
       try {
         final res = await _dio.post(
@@ -113,8 +133,6 @@ Never name other AI brands. You are only JagX AI.
             if (out.isNotEmpty) return out;
           }
         }
-        // 401 without key — no point retrying the same call.
-        if (res.statusCode == 401 && key.isEmpty) return null;
         if (res.statusCode == 401) return null;
       } on DioException {
         if (attempt < 2) {
@@ -153,7 +171,7 @@ Never name other AI brands. You are only JagX AI.
               ...messages,
             ],
             'temperature': 0.35,
-            'max_tokens': 1024,
+            'max_tokens': 2048,
           },
         );
         if (res.statusCode == 200) {
@@ -178,14 +196,12 @@ Never name other AI brands. You are only JagX AI.
     final t = (last['content'] ?? '').toLowerCase().trim();
     if (t.isEmpty) return 'Say something and I will answer.';
     if (RegExp(r'^(hi|hello|hey|yo|sup)\b').hasMatch(t)) {
-      return 'Hi — I am JagX AI, built by JagX and JRILICENSE. How can I help?';
+      return 'Hi. I am JagX AI, built by JagX and JRILICENSE. How can I help?';
     }
     if (t.contains('who are you')) {
       return 'I am JagX AI, created by JagX and JRILICENSE.';
     }
-    return 'The cloud model is waking up or the app is missing JAGX_API_KEY. '
-        'Add JAGX_API_KEY in GitHub Secrets (a key from your Render /create-key), '
-        'rebuild the APK, and try again. On Render you can also set JAGX_ALLOW_PUBLIC_CHAT=true.';
+    return 'The model is waking up. Try again in a moment.';
   }
 
   static Future<String?> imagine(String prompt) async {
