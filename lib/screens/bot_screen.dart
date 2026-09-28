@@ -7,7 +7,6 @@ import '../core/bot_tasks.dart';
 import '../core/browser_tool.dart';
 import '../core/theme.dart';
 
-/// JagX Bot — multi-agent goals without WebView (APK-safe).
 class BotScreen extends StatefulWidget {
   const BotScreen({super.key});
 
@@ -21,6 +20,7 @@ class _BotScreenState extends State<BotScreen> {
   bool _running = false;
   List<BotTask> _tasks = [];
   String? _result;
+  Agent _agent = Agents.list.first;
 
   @override
   void initState() {
@@ -66,37 +66,50 @@ class _BotScreenState extends State<BotScreen> {
     await BotTaskStore.update(task);
 
     try {
-      _log('Planning…');
-      final agent = Agents.list.isNotEmpty ? Agents.list.first : null;
-      final agentId = agent?.id;
-
-      _log('Research (optional)…');
+      _log('${_agent.emoji} ${_agent.name} (${_agent.role}) engaged');
+      _log('Research pass…');
       String research = '';
       try {
         research = await BrowserTool.search(goal);
-        if (research.isNotEmpty) _log('Research notes ready');
+        if (research.isNotEmpty) _log('Web context ready');
       } catch (_) {
         _log('Research skipped');
       }
 
-      _log('Asking JagX…');
+      _log('Thinking…');
       final prompt = research.isEmpty
           ? goal
-          : '$goal\n\nContext:\n$research';
+          : '$goal\n\nWEB CONTEXT:\n$research';
 
-      final reply = agentId == null
-          ? await Ai.chat(
-              modelId: 'forge',
-              messages: [
-                {'role': 'user', 'content': prompt},
-              ],
-            )
-          : await Ai.agentChat(
-              agentId: agentId,
-              messages: [
-                {'role': 'user', 'content': prompt},
-              ],
-            );
+      // Multi-agent pass: Nimbus coordinates when user picks orchestrator
+      String reply;
+      if (_agent.id == 'nimbus') {
+        _log('Atlas planning…');
+        final plan = await Ai.agentChat(
+          agentId: 'atlas',
+          messages: [
+            {'role': 'user', 'content': 'Plan only:\n$prompt'}
+          ],
+        );
+        _log('Nova / Mira executing…');
+        reply = await Ai.agentChat(
+          agentId: 'nimbus',
+          messages: [
+            {
+              'role': 'user',
+              'content':
+                  'Goal:\n$prompt\n\nPlan from Atlas:\n$plan\n\nDeliver the final useful answer.'
+            }
+          ],
+        );
+      } else {
+        reply = await Ai.agentChat(
+          agentId: _agent.id,
+          messages: [
+            {'role': 'user', 'content': prompt}
+          ],
+        );
+      }
 
       task.status = 'done';
       task.logs
@@ -120,6 +133,47 @@ class _BotScreenState extends State<BotScreen> {
     }
   }
 
+  void _pickAgent() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Jx.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text('Choose agent',
+                  style: TextStyle(
+                      color: Jx.text,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16)),
+            ),
+            ...Agents.list.map((a) {
+              final sel = a.id == _agent.id;
+              return ListTile(
+                leading: Text(a.emoji, style: const TextStyle(fontSize: 22)),
+                title: Text('${a.name} · ${a.role}',
+                    style: const TextStyle(
+                        color: Jx.text, fontWeight: FontWeight.w600)),
+                trailing: sel
+                    ? const Icon(Icons.check, color: Jx.accent)
+                    : null,
+                onTap: () {
+                  setState(() => _agent = a);
+                  Navigator.pop(context);
+                },
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _goal.dispose();
@@ -131,12 +185,19 @@ class _BotScreenState extends State<BotScreen> {
     return Scaffold(
       backgroundColor: Jx.bg,
       appBar: AppBar(
-        backgroundColor: Jx.bg,
         title: const Text('JagX Bot'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          TextButton.icon(
+            onPressed: _pickAgent,
+            icon: Text(_agent.emoji),
+            label: Text(_agent.name,
+                style: const TextStyle(color: Jx.text)),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -144,11 +205,37 @@ class _BotScreenState extends State<BotScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                const Text(
-                  'Describe a goal. Bot plans, researches, and answers.',
-                  style: TextStyle(color: Jx.muted, fontSize: 13),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Jx.accent.withOpacity(0.15),
+                        Jx.violet.withOpacity(0.12),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Jx.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${_agent.emoji} ${_agent.name} · ${_agent.role}',
+                        style: const TextStyle(
+                            color: Jx.text,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Multi-agent workspace. Nimbus orchestrates Atlas → specialists for hard goals.',
+                        style: TextStyle(color: Jx.muted, fontSize: 13, height: 1.4),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 if (_liveLog.isNotEmpty) ...[
                   const Text('Activity',
                       style: TextStyle(
@@ -172,7 +259,7 @@ class _BotScreenState extends State<BotScreen> {
                   SelectableText(
                     _result!,
                     style: const TextStyle(
-                        color: Jx.text, fontSize: 14, height: 1.45),
+                        color: Jx.text, fontSize: 14, height: 1.5),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -201,27 +288,37 @@ class _BotScreenState extends State<BotScreen> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _goal,
-                      style: const TextStyle(color: Jx.text),
-                      decoration: const InputDecoration(
-                        hintText: 'Bot goal…',
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Jx.card,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Jx.border),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _goal,
+                        style: const TextStyle(color: Jx.text),
+                        decoration: const InputDecoration(
+                          hintText: 'Bot goal…',
+                          border: InputBorder.none,
+                          filled: false,
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                        ),
+                        onSubmitted: (_) => _start(),
                       ),
-                      onSubmitted: (_) => _start(),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: _running ? null : _start,
-                    icon: Icon(
-                      Icons.play_arrow_rounded,
-                      color: _running ? Jx.dim : Jx.accent,
+                    IconButton(
+                      onPressed: _running ? null : _start,
+                      icon: Icon(
+                        Icons.play_arrow_rounded,
+                        color: _running ? Jx.dim : Jx.accent,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

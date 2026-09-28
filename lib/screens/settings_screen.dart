@@ -17,6 +17,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _name = '';
   String _email = '';
   bool _guest = true;
+  bool _haptics = true;
 
   @override
   void initState() {
@@ -28,10 +29,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final n = await Profile.name();
     final e = await Auth.sessionEmail();
     final g = await Auth.isGuest();
+    final p = await SharedPreferences.getInstance();
     setState(() {
       _name = n ?? '';
       _email = e ?? '';
       _guest = g || (e == null || e.isEmpty);
+      _haptics = p.getBool('jx_haptics') ?? true;
     });
   }
 
@@ -58,14 +61,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: Jx.bg,
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: Jx.bg,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: [
           Container(
             padding: const EdgeInsets.all(14),
@@ -77,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 CircleAvatar(
                   radius: 26,
-                  backgroundColor: const Color(0xFF7C3AED),
+                  backgroundColor: Jx.accent,
                   child: Text(
                     (_name.isNotEmpty ? _name : 'J')[0].toUpperCase(),
                     style: const TextStyle(
@@ -106,13 +108,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Jx.dim),
+                  icon: const Icon(Icons.chevron_right, color: Jx.dim),
                   onPressed: () => context.push('/onboarding'),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
+          _section('Preferences'),
+          _card([
+            _row(Icons.contrast, 'Appearance', 'Dark', () {}),
+            SwitchListTile(
+              secondary: const Icon(Icons.vibration, color: Jx.muted),
+              title: const Text('Haptics', style: TextStyle(color: Jx.text)),
+              value: _haptics,
+              activeColor: Jx.accent,
+              onChanged: (v) async {
+                setState(() => _haptics = v);
+                final p = await SharedPreferences.getInstance();
+                await p.setBool('jx_haptics', v);
+              },
+            ),
+            _row(Icons.language, 'App language', 'Follows chat language', () {}),
+            _row(Icons.tune, 'Advanced', null, () {}),
+          ]),
+          const SizedBox(height: 18),
+          _section('JagX'),
+          _card([
+            _row(Icons.hub_outlined, 'Connectors', null,
+                () => context.push('/connectors')),
+            _row(Icons.smart_toy_outlined, 'JagX Bot agents', null,
+                () => context.push('/bot')),
+            _row(Icons.code, 'Connect GitHub', null,
+                () => context.push('/github')),
+            _row(Icons.workspace_premium_outlined, 'Premium', null,
+                () => context.push('/premium')),
+          ]),
+          const SizedBox(height: 18),
           _section('Account'),
           _card([
             if (_guest)
@@ -121,25 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             else
               _row(Icons.logout, 'Sign out', _email, _signOut),
           ]),
-          const SizedBox(height: 16),
-          _section('App'),
-          _card([
-            _row(Icons.contrast, 'Appearance', 'Dark', () {}),
-            _row(Icons.language, 'App language', 'Follows chat language', () {}),
-          ]),
-          const SizedBox(height: 16),
-          _section('JagX'),
-          _card([
-            _row(Icons.link, 'Connectors', null,
-                () => context.push('/connectors')),
-            _row(Icons.code, 'Connect GitHub', null,
-                () => context.push('/github')),
-            _row(Icons.workspace_premium_outlined, 'Premium', null,
-                () => context.push('/premium')),
-            _row(Icons.smart_toy_outlined, 'JagX Bot', null,
-                () => context.push('/bot')),
-          ]),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           _section('Data & information'),
           _card([
             _row(Icons.delete_outline, 'Clear chat history', null, _clearHistory),
@@ -148,9 +162,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _row(Icons.lock_outline, 'Privacy Policy', null,
                 () => context.push('/privacy')),
           ]),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           const Center(
-            child: Text('JagX AI · 3.1.0 · JagX & JRILICENSE',
+            child: Text('JagX AI · 3.3.0 · JagX & JRILICENSE',
                 style: TextStyle(color: Jx.dim, fontSize: 12)),
           ),
         ],

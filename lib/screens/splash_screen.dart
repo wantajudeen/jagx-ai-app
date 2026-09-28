@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/auth.dart';
+import '../core/env.dart';
 import '../core/profile.dart';
 import '../core/theme.dart';
 
@@ -16,21 +17,30 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c;
   late final Animation<double> _fade;
+  late final Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
     _c = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 700));
+        vsync: this, duration: const Duration(milliseconds: 900));
     _fade = CurvedAnimation(parent: _c, curve: Curves.easeOut);
+    _scale = Tween(begin: 0.92, end: 1.0)
+        .animate(CurvedAnimation(parent: _c, curve: Curves.easeOutBack));
     _c.forward();
     _go();
   }
 
   Future<void> _go() async {
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future.delayed(const Duration(milliseconds: 1100));
     if (!mounted) return;
-    if (!await Auth.hasChosenEntry()) {
+    // If Supabase configured, require real session; else allow local guest/onboarding flow.
+    if (Env.hasSupabase) {
+      if (!await Auth.isLoggedIn()) {
+        context.go('/auth');
+        return;
+      }
+    } else if (!await Auth.hasChosenEntry()) {
       context.go('/auth');
       return;
     }
@@ -53,56 +63,39 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: Jx.bg,
       body: FadeTransition(
         opacity: _fade,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF7C3AED), Color(0xFF4C1D95)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: const Center(
-                  child: Text(
-                    'J',
-                    style: TextStyle(
-                      fontSize: 42,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
+        child: ScaleTransition(
+          scale: _scale,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const JagxMark(size: 88, radius: 24),
+                const SizedBox(height: 24),
+                const Text(
+                  'JagX AI',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.8,
+                    color: Jx.text,
                   ),
                 ),
-              ),
-              const SizedBox(height: 22),
-              const Text(
-                'JagX AI',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w700,
-                  color: Jx.text,
+                const SizedBox(height: 8),
+                const Text(
+                  'Built by JagX & JRILICENSE',
+                  style: TextStyle(color: Jx.muted, fontSize: 13),
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Built by JagX & JRILICENSE',
-                style: TextStyle(color: Jx.muted, fontSize: 13),
-              ),
-              const SizedBox(height: 36),
-              const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.2,
-                  color: Color(0xFF7C3AED),
+                const SizedBox(height: 40),
+                const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: Jx.accent,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
