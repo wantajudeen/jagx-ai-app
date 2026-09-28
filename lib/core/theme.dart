@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -31,10 +29,10 @@ class JagxTheme {
     return base.copyWith(
       scaffoldBackgroundColor: Jx.bg,
       colorScheme: const ColorScheme.dark(
-        primary: Jx.blue,
-        secondary: Jx.violet,
+        primary: Jx.accent,
+        secondary: Jx.accentSoft,
         surface: Jx.surface,
-        onPrimary: Colors.white,
+        onPrimary: Colors.black,
         onSurface: Jx.text,
         outline: Jx.border,
       ),
@@ -81,12 +79,12 @@ class JagxTheme {
   }
 }
 
-/// In-app mark: simplified interlocking JX (matches icon spirit).
+/// Dark subtle JX mark for empty chat (Grok-like quiet presence).
 class JagxMark extends StatelessWidget {
   const JagxMark({
     super.key,
     this.size = 48,
-    this.color = const Color(0xFF6AB0FF),
+    this.color = const Color(0xFF5A5A5A),
   });
 
   final double size;
@@ -113,11 +111,11 @@ class _JxMonoPainter extends CustomPainter {
     final p = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.12
+      ..strokeWidth = w * 0.11
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    // J path
+    // J
     final j = Path()
       ..moveTo(w * 0.28, h * 0.22)
       ..lineTo(w * 0.52, h * 0.22)
@@ -126,31 +124,26 @@ class _JxMonoPainter extends CustomPainter {
       ..quadraticBezierTo(w * 0.40, h * 0.78, w * 0.22, h * 0.78);
     canvas.drawPath(j, p);
 
-    // X strokes (violet-ish)
-    final px = Paint()
-      ..color = const Color(0xFFB07AFF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.12
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(w * 0.52, h * 0.28), Offset(w * 0.82, h * 0.72), px);
-    canvas.drawLine(Offset(w * 0.82, h * 0.28), Offset(w * 0.52, h * 0.72), px);
+    // X
+    canvas.drawLine(Offset(w * 0.52, h * 0.28), Offset(w * 0.82, h * 0.72), p);
+    canvas.drawLine(Offset(w * 0.82, h * 0.28), Offset(w * 0.52, h * 0.72), p);
 
-    // orbit node
-    canvas.drawCircle(
-      Offset(w * 0.78, h * 0.20),
-      w * 0.055,
-      Paint()..color = color,
-    );
+    // subtle orbit
     canvas.drawArc(
       Rect.fromCenter(
-          center: Offset(w * 0.5, h * 0.5), width: w * 0.95, height: h * 0.8),
-      -0.6,
-      2.2,
+          center: Offset(w * 0.5, h * 0.5), width: w * 0.92, height: h * 0.78),
+      -0.5,
+      2.0,
       false,
       Paint()
-        ..color = color.withOpacity(0.45)
+        ..color = color.withOpacity(0.5)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = w * 0.04,
+        ..strokeWidth = w * 0.035,
+    );
+    canvas.drawCircle(
+      Offset(w * 0.78, h * 0.22),
+      w * 0.045,
+      Paint()..color = color.withOpacity(0.7),
     );
   }
 
