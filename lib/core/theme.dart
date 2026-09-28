@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -78,7 +80,7 @@ class JagxTheme {
   }
 }
 
-/// Professional abstract mark: diamond core + hex frame + network nodes.
+/// Professional abstract mark: hex frame + diamond core (not a letter, not Grok).
 class JagxMark extends StatelessWidget {
   const JagxMark({
     super.key,
@@ -106,21 +108,20 @@ class _JagxLogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
-    final h = size.height;
     final cx = w / 2;
-    final cy = h / 2;
+    final cy = size.height / 2;
 
-    // Outer hex
     final hexPaint = Paint()
-      ..color = color.withOpacity(0.35)
+      ..color = color.withOpacity(0.4)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.04;
+      ..strokeWidth = w * 0.045;
+
     final rHex = w * 0.42;
     final hex = Path();
     for (var k = 0; k < 6; k++) {
-      final a = (30 + k * 60) * 3.14159265 / 180;
-      final x = cx + rHex * MathCos(a);
-      final y = cy + rHex * MathSin(a);
+      final a = (30 + k * 60) * math.pi / 180;
+      final x = cx + rHex * math.cos(a);
+      final y = cy + rHex * math.sin(a);
       if (k == 0) {
         hex.moveTo(x, y);
       } else {
@@ -130,7 +131,6 @@ class _JagxLogoPainter extends CustomPainter {
     hex.close();
     canvas.drawPath(hex, hexPaint);
 
-    // Diamond fill
     final r = w * 0.22;
     final diamond = Path()
       ..moveTo(cx, cy - r)
@@ -145,7 +145,6 @@ class _JagxLogoPainter extends CustomPainter {
         ..style = PaintingStyle.fill,
     );
 
-    // Inner cut
     final r2 = w * 0.08;
     final cut = Path()
       ..moveTo(cx, cy - r2)
@@ -161,26 +160,6 @@ class _JagxLogoPainter extends CustomPainter {
     );
   }
 
-  double MathCos(double a) => a.cosApprox();
-  double MathSin(double a) => a.sinApprox();
-
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-extension on double {
-  double cosApprox() {
-    // use dart math via custom - actually import math
-    return _cos(this);
-  }
-
-  double sinApprox() => _sin(this);
-}
-
-// Avoid import issues in painter by using dart:math in a cleaner rewrite
-double _cos(double a) {
-  // Taylor is messy; restructure file to import dart:math properly
-  return a; // placeholder replaced below
-}
-
-double _sin(double a) => a;

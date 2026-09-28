@@ -40,7 +40,6 @@ jobs:
           python3 -m pip install --user pillow
           mkdir -p assets/icons
           python3 tooling/make_icon.py
-          # Prefer secret; fall back to known permanent key so APK always chats
           KEY="${JAGX_API_KEY:-jagx-984199d487c01240f4515157a11cd6b4}"
           BASE="${JAGX_API_BASE:-https://jagx-ai-v2.onrender.com}"
           {
@@ -57,9 +56,10 @@ jobs:
       - name: Pub get
         run: flutter pub get
 
-      - name: Patch compileSdk + OAuth intent
+      - name: Patch compileSdk, label, OAuth
         run: |
           python3 tooling/patch_sdk.py
+          python3 tooling/patch_app_label.py
           python3 tooling/patch_android_oauth.py || true
 
       - name: Launcher icons
@@ -98,7 +98,6 @@ jobs:
           name: JagX AI APK
           files: JagX-AI.apk
           body: |
-            Public APK — no GitHub account needed.
+            Public APK — install as JagX AI on your home screen.
             Backend: https://jagx-ai-v2.onrender.com
-            Install: open this APK on Android and allow install from browser.
           make_latest: true
