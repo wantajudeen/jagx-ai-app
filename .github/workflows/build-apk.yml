@@ -17,6 +17,8 @@ jobs:
       JAGX_API_KEY: ${{ secrets.JAGX_API_KEY }}
       JAGX_API_BASE: ${{ secrets.JAGX_API_BASE }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -38,17 +40,23 @@ jobs:
           python3 -m pip install --user pillow
           mkdir -p assets/icons
           python3 tooling/make_icon.py
-          echo "JAGX_API_KEY=${JAGX_API_KEY}" > .env
-          echo "JAGX_API_BASE=${JAGX_API_BASE:-https://jagx-ai-v2.onrender.com}" >> .env
-          echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}" >> .env
+          {
+            echo "JAGX_API_KEY=${JAGX_API_KEY}"
+            echo "JAGX_API_BASE=${JAGX_API_BASE:-https://jagx-ai-v2.onrender.com}"
+            echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}"
+            echo "SUPABASE_URL=${SUPABASE_URL}"
+            echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
+          } > .env
           rm -rf android ios web linux macos windows
           flutter create --org com.jagx --project-name jagx_ai --platforms=android .
 
       - name: Pub get
         run: flutter pub get
 
-      - name: Patch compileSdk 35
-        run: python3 tooling/patch_sdk.py
+      - name: Patch compileSdk + OAuth intent
+        run: |
+          python3 tooling/patch_sdk.py
+          python3 tooling/patch_android_oauth.py
 
       - name: Launcher icons
         run: dart run flutter_launcher_icons || true
