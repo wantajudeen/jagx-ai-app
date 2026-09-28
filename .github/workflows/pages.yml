@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -15,59 +15,62 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Build site with Supabase config.json
+      - name: Inject Supabase secrets into site
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           set -e
-          mkdir -p _site
           python3 << 'PY'
-          import os, json
+          import os, re, json
           from pathlib import Path
-          html = Path("index.html").read_text(encoding="utf-8")
+
           url = (os.environ.get("SUPABASE_URL") or "").strip()
           key = (os.environ.get("SUPABASE_ANON_KEY") or "").strip()
-          if url and key:
-              html = html.replace("__SUPABASE_URL__", url)
-              html = html.replace("__SUPABASE_ANON_KEY__", key)
-              # also replace placeholder hardcode if present
-              import re
-              html = re.sub(
-                  r"var SUPABASE_ANON_KEY = '[^']*';",
-                  f"var SUPABASE_ANON_KEY = '{key}';",
-                  html,
-                  count=1,
-              )
-              html = re.sub(
-                  r"var SUPABASE_URL = '[^']*';",
-                  f"var SUPABASE_URL = '{url}';",
-                  html,
-                  count=1,
-              )
-              Path("_site/config.json").write_text(
-                  json.dumps({"url": url, "anon": key}), encoding="utf-8"
-              )
-              print("injected secrets ok", len(url), len(key))
-          else:
-              print("WARNING: secrets empty")
-              Path("_site/config.json").write_text("{}", encoding="utf-8")
-          Path("_site/index.html").write_text(html, encoding="utf-8")
-          if Path("CNAME").exists():
-              Path("_site/CNAME").write_text(Path("CNAME").read_text())
+          if not url or not key:
+              raise SystemExit("Missing SUPABASE_URL or SUPABASE_ANON_KEY secrets")
+
+          html = Path("index.html").read_text(encoding="utf-8")
+          html = html.replace("__SUPABASE_URL__", url)
+          html = html.replace("__SUPABASE_ANON_KEY__", key)
+          html = re.sub(r"var SUPABASE_URL = '[^']*';", f"var SUPABASE_URL = '{url}';", html, count=1)
+          html = re.sub(r"var SUPABASE_ANON_KEY = '[^']*';", f"var SUPABASE_ANON_KEY = '{key}';", html, count=1)
+          Path("index.html").write_text(html, encoding="utf-8")
+          Path("config.json").write_text(json.dumps({"url": url, "anon": key}), encoding="utf-8")
+          print("injected", len(url), len(key))
           PY
 
-      - uses: actions/configure-pages@v5
+      - name: Publish to gh-pages branch (wins over broken root deploy)
+        run: |
+          set -e
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          # orphan branch with only site files
+          rm -rf /tmp/site && mkdir -p /tmp/site
+          cp index.html config.json /tmp/site/
+          if [ -f CNAME ]; then cp CNAME /tmp/site/; fi
+          cd /tmp/site
+          git init
+          git checkout -b gh-pages
+          git add -A
+          git commit -m "Deploy site with Supabase config"
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/wantajudeen/jagx-ai-app.git"
+          git push -f origin gh-pages
+
+      - name: Also deploy via Actions Pages artifact
+        uses: actions/configure-pages@v5
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: /tmp/site
+
       - id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true

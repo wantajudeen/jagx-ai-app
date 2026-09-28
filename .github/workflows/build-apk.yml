@@ -9,17 +9,9 @@ permissions:
   contents: write
 
 jobs:
-  apk:
+  build:
     name: Flutter APK
     runs-on: ubuntu-latest
-    timeout-minutes: 55
-    env:
-      JAGX_API_KEY: ${{ secrets.JAGX_API_KEY }}
-      JAGX_API_BASE: ${{ secrets.JAGX_API_BASE }}
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -34,70 +26,88 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Prepare project
+      - name: Prepare project + inject secrets into .env
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          JAGX_API_KEY: ${{ secrets.JAGX_API_KEY }}
         run: |
           set -e
-          python3 -m pip install --user pillow
-          mkdir -p assets/icons
-          python3 tooling/make_icon.py
-          KEY="${JAGX_API_KEY:-jagx-984199d487c01240f4515157a11cd6b4}"
-          BASE="${JAGX_API_BASE:-https://jagx-ai-v2.onrender.com}"
-          {
-            echo "JAGX_API_KEY=${KEY}"
-            echo "JAGX_API_BASE=${BASE}"
-            echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}"
-            echo "SUPABASE_URL=${SUPABASE_URL}"
-            echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
-          } > .env
-          echo "env key prefix: ${KEY:0:12}..."
-          rm -rf android ios web linux macos windows
-          flutter create --org com.jagx --project-name jagx_ai --platforms=android .
+          cat > .env << EOF
+          SUPABASE_URL=${SUPABASE_URL}
+          SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+          OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+          JAGX_API_KEY=${JAGX_API_KEY:-jagx-984199d487c01240f4515157a11cd6b4}
+          JAGX_API_BASE=https://jagx-ai-v2.onrender.com
+          EOF
+          # strip leading spaces from heredoc
+          sed -i 's/^[[:space:]]*//' .env
+          echo "env keys present:" $(grep -c '=' .env)
+          python3 tooling/make_icon.py || true
+          test -f assets/icons/app_icon.png || python3 -c "from PIL import Image; Image.new('RGB',(512,512),(10,10,10)).save('assets/icons/app_icon.png')"
 
       - name: Pub get
         run: flutter pub get
 
       - name: Patch compileSdk, label, OAuth
         run: |
-          python3 tooling/patch_sdk.py
-          python3 tooling/patch_app_label.py
-          python3 tooling/patch_android_oauth.py || true
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+          # compileSdk 35
+          for p in Path('.').rglob('build.gradle'):
+              t = p.read_text()
+              n = re.sub(r'compileSdk\s*=?\s*\d+', 'compileSdk = 35', t)
+              n = re.sub(r'compileSdkVersion\s+\d+', 'compileSdkVersion 35', n)
+              if n != t: p.write_text(n); print('patched', p)
+          for p in Path('.').rglob('build.gradle.kts'):
+              t = p.read_text()
+              n = re.sub(r'compileSdk\s*=\s*\d+', 'compileSdk = 35', t)
+              if n != t: p.write_text(n); print('patched', p)
+          # force app label
+          man = Path('android/app/src/main/AndroidManifest.xml')
+          if man.exists():
+              t = man.read_text()
+              if 'android:label=' in t:
+                  t = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', t)
+              else:
+                  t = t.replace('<application', '<application android:label="JagX AI"', 1)
+              man.write_text(t)
+              print('label set')
+          PY
 
       - name: Launcher icons
         run: dart run flutter_launcher_icons || true
 
       - name: Build release APK
-        run: |
-          set -o pipefail
-          flutter build apk --release 2>&1 | tee build_log.txt
-          ls -la build/app/outputs/flutter-apk/
-          test -f build/app/outputs/flutter-apk/app-release.apk
-          cp build/app/outputs/flutter-apk/app-release.apk JagX-AI.apk
-          ls -la JagX-AI.apk
+        run: flutter build apk --release
 
       - name: Upload log on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: flutter-build-log
-          path: build_log.txt
+          path: |
+            **/flutter_*.log
+            build_log.txt
+          if-no-files-found: ignore
 
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: JagX-AI-Flutter-APK
-          path: JagX-AI.apk
+          name: JagX-AI-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Publish release
         if: success()
         uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: apk-latest
           name: JagX AI APK
-          files: JagX-AI.apk
-          body: |
-            Public APK — install as JagX AI on your home screen.
-            Backend: https://jagx-ai-v2.onrender.com
+          files: build/app/outputs/flutter-apk/app-release.apk
+          body: Latest JagX AI Android build
           make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
