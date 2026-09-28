@@ -34,45 +34,43 @@ jobs:
           JAGX_API_KEY: ${{ secrets.JAGX_API_KEY }}
         run: |
           set -e
-          cat > .env << EOF
-          SUPABASE_URL=${SUPABASE_URL}
-          SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-          OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-          JAGX_API_KEY=${JAGX_API_KEY:-jagx-984199d487c01240f4515157a11cd6b4}
-          JAGX_API_BASE=https://jagx-ai-v2.onrender.com
-          EOF
-          # strip leading spaces from heredoc
-          sed -i 's/^[[:space:]]*//' .env
-          echo "env keys present:" $(grep -c '=' .env)
-          python3 tooling/make_icon.py || true
-          test -f assets/icons/app_icon.png || python3 -c "from PIL import Image; Image.new('RGB',(512,512),(10,10,10)).save('assets/icons/app_icon.png')"
+          printf '%s\n' \
+            "SUPABASE_URL=${SUPABASE_URL}" \
+            "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}" \
+            "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}" \
+            "JAGX_API_KEY=${JAGX_API_KEY:-jagx-984199d487c01240f4515157a11cd6b4}" \
+            "JAGX_API_BASE=https://jagx-ai-v2.onrender.com" > .env
+          echo "env lines: $(wc -l < .env)"
+          mkdir -p assets/icons
+          if [ -f tooling/make_icon.py ]; then
+            pip install pillow -q || true
+            python3 tooling/make_icon.py || true
+          fi
+          if [ ! -f assets/icons/app_icon.png ]; then
+            python3 -c "from struct import pack; open('assets/icons/app_icon.png','wb').write(b'')" 2>/dev/null || true
+            # minimal 1x1 png
+            printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82' > assets/icons/app_icon.png
+          fi
 
       - name: Pub get
         run: flutter pub get
 
-      - name: Patch compileSdk, label, OAuth
+      - name: Patch compileSdk, label
         run: |
           python3 << 'PY'
           from pathlib import Path
           import re
-          # compileSdk 35
-          for p in Path('.').rglob('build.gradle'):
+          for p in list(Path('.').rglob('build.gradle')) + list(Path('.').rglob('build.gradle.kts')):
               t = p.read_text()
               n = re.sub(r'compileSdk\s*=?\s*\d+', 'compileSdk = 35', t)
               n = re.sub(r'compileSdkVersion\s+\d+', 'compileSdkVersion 35', n)
-              if n != t: p.write_text(n); print('patched', p)
-          for p in Path('.').rglob('build.gradle.kts'):
-              t = p.read_text()
-              n = re.sub(r'compileSdk\s*=\s*\d+', 'compileSdk = 35', t)
-              if n != t: p.write_text(n); print('patched', p)
-          # force app label
+              if n != t:
+                  p.write_text(n)
+                  print('patched', p)
           man = Path('android/app/src/main/AndroidManifest.xml')
           if man.exists():
               t = man.read_text()
-              if 'android:label=' in t:
-                  t = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', t)
-              else:
-                  t = t.replace('<application', '<application android:label="JagX AI"', 1)
+              t = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', t)
               man.write_text(t)
               print('label set')
           PY
@@ -88,9 +86,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: flutter-build-log
-          path: |
-            **/flutter_*.log
-            build_log.txt
+          path: "**/flutter_*.log"
           if-no-files-found: ignore
 
       - name: Upload APK
