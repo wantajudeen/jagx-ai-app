@@ -146,11 +146,11 @@ img.gen{max-width:min(100%,360px);border-radius:14px;margin:10px 0;border:1px so
   /* Public anon key is safe in the browser (Supabase design). */
   var API = 'https://jagx-ai-v2.onrender.com';
   var SUPABASE_URL = 'https://xxxyqzuwvavqsccnlkxa.supabase.co';
-  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4eHlxenV3dmF2cXNjY25sa3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg0NzY0NzAsImV4cCI6MjA3NDA1MjQ3MH0.placeholder';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4eHlxenV3dmF2cXNjY25sa3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjY4MDcsImV4cCI6MjEwNTE0MjgwN30.pd3D3ULeR90gM7HB8xAlERr8swUyc_aJaIxDqc-vH2Y';
 
   /* Prefer injected values from Actions when present */
-  var injUrl = '__SUPABASE_URL__';
-  var injKey = '__SUPABASE_ANON_KEY__';
+  var injUrl = 'https://xxxyqzuwvavqsccnlkxa.supabase.co';
+  var injKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4eHlxenV3dmF2cXNjY25sa3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjY4MDcsImV4cCI6MjEwNTE0MjgwN30.pd3D3ULeR90gM7HB8xAlERr8swUyc_aJaIxDqc-vH2Y';
   if (injUrl.indexOf('__') < 0 && injUrl.indexOf('http') === 0) SUPABASE_URL = injUrl;
   if (injKey.indexOf('__') < 0 && injKey.length > 40) SUPABASE_ANON_KEY = injKey;
 
