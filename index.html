@@ -4,27 +4,28 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <title>JagX AI</title>
-<meta name="description" content="JagX AI by JagX & JRILICENSE"/>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000' width='100' height='100'/><path d='M35 28h20M45 28v32q0 14-14 14' stroke='%23666' stroke-width='8' fill='none' stroke-linecap='round'/><path d='M55 32l22 36M77 32L55 68' stroke='%23666' stroke-width='8' fill='none' stroke-linecap='round'/></svg>"/>
+<meta name="description" content="JagX AI by JagX and JRILICENSE"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%23000'/><text x='32' y='42' text-anchor='middle' font-family='system-ui,sans-serif' font-size='22' font-weight='600' fill='%23999'>JX</text></svg>"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--bg:#000;--card:#141414;--line:#2a2a2a;--text:#f2f2f2;--muted:#9a9a9a;--dim:#6a6a6a;--bubble:#1a1a1a}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+body{font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
 button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 .top{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--line)}
-.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px}
-.logo{width:28px;height:28px;opacity:.7}
-.top-right{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.pill{height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-size:13px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:600;font-size:16px;letter-spacing:0.02em}
+.brand .mark{width:32px;height:32px;border-radius:8px;background:#111;border:1px solid #2a2a2a;display:grid;place-items:center;font-size:11px;font-weight:700;color:#aaa;letter-spacing:0.06em}
+.brand .name{display:flex;align-items:baseline;gap:6px}
+.brand .name .ai{font-weight:500;color:var(--muted);font-size:14px}
+.top-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-size:13px}
 .pill:hover{background:var(--card);color:var(--text)}
 .pill.solid{background:#fff;color:#000;border-color:#fff}
 .main{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;width:100%}
 .thread{flex:1;width:100%;max-width:740px;overflow-y:auto;padding:24px 16px 12px;display:flex;flex-direction:column}
 .welcome{margin:auto;text-align:center;padding:24px}
-.welcome svg{width:72px;height:72px;opacity:.45;margin-bottom:16px}
+.welcome .mark{width:56px;height:56px;margin:0 auto 16px;border-radius:14px;background:#111;border:1px solid #2a2a2a;display:grid;place-items:center;font-size:16px;font-weight:700;color:#666;letter-spacing:0.08em}
 .msg{display:flex;gap:12px;margin:0 auto 18px;max-width:740px;width:100%}
 .msg.user{justify-content:flex-end}
 .bubble{max-width:min(100%,640px);font-size:15px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
@@ -41,16 +42,16 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 .send{width:34px;height:34px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center;font-weight:700;margin-left:auto}
 .send:disabled{opacity:.35}
 .hint{text-align:center;color:var(--dim);font-size:11px;margin-top:10px}
-.auth-bg{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.auth-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 .auth-bg.open{display:flex}
-.auth-card{width:100%;max-width:400px;background:#111;border:1px solid var(--line);border-radius:18px;padding:22px 18px}
-.auth-card h2{font-size:20px;margin-bottom:6px}
-.auth-card p.sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+.auth-card{width:100%;max-width:400px;background:#111;border:1px solid var(--line);border-radius:18px;padding:24px 20px}
+.auth-card h2{font-size:20px;margin-bottom:6px;font-weight:600;letter-spacing:-0.01em}
+.auth-card p.sub{color:var(--muted);font-size:13px;margin-bottom:16px;line-height:1.4}
 .auth-card label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
 .auth-card input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0a0a0a;color:var(--text)}
 .auth-card .btn{display:block;width:100%;text-align:center;background:#fff;color:#000;border-radius:12px;padding:12px;font-weight:600;margin-top:14px}
 .auth-card .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
-.auth-card .err{color:#f87171;font-size:13px;margin-top:10px;white-space:pre-wrap}
+.auth-card .err{color:#f87171;font-size:13px;margin-top:10px;white-space:pre-wrap;line-height:1.45}
 .auth-card .ok{color:#86efac;font-size:13px;margin-top:10px}
 .locked .composer{opacity:.45;pointer-events:none}
 .user-chip{font-size:12px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -62,8 +63,8 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 <body>
 <header class="top">
   <div class="brand">
-    <svg class="logo" viewBox="0 0 100 100" fill="none"><path d="M32 26h22M43 26v34q0 16-16 16" stroke="#777" stroke-width="8" stroke-linecap="round"/><path d="M54 30l24 40M78 30L54 70" stroke="#777" stroke-width="8" stroke-linecap="round"/></svg>
-    JagX AI
+    <div class="mark">JX</div>
+    <div class="name"><span>JagX</span><span class="ai">AI</span></div>
   </div>
   <div class="top-right">
     <span class="user-chip" id="userChip"></span>
@@ -75,14 +76,14 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 <main class="main locked" id="main">
   <div class="thread" id="thread">
     <div class="welcome" id="welcome">
-      <svg viewBox="0 0 100 100" fill="none"><path d="M32 26h22M43 26v34q0 16-16 16" stroke="#555" stroke-width="8" stroke-linecap="round"/><path d="M54 30l24 40M78 30L54 70" stroke="#555" stroke-width="8" stroke-linecap="round"/></svg>
+      <div class="mark">JX</div>
     </div>
   </div>
   <div class="composer-wrap">
     <div class="composer">
       <textarea id="input" rows="1" placeholder="Sign in to ask anything"></textarea>
       <div class="row">
-        <span class="chip">⚡ Fast</span>
+        <span class="chip">Fast</span>
         <button class="send" id="send" type="button">↑</button>
       </div>
     </div>
@@ -116,138 +117,229 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 </div>
 <script>
 (function(){
-  const API='https://jagx-ai-v2.onrender.com';
-  const SUPABASE_URL='__SUPABASE_URL__';
-  const SUPABASE_ANON_KEY='__SUPABASE_ANON_KEY__';
-  const hasSb = SUPABASE_URL && !SUPABASE_URL.includes('__SUPABASE') && SUPABASE_URL.startsWith('http')
-    && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes('__SUPABASE') && SUPABASE_ANON_KEY.length > 20;
+  const API = 'https://jagx-ai-v2.onrender.com';
+  const SUPABASE_URL = '__SUPABASE_URL__';
+  const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+  const cfgOk = SUPABASE_URL.indexOf('__SUPABASE') < 0 && SUPABASE_URL.indexOf('http') === 0
+    && SUPABASE_ANON_KEY.indexOf('__SUPABASE') < 0 && SUPABASE_ANON_KEY.length > 20;
+
   let supabase = null;
-  if (hasSb && window.supabase) {
-    try { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch (e) { console.error(e); }
-  }
-  const thread=document.getElementById('thread'), welcome=document.getElementById('welcome');
-  const input=document.getElementById('input'), sendBtn=document.getElementById('send'), main=document.getElementById('main');
-  const authModal=document.getElementById('authModal'), authTitle=document.getElementById('authTitle');
-  const authSubmit=document.getElementById('authSubmit'), authToggle=document.getElementById('authToggle');
-  const nameWrap=document.getElementById('nameWrap'), authErr=document.getElementById('authErr'), authOk=document.getElementById('authOk');
-  const userChip=document.getElementById('userChip'), btnAuth=document.getElementById('btnAuth');
-  const history=[]; let modeSignUp=false; let session=null; let thinkEl=null; let thinkTimer=null; let thinkStart=0;
+  const history = [];
+  let modeSignUp = false;
+  let session = null;
+  let thinkEl = null;
+  let thinkTimer = null;
+  let thinkStart = 0;
+
+  const thread = document.getElementById('thread');
+  const welcome = document.getElementById('welcome');
+  const input = document.getElementById('input');
+  const sendBtn = document.getElementById('send');
+  const main = document.getElementById('main');
+  const authModal = document.getElementById('authModal');
+  const authTitle = document.getElementById('authTitle');
+  const authSubmit = document.getElementById('authSubmit');
+  const authToggle = document.getElementById('authToggle');
+  const nameWrap = document.getElementById('nameWrap');
+  const authErr = document.getElementById('authErr');
+  const authOk = document.getElementById('authOk');
+  const userChip = document.getElementById('userChip');
+  const btnAuth = document.getElementById('btnAuth');
+
+  function showErr(m){ authErr.style.display='block'; authErr.textContent=m; authOk.style.display='none'; }
+  function showOk(m){ authOk.style.display='block'; authOk.textContent=m; authErr.style.display='none'; }
 
   function setSession(s){
-    session=s;
-    if(s){
-      main.classList.remove('locked'); authModal.classList.remove('open');
-      input.placeholder='Ask anything';
-      userChip.textContent=(s.user&& (s.user.email||s.user.user_metadata&&s.user.user_metadata.full_name))||'Signed in';
-      btnAuth.textContent='Sign out';
+    session = s;
+    if (s) {
+      main.classList.remove('locked');
+      authModal.classList.remove('open');
+      input.placeholder = 'Ask anything';
+      const u = s.user || {};
+      userChip.textContent = (u.email) || (u.user_metadata && (u.user_metadata.full_name || u.user_metadata.name)) || 'Signed in';
+      btnAuth.textContent = 'Sign out';
     } else {
-      main.classList.add('locked'); authModal.classList.add('open');
-      input.placeholder='Sign in to ask anything';
-      userChip.textContent=''; btnAuth.textContent='Sign in';
+      main.classList.add('locked');
+      authModal.classList.add('open');
+      input.placeholder = 'Sign in to ask anything';
+      userChip.textContent = '';
+      btnAuth.textContent = 'Sign in';
     }
   }
-  function showErr(m){authErr.style.display='block';authErr.textContent=m;authOk.style.display='none'}
-  function showOk(m){authOk.style.display='block';authOk.textContent=m;authErr.style.display='none'}
 
-  async function initAuth(){
-    if(!supabase){
-      showErr('Supabase is not connected on this deploy.\n\n1) Confirm GitHub Secrets: SUPABASE_URL and SUPABASE_ANON_KEY\n2) Unpause your Supabase project\n3) In Supabase Auth → URL config, add https://jagxai.name.ng\n4) Re-run Actions → Deploy website');
+  function loadScript(src){
+    return new Promise(function(resolve, reject){
+      var s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = function(){ resolve(true); };
+      s.onerror = function(){ reject(new Error('fail '+src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  async function bootSupabase(){
+    if (!cfgOk) {
+      showErr('Supabase secrets were not injected into this deploy.\nAdd SUPABASE_URL and SUPABASE_ANON_KEY under GitHub → Settings → Secrets → Actions, then run Deploy website.');
+      return;
+    }
+    var sources = [
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+      'https://unpkg.com/@supabase/supabase-js@2'
+    ];
+    var loaded = false;
+    for (var i = 0; i < sources.length; i++) {
+      try {
+        await loadScript(sources[i]);
+        if (window.supabase && window.supabase.createClient) { loaded = true; break; }
+      } catch (e) {}
+    }
+    if (!loaded) {
+      showErr('Could not load Supabase library (network/CDN). Check connection and refresh.');
       return;
     }
     try {
-      const {data, error}=await supabase.auth.getSession();
-      if (error) showErr(error.message);
-      setSession(data && data.session);
-      supabase.auth.onAuthStateChange((_e,s)=>setSession(s));
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     } catch (e) {
-      showErr('Cannot reach Supabase. Unpause the project, then refresh.\n' + (e.message||e));
+      showErr('createClient failed: ' + (e.message || e));
+      return;
+    }
+    try {
+      var res = await supabase.auth.getSession();
+      if (res.error) showErr(res.error.message);
+      setSession(res.data && res.data.session);
+      supabase.auth.onAuthStateChange(function(_e, s){ setSession(s); });
+    } catch (e) {
+      showErr('Cannot reach Supabase project.\nUnpause it in the dashboard, then refresh.\n' + (e.message || e));
     }
   }
 
-  authToggle.onclick=()=>{ modeSignUp=!modeSignUp; authTitle.textContent=modeSignUp?'Create account':'Sign in';
-    authSubmit.textContent=modeSignUp?'Create account':'Sign in';
-    authToggle.textContent=modeSignUp?'Already have an account? Sign in':'New here? Create an account';
-    nameWrap.style.display=modeSignUp?'block':'none'; };
+  authToggle.onclick = function(){
+    modeSignUp = !modeSignUp;
+    authTitle.textContent = modeSignUp ? 'Create account' : 'Sign in';
+    authSubmit.textContent = modeSignUp ? 'Create account' : 'Sign in';
+    authToggle.textContent = modeSignUp ? 'Already have an account? Sign in' : 'New here? Create an account';
+    nameWrap.style.display = modeSignUp ? 'block' : 'none';
+  };
 
-  authSubmit.onclick=async()=>{
-    if(!supabase)return showErr('Supabase not configured — see message above');
-    const email=(document.getElementById('authEmail').value||'').trim();
-    const password=document.getElementById('authPass').value||'';
-    const name=(document.getElementById('authName').value||'').trim();
-    if(!email||!password)return showErr('Email and password required');
-    try{
-      if(modeSignUp){
-        if(!name)return showErr('Enter your name');
-        const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:name,name}}});
-        if(error)return showErr(error.message);
-        if(!data.session)return showOk('Check your email to confirm, then sign in.');
-        setSession(data.session);
+  authSubmit.onclick = async function(){
+    if (!supabase) return showErr('Auth is still starting — wait a second and try again.');
+    var email = (document.getElementById('authEmail').value || '').trim();
+    var password = document.getElementById('authPass').value || '';
+    var name = (document.getElementById('authName').value || '').trim();
+    if (!email || !password) return showErr('Email and password required');
+    try {
+      if (modeSignUp) {
+        if (!name) return showErr('Enter your name');
+        var up = await supabase.auth.signUp({ email: email, password: password, options: { data: { full_name: name, name: name } } });
+        if (up.error) return showErr(up.error.message);
+        if (!up.data.session) return showOk('Check your email to confirm, then sign in.');
+        setSession(up.data.session);
       } else {
-        const {data,error}=await supabase.auth.signInWithPassword({email,password});
-        if(error)return showErr(error.message);
-        setSession(data.session);
+        var inn = await supabase.auth.signInWithPassword({ email: email, password: password });
+        if (inn.error) return showErr(inn.error.message);
+        setSession(inn.data.session);
       }
-    }catch(e){showErr(String(e.message||e));}
+    } catch (e) { showErr(String(e.message || e)); }
   };
 
-  document.getElementById('btnGoogle').onclick=async()=>{
-    if(!supabase)return showErr('Supabase not configured');
-    const {error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});
-    if(error)showErr(error.message);
+  document.getElementById('btnGoogle').onclick = async function(){
+    if (!supabase) return showErr('Auth is still starting — wait a second.');
+    var r = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+    if (r.error) showErr(r.error.message);
   };
-  btnAuth.onclick=async()=>{ if(session&&supabase){await supabase.auth.signOut();setSession(null);} else authModal.classList.add('open'); };
 
-  function addMsg(text,user,isErr){
-    welcome.style.display='none';
-    const row=document.createElement('div'); row.className='msg'+(user?' user':'');
-    const bub=document.createElement('div'); bub.className='bubble'+(isErr?' err':'');
-    bub.textContent=text; row.appendChild(bub); thread.appendChild(row); thread.scrollTop=thread.scrollHeight;
+  btnAuth.onclick = async function(){
+    if (session && supabase) { await supabase.auth.signOut(); setSession(null); }
+    else authModal.classList.add('open');
+  };
+
+  function addMsg(text, user, isErr){
+    welcome.style.display = 'none';
+    var row = document.createElement('div');
+    row.className = 'msg' + (user ? ' user' : '');
+    var bub = document.createElement('div');
+    bub.className = 'bubble' + (isErr ? ' err' : '');
+    bub.textContent = text;
+    row.appendChild(bub);
+    thread.appendChild(row);
+    thread.scrollTop = thread.scrollHeight;
   }
 
   function startThinking(){
     stopThinking();
-    thinkStart=Date.now();
-    thinkEl=document.createElement('div');
-    thinkEl.className='thinking';
-    thinkEl.innerHTML='<span class="dot"></span><span class="label">Thinking…</span>';
+    thinkStart = Date.now();
+    thinkEl = document.createElement('div');
+    thinkEl.className = 'thinking';
+    thinkEl.innerHTML = '<span class="dot"></span><span class="label">Thinking…</span>';
     thread.appendChild(thinkEl);
-    thinkTimer=setInterval(()=>{
-      const s=Math.floor((Date.now()-thinkStart)/1000);
-      const m=Math.floor(s/60); const r=s%60;
-      const t=m>0? (m+'m '+r+'s') : (r+'s');
-      const lab=thinkEl&&thinkEl.querySelector('.label');
-      if(lab) lab.textContent='Thinking · '+t;
-    },500);
-    thread.scrollTop=thread.scrollHeight;
+    thinkTimer = setInterval(function(){
+      var s = Math.floor((Date.now() - thinkStart) / 1000);
+      var m = Math.floor(s / 60);
+      var r = s % 60;
+      var t = m > 0 ? (m + 'm ' + r + 's') : (r + 's');
+      var lab = thinkEl && thinkEl.querySelector('.label');
+      if (lab) lab.textContent = 'Thinking · ' + t;
+    }, 500);
+    thread.scrollTop = thread.scrollHeight;
   }
   function stopThinking(){
-    if(thinkTimer) clearInterval(thinkTimer);
-    thinkTimer=null;
-    if(thinkEl&&thinkEl.parentNode) thinkEl.parentNode.removeChild(thinkEl);
-    thinkEl=null;
+    if (thinkTimer) clearInterval(thinkTimer);
+    thinkTimer = null;
+    if (thinkEl && thinkEl.parentNode) thinkEl.parentNode.removeChild(thinkEl);
+    thinkEl = null;
   }
 
   async function send(){
-    if(!session){authModal.classList.add('open');return;}
-    const text=(input.value||'').trim(); if(!text||sendBtn.disabled)return;
-    input.value=''; addMsg(text,true); history.push({role:'user',content:text});
-    sendBtn.disabled=true; startThinking();
-    try{
-      const r=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'jagx-984199d487c01240f4515157a11cd6b4'},body:JSON.stringify({message:text,history:history.slice(0,-1).slice(-8)})});
-      const data=await r.json().catch(()=>({}));
+    if (!session) { authModal.classList.add('open'); return; }
+    var text = (input.value || '').trim();
+    if (!text || sendBtn.disabled) return;
+    input.value = '';
+    addMsg(text, true);
+    history.push({ role: 'user', content: text });
+    sendBtn.disabled = true;
+    startThinking();
+    try {
+      var r = await fetch(API + '/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': 'jagx-984199d487c01240f4515157a11cd6b4' },
+        body: JSON.stringify({ message: text, history: history.slice(0, -1).slice(-8) })
+      });
+      var data = await r.json().catch(function(){ return {}; });
       stopThinking();
-      if(!r.ok) addMsg((data.detail||data.message||('Error '+r.status))+'',false,true);
-      else { const reply=data.response||''; addMsg(reply,false); history.push({role:'assistant',content:reply}); }
-    }catch(e){ stopThinking(); addMsg('Network issue — try again shortly.',false,true); }
-    finally{ sendBtn.disabled=false; input.focus(); }
+      if (!r.ok) addMsg((data.detail || data.message || ('Error ' + r.status)) + '', false, true);
+      else {
+        var reply = data.response || '';
+        addMsg(reply, false);
+        history.push({ role: 'assistant', content: reply });
+      }
+    } catch (e) {
+      stopThinking();
+      addMsg('Network issue — try again shortly.', false, true);
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
   }
-  sendBtn.onclick=send;
-  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
-  document.getElementById('btnNew').onclick=()=>{history.length=0;thread.querySelectorAll('.msg').forEach(n=>n.remove());stopThinking();welcome.style.display='';};
-  const sheet=document.getElementById('sheet');
-  document.getElementById('btnDl').onclick=()=>sheet.classList.add('open');
-  document.getElementById('sheetClose').onclick=()=>sheet.classList.remove('open');
-  initAuth();
+
+  sendBtn.onclick = send;
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+  document.getElementById('btnNew').onclick = function(){
+    history.length = 0;
+    thread.querySelectorAll('.msg').forEach(function(n){ n.remove(); });
+    stopThinking();
+    welcome.style.display = '';
+  };
+  var sheet = document.getElementById('sheet');
+  document.getElementById('btnDl').onclick = function(){ sheet.classList.add('open'); };
+  document.getElementById('sheetClose').onclick = function(){ sheet.classList.remove('open'); };
+
+  bootSupabase();
 })();
 </script>
 </body>
