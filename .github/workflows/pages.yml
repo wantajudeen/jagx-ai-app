@@ -5,24 +5,25 @@ on:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
+# Skip if the commit is only our auto-inject (prevents loop)
 concurrency:
-  group: pages-deploy
+  group: pages-main
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
-  deploy:
+  inject-main:
     runs-on: ubuntu-latest
+    # Don't re-run when we just pushed the injected files
+    if: github.event.head_commit.message != 'chore: inject supabase config [skip ci]'
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Inject Supabase secrets into site
+      - name: Inject secrets into index.html on main
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -34,43 +35,43 @@ jobs:
 
           url = (os.environ.get("SUPABASE_URL") or "").strip()
           key = (os.environ.get("SUPABASE_ANON_KEY") or "").strip()
-          if not url or not key:
-              raise SystemExit("Missing SUPABASE_URL or SUPABASE_ANON_KEY secrets")
+          if not url.startswith("http") or len(key) < 40:
+              raise SystemExit(
+                  f"Bad secrets: url_len={len(url)} key_len={len(key)}. "
+                  "Set SUPABASE_URL and SUPABASE_ANON_KEY in repo Actions secrets."
+              )
 
           html = Path("index.html").read_text(encoding="utf-8")
           html = html.replace("__SUPABASE_URL__", url)
           html = html.replace("__SUPABASE_ANON_KEY__", key)
-          html = re.sub(r"var SUPABASE_URL = '[^']*';", f"var SUPABASE_URL = '{url}';", html, count=1)
-          html = re.sub(r"var SUPABASE_ANON_KEY = '[^']*';", f"var SUPABASE_ANON_KEY = '{key}';", html, count=1)
+          html = re.sub(
+              r"var SUPABASE_URL = '[^']*';",
+              f"var SUPABASE_URL = '{url}';",
+              html,
+              count=1,
+          )
+          html = re.sub(
+              r"var SUPABASE_ANON_KEY = '[^']*';",
+              f"var SUPABASE_ANON_KEY = '{key}';",
+              html,
+              count=1,
+          )
           Path("index.html").write_text(html, encoding="utf-8")
-          Path("config.json").write_text(json.dumps({"url": url, "anon": key}), encoding="utf-8")
-          print("injected", len(url), len(key))
+          Path("config.json").write_text(
+              json.dumps({"url": url, "anon": key}), encoding="utf-8"
+          )
+          print("OK injected", len(url), len(key))
           PY
 
-      - name: Publish to gh-pages branch (wins over broken root deploy)
+      - name: Commit injected site to main (for branch Pages)
         run: |
           set -e
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          # orphan branch with only site files
-          rm -rf /tmp/site && mkdir -p /tmp/site
-          cp index.html config.json /tmp/site/
-          if [ -f CNAME ]; then cp CNAME /tmp/site/; fi
-          cd /tmp/site
-          git init
-          git checkout -b gh-pages
-          git add -A
-          git commit -m "Deploy site with Supabase config"
-          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/wantajudeen/jagx-ai-app.git"
-          git push -f origin gh-pages
-
-      - name: Also deploy via Actions Pages artifact
-        uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: /tmp/site
-
-      - id: deployment
-        uses: actions/deploy-pages@v4
-        continue-on-error: true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html config.json
+          if git diff --cached --quiet; then
+            echo "No changes (already injected)"
+            exit 0
+          fi
+          git commit -m "chore: inject supabase config [skip ci]"
+          git push origin HEAD:main
