@@ -7,7 +7,7 @@
 <title>JagX AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-:root{--bg:#000;--card:#141414;--line:#242424;--text:#f3f3f3;--muted:#9a9a9a;--dim:#6a6a6a}
+:root{--bg:#000;--card:#171717;--line:#2a2a2a;--text:#f3f3f3;--muted:#9a9a9a;--dim:#6e6e6e}
 *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
 body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
 button,input,textarea,select{font:inherit;color:inherit;border:none;background:none}button{cursor:pointer}
@@ -25,48 +25,57 @@ button,input,textarea,select{font:inherit;color:inherit;border:none;background:n
 .msg.user .bubble{background:#1a1a1a;border-radius:18px;padding:10px 14px;white-space:pre-wrap}
 .msg.bot .bubble table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;display:block;overflow-x:auto}
 .msg.bot .bubble th,.msg.bot .bubble td{border:1px solid #2a2a2a;padding:8px 10px;text-align:left}
-.msg.bot .bubble th{background:#141414}.msg.bot .bubble ul,.msg.bot .bubble ol{margin:8px 0 8px 18px}.msg.bot .bubble p{margin:0 0 10px}
-.agent{font-size:11px;color:var(--dim);margin-bottom:6px;letter-spacing:.04em}
-.actions-row{display:flex;gap:6px;margin-top:8px}.actions-row button{font-size:12px;color:var(--dim);padding:4px 8px;border-radius:8px}
+.msg.bot .bubble th{background:#141414}.msg.bot .bubble ul{margin:8px 0 8px 18px}.msg.bot .bubble p{margin:0 0 10px}
+.agent{font-size:11px;color:var(--dim);margin-bottom:6px}
+.actions-row{display:flex;gap:6px;margin-top:8px}.actions-row button{font-size:12px;color:var(--dim);padding:4px 8px}
 pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0;font-size:13px;position:relative}
-pre.code .copy{position:absolute;top:8px;right:8px;font-size:11px;color:var(--muted);background:#161616;border:1px solid var(--line);border-radius:8px;padding:4px 8px}
-img.gen{max-width:min(100%,360px);border-radius:14px;margin:10px 0;display:block}
+pre.code .copy{position:absolute;top:8px;right:8px;font-size:11px;background:#161616;border:1px solid var(--line);border-radius:8px;padding:4px 8px}
 .thinking{color:var(--muted);font-size:13px;margin:6px 0 12px}
 .composer-wrap{padding:8px 14px 14px;flex-shrink:0}.composer{background:var(--card);border-radius:24px;padding:10px 12px}
-.composer textarea{width:100%;outline:0;resize:none;max-height:140px;font-size:15px;padding:4px 2px}
+.composer textarea{width:100%;outline:0;resize:none;max-height:140px;font-size:15px}
 .bar{display:flex;align-items:center;gap:6px;margin-top:4px}
 .plus,.send{width:34px;height:34px;border-radius:50%;display:grid;place-items:center}
 .plus{color:var(--muted);font-size:20px}.chip{font-size:12px;color:var(--muted);background:#0a0a0a;border-radius:999px;padding:6px 10px;font-weight:600}
 .send{background:#fff;color:#000;margin-left:auto;font-weight:700}.send:disabled{opacity:.35}
 .foot{text-align:center;color:var(--dim);font-size:11px;margin-top:8px}
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30;display:none}.scrim.open{display:block}
-.drawer{position:fixed;left:0;top:0;bottom:0;width:min(320px,88vw);background:#0b0b0b;border-right:1px solid var(--line);z-index:31;transform:translateX(-105%);transition:transform .2s;padding:14px 10px;overflow-y:auto;display:flex;flex-direction:column}
+.drawer{position:fixed;left:0;top:0;bottom:0;width:min(340px,90vw);background:#111;z-index:31;transform:translateX(-105%);transition:transform .2s;display:flex;flex-direction:column}
 .drawer.open{transform:translateX(0)}
-.who{display:flex;align-items:center;gap:10px;padding:8px}.av{width:34px;height:34px;border-radius:50%;background:#1c1c1c;display:grid;place-items:center;font-weight:600}
-.who .nm{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.item{width:100%;text-align:left;padding:11px 10px;border-radius:12px;font-size:14px}.item:hover{background:#161616}
-.sec{font-size:11px;color:var(--dim);padding:12px 10px 6px;letter-spacing:.08em;text-transform:uppercase}
-.hist{flex:1;min-height:80px}.hitem{width:100%;text-align:left;padding:10px;border-radius:10px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
-.hitem:hover{background:#161616;color:var(--text)}.hitem .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dbody{flex:1;overflow-y:auto;padding:16px 14px 8px}
+.who{display:flex;align-items:center;gap:12px;padding:6px 4px 16px}
+.av{width:42px;height:42px;border-radius:50%;background:#2f6b32;display:grid;place-items:center;font-weight:700}
+.who .nm{font-size:16px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.group{background:#1a1a1a;border-radius:16px;overflow:hidden;margin-bottom:16px}
+.gitem{width:100%;text-align:left;padding:14px 14px;font-size:15px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #222}
+.gitem:last-child{border-bottom:0}.gitem:hover{background:#202020}
+.gitem .ic{width:22px;color:var(--muted);text-align:center}
+.sec{display:flex;justify-content:space-between;color:var(--dim);font-size:13px;padding:4px 6px 8px}
+.hitem{width:100%;text-align:left;padding:12px 8px;border-radius:12px;margin-bottom:2px}
+.hitem:hover{background:#1a1a1a}.ht{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hs{font-size:12px;color:var(--dim);margin-top:3px}
+.dbot{display:flex;gap:8px;padding:10px 12px 16px;align-items:center}
+.dbot input{flex:1;background:#1a1a1a;border-radius:999px;padding:10px 14px;font-size:14px}
+.dbot .r{width:42px;height:42px;border-radius:50%;background:#1a1a1a;display:grid;place-items:center}
+.panel{display:none;padding:8px 16px 20px;overflow-y:auto;flex:1}.panel.open{display:block}
+.ph{display:flex;align-items:center;gap:8px;padding:8px 0 14px;font-size:18px;font-weight:600}
+.lead{color:var(--muted);font-size:13px;margin-bottom:14px;line-height:1.5}
+.box{background:#171717;border-radius:16px;padding:14px;margin-bottom:10px}
+.srow{width:100%;display:flex;align-items:center;gap:12px;padding:14px;background:#171717;border-radius:16px;margin-bottom:8px;text-align:left}
+.srow .sub{font-size:12px;color:var(--dim);margin-top:3px}
+.srow .grow{flex:1}.lbl{font-size:12px;color:var(--dim);padding:16px 4px 8px}
+.tog{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 10px;color:var(--muted)}.tog.on{color:#000;background:#fff;border-color:#fff}
+.browser{height:220px;border-radius:14px;overflow:hidden;background:#0a0a0a;margin-top:10px}
+.browser iframe{width:100%;height:100%;border:0;background:#fff}
+.bar2{display:flex;gap:6px;margin-top:8px}.bar2 input{flex:1;background:#0a0a0a;border-radius:10px;padding:8px 10px;font-size:13px;border:1px solid var(--line)}
+.bar2 button,.ghost,.solid,.full{border-radius:11px}.full{width:100%;margin-top:12px;height:42px;font-weight:600}.ghost{border:1px solid var(--line);padding:8px 12px}.solid{background:#fff;color:#000}
+.tiny{font-size:12px;color:var(--dim);margin-top:6px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;z-index:40;padding:16px}.modal.open{display:flex}
 .card{width:100%;max-width:400px;background:#111;border:1px solid var(--line);border-radius:16px;padding:20px 18px;max-height:86vh;overflow:auto}
 .card h2{font-size:18px;margin-bottom:4px}.card .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
-.card label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
-.card input,.card select, .box input,.box select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0a0a0a}
-.full{width:100%;margin-top:12px;height:42px;border-radius:11px;font-weight:600}.ghost{border:1px solid var(--line)}.solid{background:#fff;color:#000}
+.card label,.box label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.card input,.box input,.box select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0a0a0a}
 .err{color:#f87171;font-size:13px;margin-top:10px}.ok{color:#86efac;font-size:13px;margin-top:10px}
 .or{text-align:center;color:var(--dim);font-size:12px;margin:12px 0}.switch{text-align:center;margin-top:12px;font-size:13px;color:var(--muted)}
 .locked .composer{opacity:.5;pointer-events:none}
-.panel{display:none;padding:18px 16px;overflow-y:auto;flex:1}.panel.open{display:block}
-.panel h3{margin-bottom:6px}.lead{color:var(--muted);font-size:13px;margin-bottom:14px;line-height:1.5}
-.box{background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid var(--line)}
-.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.tog{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 10px;color:var(--muted)}.tog.on{color:#000;background:#fff;border-color:#fff}
-.browser{height:260px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0a0a0a;margin-top:10px}
-.browser iframe{width:100%;height:100%;border:0;background:#fff}
-.bar2{display:flex;gap:6px;margin-bottom:8px}.bar2 input{flex:1;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#0a0a0a;font-size:13px}
-.bar2 button{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px}
-.tiny{font-size:12px;color:var(--dim);margin-top:6px}
 </style></head><body>
 <header class="top">
   <button class="icon-btn" type="button" id="btnMenu">☰</button>
@@ -75,55 +84,70 @@ img.gen{max-width:min(100%,360px);border-radius:14px;margin:10px 0;display:block
 </header>
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer">
-  <div class="who"><div class="av" id="av">J</div><div class="nm" id="userChip">Guest</div></div>
-  <button class="item" type="button" id="dNew">＋ New chat</button>
-  <button class="item" type="button" id="dBot">✦ JagX Bot</button>
-  <button class="item" type="button" id="dConn">⬡ Connectors</button>
-  <button class="item" type="button" id="dVault">▣ Vault</button>
-  <button class="item" type="button" id="dSet">⚙ Settings</button>
-  <button class="item" type="button" id="dDl">↓ Get app</button>
-  <div class="sec">Chats</div>
-  <div class="hist" id="histList"></div>
-  <button class="item" type="button" id="btnAuth">Sign in</button>
+  <div class="dbody">
+    <div class="who"><div class="av" id="av">J</div><div class="nm" id="userChip">Guest</div><button class="icon-btn" type="button" id="btnAuth" title="Account">»</button></div>
+    <div class="group">
+      <button class="gitem" type="button" id="dAuto"><span class="ic">⏱</span>Automations</button>
+      <button class="gitem" type="button" id="dLib"><span class="ic">▣</span>Library</button>
+      <button class="gitem" type="button" id="dProj"><span class="ic">📁</span>Projects</button>
+      <button class="gitem" type="button" id="dBot"><span class="ic">☻</span>JagX Bot</button>
+    </div>
+    <div class="sec"><span>Conversations</span></div>
+    <div id="histList"></div>
+  </div>
+  <div class="dbot">
+    <input id="drawerSearch" placeholder="Search"/>
+    <button class="r" type="button" id="dSet" title="Settings">⚙</button>
+    <button class="r" type="button" id="dNew" title="New chat">✎</button>
+  </div>
 </aside>
 <main class="main locked" id="main">
   <div class="thread" id="thread"><div class="empty" id="empty"><b>JX</b><span>Ask anything</span></div></div>
   <div class="panel" id="panelBot">
-    <h3>JagX Bot</h3>
-    <p class="lead">Live multi-agent runner on the JagX backend. Start a session, then type the task in chat.</p>
-    <div class="box"><div class="row"><div><b>Live session</b><div class="tiny">Nimbus · Atlas · Nova · Mira</div></div><button class="tog" id="botLive" type="button">Start</button></div></div>
+    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>JagX Bot</div>
+    <p class="lead">Live helper for work and income. It tells you what to connect, then uses those tools in the plan. It does not promise guaranteed money.</p>
+    <div class="box"><div class="row" style="display:flex;justify-content:space-between;align-items:center"><div><b>Live session</b><div class="tiny">Nimbus plans · Atlas research · Nova build</div></div><button class="tog" id="botLive" type="button">Start</button></div></div>
+    <div class="box"><b>Start here to earn with tools</b>
+      <div class="tiny">1. Gmail + Drive — clients, invoices, files<br/>2. GitHub — sell builds and fixes<br/>3. Notion — offer systems to businesses<br/>4. Trading connector — research only unless you accept the risk</div>
+      <button class="full ghost" type="button" id="askEarn">Ask Bot: how should I start?</button>
+    </div>
     <div class="box"><b>Workspace browser</b>
-      <div class="bar2"><input id="browseUrl" placeholder="https://"/><button type="button" id="browseGo">Open</button></div>
+      <div class="bar2"><input id="browseUrl" placeholder="https://"/><button class="ghost" type="button" id="browseGo">Open</button></div>
       <div class="browser"><iframe id="browseFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" title="Bot browser"></iframe></div>
-      <div class="tiny">Some sites block embedding. The URL is still sent as bot context.</div>
     </div>
   </div>
   <div class="panel" id="panelConn">
-    <h3>Connectors</h3>
-    <p class="lead">Enable tools JagX Bot can plan against. Keep tokens in Vault.</p>
+    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Connectors</div>
+    <p class="lead">Connect an app, then turn it On. JagX Bot will tell you the next step for that tool.</p>
     <div id="connList"></div>
     <div class="box"><b>Add connector</b>
-      <label>Name</label><input id="cName" placeholder="Trading desk"/>
-      <label>Type</label><select id="cType"><option>webhook</option><option>github</option><option>gmail</option><option>drive</option><option>notion</option><option>trading</option><option>custom</option></select>
-      <label>Endpoint or note</label><input id="cEnd" placeholder="https://api.example.com"/>
-      <button class="full solid" type="button" id="cAdd">Save connector</button>
+      <label>Name</label><input id="cName" placeholder="Gmail work inbox"/>
+      <label>Type</label><select id="cType"><option>gmail</option><option>drive</option><option>github</option><option>notion</option><option>trading</option><option>webhook</option><option>custom</option></select>
+      <label>Endpoint, workspace, or note</label><input id="cEnd" placeholder="URL or account note"/>
+      <button class="full solid" type="button" id="cAdd">Connect</button>
     </div>
   </div>
   <div class="panel" id="panelVault">
-    <h3>Vault</h3>
-    <p class="lead">Secrets stay on this device. Bot only sees labels unless you type a secret yourself.</p>
+    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Vault</div>
+    <p class="lead">Store API keys here. The bot sees labels only.</p>
     <div id="vaultList"></div>
-    <div class="box">
-      <label>Label</label><input id="vLabel" placeholder="Broker login"/>
-      <label>Secret</label><input id="vSecret" type="password"/>
-      <button class="full solid" type="button" id="vAdd">Save secret</button>
-    </div>
+    <div class="box"><label>Label</label><input id="vLabel" placeholder="GitHub token"/><label>Secret</label><input id="vSecret" type="password"/><button class="full solid" type="button" id="vAdd">Save secret</button></div>
   </div>
   <div class="panel" id="panelSet">
-    <h3>Settings</h3>
-    <div class="box"><div class="row"><div><b>Model</b><div class="tiny">JagX backend · Fast</div></div><span class="chip">Fast</span></div></div>
-    <div class="box"><div class="row"><div><b>History</b><div class="tiny">Per account on this device + Supabase</div></div><button class="ghost" style="border-radius:10px;padding:8px 12px" type="button" id="clearHist">Clear</button></div></div>
+    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Settings</div>
+    <div class="lbl">App</div>
+    <button class="srow" type="button"><div class="grow"><b>Appearance</b><div class="sub">Dark</div></div></button>
+    <button class="srow" type="button"><div class="grow"><b>App language</b><div class="sub">English</div></div></button>
+    <button class="srow" type="button" id="clearHist"><div class="grow"><b>History</b><div class="sub">Clear conversations on this device</div></div></button>
+    <div class="lbl">JagX</div>
+    <button class="srow" type="button" id="dConn2"><div class="grow"><b>Connectors</b><div class="sub">Gmail, Drive, GitHub, trading, custom</div></div></button>
+    <button class="srow" type="button" id="dVault2"><div class="grow"><b>Vault</b><div class="sub">Safe labels for keys the bot can request</div></div></button>
+    <button class="srow" type="button" id="dBot2"><div class="grow"><b>JagX Bot</b><div class="sub">Live multi-agent work session</div></div></button>
+    <button class="srow" type="button" id="dDl"><div class="grow"><b>Get Android app</b><div class="sub">Public APK download</div></div></button>
   </div>
+  <div class="panel" id="panelAuto"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Automations</div><p class="lead">Saved repeat jobs. Ask JagX Bot to turn a task into a daily or weekly run.</p></div>
+  <div class="panel" id="panelLib"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Library</div><p class="lead">Files and images from chats stay in your history. Use + in the composer to attach more.</p></div>
+  <div class="panel" id="panelProj"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Projects</div><p class="lead">Group chats by job. New chat from the pencil, then name the work in the first message.</p></div>
   <div class="composer-wrap" id="composerWrap">
     <div class="composer">
       <textarea id="input" rows="1" placeholder="Sign in to chat"></textarea>
@@ -157,6 +181,7 @@ img.gen{max-width:min(100%,360px);border-radius:14px;margin:10px 0;display:block
   var supabase=null,session=null,modeSignUp=false,mode='ask',botOn=false,pendingFile=null;
   var chats=[],chatId=null,history=[],vault=[],conns=[];
   var thinkEl=null,thinkTimer=null,thinkStart=0;
+  var PANELS=['panelBot','panelConn','panelVault','panelSet','panelAuto','panelLib','panelProj'];
   var thread=document.getElementById('thread'),empty=document.getElementById('empty');
   var input=document.getElementById('input'),sendBtn=document.getElementById('send'),main=document.getElementById('main');
   var authModal=document.getElementById('authModal'),authErr=document.getElementById('authErr'),authOk=document.getElementById('authOk');
@@ -167,43 +192,31 @@ img.gen{max-width:min(100%,360px);border-radius:14px;margin:10px 0;display:block
   function showOk(m){authOk.style.display='block';authOk.textContent=m;authErr.style.display='none';}
   function openDrawer(){drawer.classList.add('open');scrim.classList.add('open');}
   function closeDrawer(){drawer.classList.remove('open');scrim.classList.remove('open');}
+  function when(d){var n=Date.now()-(d||0);if(n<6e4)return 'Now';if(n<864e5)return 'Today';if(n<1728e5)return 'Yesterday';return new Date(d||Date.now()).toLocaleDateString();}
   function loadLocal(){
     try{chats=JSON.parse(localStorage.getItem(sk('chats'))||'[]');}catch(e){chats=[];}
     try{vault=JSON.parse(localStorage.getItem(sk('vault'))||'[]');}catch(e){vault=[];}
     try{conns=JSON.parse(localStorage.getItem(sk('conns'))||'[]');}catch(e){conns=[];}
-    if(!chats.length){chatId=uid();chats=[{id:chatId,title:'New chat',msgs:[],updated:Date.now()}];}
+    if(!chats.length){chatId=uid();chats=[{id:chatId,title:'New conversation',msgs:[],updated:Date.now()}];}
     if(!chatId) chatId=chats[0].id;
-    var cur=chats.find(function(c){return c.id===chatId;})||chats[0];
-    chatId=cur.id;history=cur.msgs||[];
+    var cur=chats.find(function(c){return c.id===chatId;})||chats[0];chatId=cur.id;history=cur.msgs||[];
   }
   function saveLocal(){
     var cur=chats.find(function(c){return c.id===chatId;});
-    if(cur){cur.msgs=history;cur.updated=Date.now();
-      if((!cur.title||cur.title==='New chat')&&history.length){
-        var first=history.find(function(m){return m.role==='user';});
-        if(first) cur.title=String(first.content).slice(0,42);
-      }
-    }
+    if(cur){cur.msgs=history;cur.updated=Date.now();if((!cur.title||cur.title==='New conversation')&&history.length){var first=history.find(function(m){return m.role==='user';});if(first)cur.title=String(first.content).slice(0,48);}}
     try{localStorage.setItem(sk('chats'),JSON.stringify(chats));localStorage.setItem(sk('vault'),JSON.stringify(vault));localStorage.setItem(sk('conns'),JSON.stringify(conns));}catch(e){}
-    if(supabase&&session&&session.user){
-      supabase.from('messages').upsert({user_id:session.user.id,chat_id:'all',payload:{chats:chats,conns:conns,vault:vault.map(function(v){return {id:v.id,label:v.label};})},updated_at:new Date().toISOString()}).then(function(){}).catch(function(){});
-    }
+    if(supabase&&session&&session.user){supabase.from('messages').upsert({user_id:session.user.id,chat_id:'all',payload:{chats:chats,conns:conns},updated_at:new Date().toISOString()}).then(function(){}).catch(function(){});}
     renderHist();
   }
   function renderHist(){
     var el=document.getElementById('histList');el.innerHTML='';
+    var q=(document.getElementById('drawerSearch').value||'').toLowerCase();
     chats.slice().sort(function(a,b){return (b.updated||0)-(a.updated||0);}).forEach(function(c){
+      if(q&&String(c.title||'').toLowerCase().indexOf(q)<0)return;
       var b=document.createElement('button');b.className='hitem';b.type='button';
-      b.innerHTML='<span class="t"></span><span>✕</span>';b.querySelector('.t').textContent=c.title||'Chat';
-      b.onclick=function(e){
-        if(e.target.textContent==='✕'){
-          chats=chats.filter(function(x){return x.id!==c.id;});
-          if(!chats.length){chatId=uid();chats=[{id:chatId,title:'New chat',msgs:[],updated:Date.now()}];}
-          if(chatId===c.id){chatId=chats[0].id;history=chats[0].msgs||[];}
-          saveLocal();renderAll();return;
-        }
-        chatId=c.id;history=c.msgs||[];closeDrawer();showChat();renderAll();
-      };
+      b.innerHTML='<div class="ht"></div><div class="hs"></div>';
+      b.querySelector('.ht').textContent=c.title||'Conversation';b.querySelector('.hs').textContent=when(c.updated);
+      b.onclick=function(){chatId=c.id;history=c.msgs||[];closeDrawer();showChat();renderAll();};
       el.appendChild(b);
     });
   }
@@ -211,35 +224,39 @@ img.gen{max-width:min(100%,360px);border-radius:14px;margin:10px 0;display:block
     session=s;
     if(s){main.classList.remove('locked');authModal.classList.remove('open');
       input.placeholder=botOn?'Give JagX Bot a task…':(mode==='build'?'Describe what to build…':'Ask anything');
-      var u=s.user||{},label=u.email||(u.user_metadata&&u.user_metadata.full_name)||'Signed in';
+      var u=s.user||{},label=(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email||'Signed in';
       document.getElementById('userChip').textContent=label;document.getElementById('av').textContent=(label[0]||'J').toUpperCase();
-      document.getElementById('btnAuth').textContent='Sign out';loadLocal();renderHist();renderAll();renderConns();renderVault();
+      loadLocal();renderHist();renderAll();renderConns();renderVault();
     } else {main.classList.add('locked');authModal.classList.add('open');input.placeholder='Sign in to chat';
-      document.getElementById('userChip').textContent='Guest';document.getElementById('av').textContent='J';document.getElementById('btnAuth').textContent='Sign in';}
+      document.getElementById('userChip').textContent='Guest';document.getElementById('av').textContent='J';}
   }
   function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
   async function boot(){
     try{await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');}catch(e){try{await loadScript('https://unpkg.com/@supabase/supabase-js@2');}catch(e2){return showErr('Auth library failed');}}
     if(!window.supabase) return showErr('Auth missing');
-    try{supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-      var r=await supabase.auth.getSession();setSession(r.data&&r.data.session);
-      supabase.auth.onAuthStateChange(function(_e,s){setSession(s);});
-    }catch(e){showErr(String(e.message||e));}
+    try{supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);var r=await supabase.auth.getSession();setSession(r.data&&r.data.session);supabase.auth.onAuthStateChange(function(_e,s){setSession(s);});}catch(e){showErr(String(e.message||e));}
   }
   document.getElementById('btnMenu').onclick=openDrawer;scrim.onclick=closeDrawer;
+  function showPanel(id){document.getElementById('thread').style.display='none';PANELS.forEach(function(p){document.getElementById(p).classList.toggle('open',p===id);});}
+  function showChat(){document.getElementById('thread').style.display='';PANELS.forEach(function(p){document.getElementById(p).classList.remove('open');});}
+  document.querySelectorAll('[data-back]').forEach(function(b){b.onclick=showChat;});
   document.getElementById('dNew').onclick=function(){closeDrawer();newChat();};
   document.getElementById('btnNew').onclick=newChat;
   document.getElementById('dBot').onclick=function(){closeDrawer();showPanel('panelBot');};
-  document.getElementById('dConn').onclick=function(){closeDrawer();showPanel('panelConn');};
-  document.getElementById('dVault').onclick=function(){closeDrawer();showPanel('panelVault');};
+  document.getElementById('dBot2').onclick=function(){showPanel('panelBot');};
+  document.getElementById('dConn2').onclick=function(){showPanel('panelConn');};
+  document.getElementById('dVault2').onclick=function(){showPanel('panelVault');};
   document.getElementById('dSet').onclick=function(){closeDrawer();showPanel('panelSet');};
-  document.getElementById('dDl').onclick=function(){closeDrawer();document.getElementById('dlModal').classList.add('open');};
+  document.getElementById('dAuto').onclick=function(){closeDrawer();showPanel('panelAuto');};
+  document.getElementById('dLib').onclick=function(){closeDrawer();showPanel('panelLib');};
+  document.getElementById('dProj').onclick=function(){closeDrawer();showPanel('panelProj');};
+  document.getElementById('dDl').onclick=function(){document.getElementById('dlModal').classList.add('open');};
   document.getElementById('dlClose').onclick=function(){document.getElementById('dlModal').classList.remove('open');};
-  function showPanel(id){document.getElementById('thread').style.display='none';['panelBot','panelConn','panelVault','panelSet'].forEach(function(p){document.getElementById(p).classList.toggle('open',p===id);});}
-  function showChat(){document.getElementById('thread').style.display='';['panelBot','panelConn','panelVault','panelSet'].forEach(function(p){document.getElementById(p).classList.remove('open');});}
+  document.getElementById('drawerSearch').oninput=renderHist;
   document.getElementById('tabAsk').onclick=function(){mode='ask';botOn=false;this.classList.add('on');document.getElementById('tabBuild').classList.remove('on');document.getElementById('modeChip').textContent='Ask · Fast';input.placeholder=session?'Ask anything':'Sign in to chat';showChat();};
   document.getElementById('tabBuild').onclick=function(){mode='build';botOn=false;this.classList.add('on');document.getElementById('tabAsk').classList.remove('on');document.getElementById('modeChip').textContent='Build · Fast';input.placeholder=session?'Describe what to build…':'Sign in to chat';showChat();};
   document.getElementById('botLive').onclick=function(){botOn=true;mode='bot';showChat();document.getElementById('modeChip').textContent='Bot · Live';input.placeholder='Give JagX Bot a task…';document.getElementById('tabAsk').classList.remove('on');document.getElementById('tabBuild').classList.remove('on');};
+  document.getElementById('askEarn').onclick=function(){botOn=true;mode='bot';showChat();document.getElementById('modeChip').textContent='Bot · Live';input.value='Help me earn with JagX. Tell me exactly which apps to connect and the first 7-day plan.';send();};
   document.getElementById('browseGo').onclick=function(){var u=(document.getElementById('browseUrl').value||'').trim();if(!u)return;if(!/^https?:\/\//i.test(u))u='https://'+u;document.getElementById('browseFrame').src=u;};
   document.getElementById('authToggle').onclick=function(){modeSignUp=!modeSignUp;document.getElementById('authTitle').textContent=modeSignUp?'Create account':'Sign in';document.getElementById('authSubmit').textContent=modeSignUp?'Create account':'Sign in';document.getElementById('authToggle').textContent=modeSignUp?'Already have an account? Sign in':'New here? Create an account';document.getElementById('nameWrap').style.display=modeSignUp?'block':'none';};
   document.getElementById('authSubmit').onclick=async function(){
@@ -252,20 +269,19 @@ img.gen{max-width:min(100%,360px);border-radius:14px;margin:10px 0;display:block
   document.getElementById('btnAuth').onclick=async function(){closeDrawer();if(session&&supabase){await supabase.auth.signOut();setSession(null);history=[];renderAll();}else authModal.classList.add('open');};
   document.getElementById('btnPlus').onclick=function(){document.getElementById('filePick').click();};
   document.getElementById('filePick').onchange=function(e){var f=e.target.files&&e.target.files[0];if(f)pendingFile=f;};
-  document.getElementById('clearHist').onclick=function(){chats=[{id:uid(),title:'New chat',msgs:[],updated:Date.now()}];chatId=chats[0].id;history=[];saveLocal();renderAll();};
-  function renderConns(){var el=document.getElementById('connList');el.innerHTML='';if(!conns.length){el.innerHTML='<div class="box"><div class="tiny">No connectors yet.</div></div>';return;}conns.forEach(function(c){var d=document.createElement('div');d.className='box';d.innerHTML='<div class="row"><div><b></b><div class="tiny"></div></div><button class="tog" type="button"></button></div>';d.querySelector('b').textContent=c.name+' · '+c.type;d.querySelector('.tiny').textContent=c.end||'';var t=d.querySelector('.tog');t.textContent=c.on?'On':'Off';if(c.on)t.classList.add('on');t.onclick=function(){c.on=!c.on;saveLocal();renderConns();};el.appendChild(d);});}
+  document.getElementById('clearHist').onclick=function(){chats=[{id:uid(),title:'New conversation',msgs:[],updated:Date.now()}];chatId=chats[0].id;history=[];saveLocal();renderAll();};
+  function renderConns(){var el=document.getElementById('connList');el.innerHTML='';if(!conns.length){el.innerHTML='<div class="box"><div class="tiny">Nothing connected yet. Add Gmail or GitHub first.</div></div>';return;}conns.forEach(function(c){var d=document.createElement('button');d.className='srow';d.type='button';d.innerHTML='<div class="grow"><b></b><div class="sub"></div></div><span class="tog"></span>';d.querySelector('b').textContent=c.name;d.querySelector('.sub').textContent=c.type+(c.end?' · '+c.end:'');var t=d.querySelector('.tog');t.textContent=c.on?'On':'Off';if(c.on)t.classList.add('on');d.onclick=function(){c.on=!c.on;saveLocal();renderConns();};el.appendChild(d);});}
   document.getElementById('cAdd').onclick=function(){var name=(document.getElementById('cName').value||'').trim(),type=document.getElementById('cType').value,end=(document.getElementById('cEnd').value||'').trim();if(!name)return;conns.push({id:uid(),name:name,type:type,end:end,on:true});document.getElementById('cName').value='';document.getElementById('cEnd').value='';saveLocal();renderConns();};
-  function renderVault(){var el=document.getElementById('vaultList');el.innerHTML='';if(!vault.length){el.innerHTML='<div class="box"><div class="tiny">Vault is empty.</div></div>';return;}vault.forEach(function(v,i){var d=document.createElement('div');d.className='box';d.innerHTML='<div class="row"><div><b></b><div class="tiny">••••••••</div></div><button class="tog" type="button">Remove</button></div>';d.querySelector('b').textContent=v.label;d.querySelector('.tog').onclick=function(){vault.splice(i,1);saveLocal();renderVault();};el.appendChild(d);});}
+  function renderVault(){var el=document.getElementById('vaultList');el.innerHTML='';if(!vault.length){el.innerHTML='<div class="box"><div class="tiny">Vault is empty.</div></div>';return;}vault.forEach(function(v,i){var d=document.createElement('div');d.className='srow';d.innerHTML='<div class="grow"><b></b><div class="sub">••••••••</div></div><button class="tog" type="button">Remove</button>';d.querySelector('b').textContent=v.label;d.querySelector('.tog').onclick=function(){vault.splice(i,1);saveLocal();renderVault();};el.appendChild(d);});}
   document.getElementById('vAdd').onclick=function(){var label=(document.getElementById('vLabel').value||'').trim(),secret=document.getElementById('vSecret').value||'';if(!label||!secret)return;vault.push({id:uid(),label:label,secret:btoa(unescape(encodeURIComponent(secret)))});document.getElementById('vLabel').value='';document.getElementById('vSecret').value='';saveLocal();renderVault();};
-  function newChat(){chatId=uid();chats.unshift({id:chatId,title:'New chat',msgs:[],updated:Date.now()});history=[];saveLocal();showChat();renderAll();}
+  function newChat(){chatId=uid();chats.unshift({id:chatId,title:'New conversation',msgs:[],updated:Date.now()});history=[];saveLocal();showChat();renderAll();}
   function escapeHtml(s){return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>');}
-  function formatBot(text){var raw=String(text||'');raw=raw.replace(/<br\s*\/?>/gi,'\n').replace(/<\/?[^>]+>/g,'');raw=raw.replace(/\*\*([^*]+)\*\*/g,'$1');raw=raw.replace(/(^|[^\*])\*([^*\n]+)\*(?!\*)/g,'$1$2');raw=raw.replace(/^#{1,6}\s+/gm,'');var lines=raw.split('\n'),out=[],i=0;while(i<lines.length){var line=lines[i];if(/^\s*\|.+\|\s*$/.test(line)){var rows=[];while(i<lines.length&&/^\s*\|.+\|\s*$/.test(lines[i])){var cells=lines[i].trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(function(c){return c.trim();});if(!cells.every(function(c){return /^:?-+:?$/.test(c)||c==='';}))rows.push(cells);i++;}if(rows.length){var h='<table><thead><tr>'+rows[0].map(function(c){return '<th>'+escapeHtml(c)+'</th>';}).join('')+'</tr></thead><tbody>';for(var r=1;r<rows.length;r++)h+='<tr>'+rows[r].map(function(c){return '<td>'+escapeHtml(c)+'</td>';}).join('')+'</tr>';h+='</tbody></table>';out.push(h);}continue;}if(/^\s*```/.test(line)){var code=[];i++;while(i<lines.length&&!/^\s*```/.test(lines[i])){code.push(lines[i]);i++;}if(i<lines.length)i++;out.push('<pre class="code"><button class="copy" type="button">Copy</button><code>'+escapeHtml(code.join('\n'))+'</code></pre>');continue;}if(/^\s*[-*•]\s+/.test(line)){var items=[];while(i<lines.length&&/^\s*[-*•]\s+/.test(lines[i])){items.push('<li>'+escapeHtml(lines[i].replace(/^\s*[-*•]\s+/,''))+'</li>');i++;}out.push('<ul>'+items.join('')+'</ul>');continue;}if(/^\s*\d+\.\s+/.test(line)){var items2=[];while(i<lines.length&&/^\s*\d+\.\s+/.test(lines[i])){items2.push('<li>'+escapeHtml(lines[i].replace(/^\s*\d+\.\s+/,''))+'</li>');i++;}out.push('<ol>'+items2.join('')+'</ol>');continue;}if(line.trim()===''){out.push('<div style="height:8px"></div>');i++;continue;}out.push('<p>'+escapeHtml(line)+'</p>');i++;}return out.join('');}
-  function renderAll(){thread.innerHTML='';if(!history.length){thread.appendChild(empty);empty.style.display='';return;}empty.style.display='none';history.forEach(function(m){var row=document.createElement('div');row.className='msg '+(m.role==='user'?'user':'bot');var bub=document.createElement('div');bub.className='bubble';if(m.role==='user')bub.textContent=m.content;else if(m.image){bub.innerHTML='<img class="gen" src="'+escapeHtml(m.image)+'" alt=""/><div class="actions-row"><a download="jagx.png" href="'+escapeHtml(m.image)+'" target="_blank">Save</a></div>';}else{if(m.agent){var ag=document.createElement('div');ag.className='agent';ag.textContent=m.agent;bub.appendChild(ag);}var body=document.createElement('div');body.innerHTML=formatBot(m.content);bub.appendChild(body);body.querySelectorAll('.copy').forEach(function(btn){btn.onclick=function(){var code=btn.parentElement.querySelector('code');if(code)navigator.clipboard.writeText(code.textContent||'');btn.textContent='Copied';setTimeout(function(){btn.textContent='Copy';},1000);};});var meta=document.createElement('div');meta.className='actions-row';meta.innerHTML='<button type="button">Copy</button>';meta.querySelector('button').onclick=function(){navigator.clipboard.writeText(m.content||'');this.textContent='Copied';var t=this;setTimeout(function(){t.textContent='Copy';},1000);};bub.appendChild(meta);}row.appendChild(bub);thread.appendChild(row);});thread.scrollTop=thread.scrollHeight;}
-  function startThinking(){stopThinking();thinkStart=Date.now();thinkEl=document.createElement('div');thinkEl.className='thinking';thinkEl.textContent=botOn?'JagX Bot thinking…':'Thinking…';thread.appendChild(thinkEl);thinkTimer=setInterval(function(){var s=Math.floor((Date.now()-thinkStart)/1000);var m=Math.floor(s/60),r=s%60;if(thinkEl)thinkEl.textContent=(botOn?'JagX Bot thinking · ':'Thinking · ')+(m?m+'m '+r+'s':r+'s');},400);}
+  function formatBot(text){var raw=String(text||'');raw=raw.replace(/<br\s*\/?>/gi,'\n').replace(/<\/?[^>]+>/g,'');raw=raw.replace(/\*\*([^*]+)\*\*/g,'$1');raw=raw.replace(/(^|[^\*])\*([^*\n]+)\*(?!\*)/g,'$1$2');var lines=raw.split('\n'),out=[],i=0;while(i<lines.length){var line=lines[i];if(/^\s*\|.+\|\s*$/.test(line)){var rows=[];while(i<lines.length&&/^\s*\|.+\|\s*$/.test(lines[i])){var cells=lines[i].trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(function(c){return c.trim();});if(!cells.every(function(c){return /^:?-+:?$/.test(c)||c==='';}))rows.push(cells);i++;}if(rows.length){var h='<table><thead><tr>'+rows[0].map(function(c){return '<th>'+escapeHtml(c)+'</th>';}).join('')+'</tr></thead><tbody>';for(var r=1;r<rows.length;r++)h+='<tr>'+rows[r].map(function(c){return '<td>'+escapeHtml(c)+'</td>';}).join('')+'</tr>';h+='</tbody></table>';out.push(h);}continue;}if(/^\s*```/.test(line)){var code=[];i++;while(i<lines.length&&!/^\s*```/.test(lines[i])){code.push(lines[i]);i++;}if(i<lines.length)i++;out.push('<pre class="code"><button class="copy" type="button">Copy</button><code>'+escapeHtml(code.join('\n'))+'</code></pre>');continue;}if(/^\s*[-*•]\s+/.test(line)){var items=[];while(i<lines.length&&/^\s*[-*•]\s+/.test(lines[i])){items.push('<li>'+escapeHtml(lines[i].replace(/^\s*[-*•]\s+/,''))+'</li>');i++;}out.push('<ul>'+items.join('')+'</ul>');continue;}if(line.trim()===''){out.push('<div style="height:8px"></div>');i++;continue;}out.push('<p>'+escapeHtml(line)+'</p>');i++;}return out.join('');}
+  function renderAll(){thread.innerHTML='';if(!history.length){thread.appendChild(empty);empty.style.display='';return;}empty.style.display='none';history.forEach(function(m){var row=document.createElement('div');row.className='msg '+(m.role==='user'?'user':'bot');var bub=document.createElement('div');bub.className='bubble';if(m.role==='user')bub.textContent=m.content;else{if(m.agent){var ag=document.createElement('div');ag.className='agent';ag.textContent=m.agent;bub.appendChild(ag);}var body=document.createElement('div');body.innerHTML=formatBot(m.content);bub.appendChild(body);body.querySelectorAll('.copy').forEach(function(btn){btn.onclick=function(){var code=btn.parentElement.querySelector('code');if(code)navigator.clipboard.writeText(code.textContent||'');};});}row.appendChild(bub);thread.appendChild(row);});thread.scrollTop=thread.scrollHeight;}
+  function startThinking(){stopThinking();thinkStart=Date.now();thinkEl=document.createElement('div');thinkEl.className='thinking';thinkEl.textContent=botOn?'JagX Bot thinking…':'Thinking…';thread.appendChild(thinkEl);thinkTimer=setInterval(function(){var s=Math.floor((Date.now()-thinkStart)/1000);if(thinkEl)thinkEl.textContent=(botOn?'JagX Bot thinking · ':'Thinking · ')+s+'s';},400);}
   function stopThinking(){if(thinkTimer)clearInterval(thinkTimer);thinkTimer=null;if(thinkEl&&thinkEl.parentNode)thinkEl.parentNode.removeChild(thinkEl);thinkEl=null;}
-  function wantsImage(text){return /^\s*(draw|generate\s+(an?\s+)?(image|picture|photo|logo)|make\s+(an?\s+)?(image|picture|logo)|paint)\b/i.test(text);}
-  function contextPrefix(text){var bits=[];if(botOn)bits.push('You are JagX Bot, a live multi-agent team (Nimbus orchestrator, Atlas planner, Nova coder, Mira research). Work the task end to end. Name the agent acting. Do not use markdown bold stars.');if(mode==='build')bits.push('Build mode: produce complete, copyable code.');var on=conns.filter(function(c){return c.on;});if(on.length)bits.push('Enabled connectors: '+on.map(function(c){return c.name+' ('+c.type+(c.end?': '+c.end:'')+')';}).join('; ')+'.');if(vault.length)bits.push('Vault labels available (do not invent secrets): '+vault.map(function(v){return v.label;}).join(', ')+'.');var bu=document.getElementById('browseUrl').value;if(bu)bits.push('Workspace browser is pointed at: '+bu);return bits.length?(bits.join('\n')+'\n\nUser: '+text):text;}
-  async function send(){if(!session){authModal.classList.add('open');return;}var text=(input.value||'').trim();if((!text&&!pendingFile)||sendBtn.disabled)return;if(pendingFile){text=text||('[File: '+pendingFile.name+']');pendingFile=null;}input.value='';history.push({role:'user',content:text});renderAll();saveLocal();sendBtn.disabled=true;startThinking();try{if(wantsImage(text)){var prompt=text.replace(/^\s*(draw|generate|make|paint)\s*(me\s*)?(an?\s*)?(image|picture|photo|logo)?\s*(of\s*)?/i,'').trim()||text;var url='https://image.pollinations.ai/prompt/'+encodeURIComponent(prompt)+'?width=1024&height=1024&nologo=true&seed='+Date.now();stopThinking();history.push({role:'assistant',content:prompt,image:url});renderAll();saveLocal();}else{var payload={message:contextPrefix(text),history:history.filter(function(x){return !x.image;}).slice(0,-1).slice(-12)};var r=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'jagx-984199d487c01240f4515157a11cd6b4'},body:JSON.stringify(payload)});var data=await r.json().catch(function(){return {};});stopThinking();history.push({role:'assistant',agent:botOn?'JagX Bot':'JagX',content:r.ok?(data.response||''):(data.detail||data.message||('Error '+r.status))});renderAll();saveLocal();}}catch(e){stopThinking();history.push({role:'assistant',content:'Network issue — try again.'});renderAll();}finally{sendBtn.disabled=false;input.focus();}}
+  function contextPrefix(text){var bits=[];bits.push('You are JagX Bot. Help the user do real work and find legal ways to earn. Always say which connector to add next and the exact steps. Never promise guaranteed profit. No get-rich-quick or unofficial trading hacks. If they ask to earn, give a 7-day plan using Gmail, Drive, GitHub or Notion.');if(botOn)bits.push('Multi-agent mode: Nimbus, Atlas, Nova, Mira.');var on=conns.filter(function(c){return c.on;});if(on.length)bits.push('Connected now: '+on.map(function(c){return c.name+' ('+c.type+')';}).join(', ')+'.');else bits.push('No connectors on yet. Tell the user what to connect first.');if(vault.length)bits.push('Vault labels: '+vault.map(function(v){return v.label;}).join(', ')+'.');return bits.join('\n')+'\n\nUser: '+text;}
+  async function send(){if(!session){authModal.classList.add('open');return;}var text=(input.value||'').trim();if((!text&&!pendingFile)||sendBtn.disabled)return;if(pendingFile){text=text||('[File: '+pendingFile.name+']');pendingFile=null;}input.value='';history.push({role:'user',content:text});renderAll();saveLocal();sendBtn.disabled=true;startThinking();try{var payload={message:contextPrefix(text),history:history.filter(function(x){return !x.image;}).slice(0,-1).slice(-12)};var r=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'jagx-984199d487c01240f4515157a11cd6b4'},body:JSON.stringify(payload)});var data=await r.json().catch(function(){return {};});stopThinking();history.push({role:'assistant',agent:botOn?'JagX Bot':'JagX',content:r.ok?(data.response||''):(data.detail||data.message||('Error '+r.status))});renderAll();saveLocal();}catch(e){stopThinking();history.push({role:'assistant',content:'Network issue — try again.'});renderAll();}finally{sendBtn.disabled=false;input.focus();}}
   sendBtn.onclick=send;input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});boot();
 })();
 </script></body></html>
