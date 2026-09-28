@@ -6,23 +6,16 @@ import 'env.dart';
 class Ai {
   static final _dio = Dio(BaseOptions(
     connectTimeout: const Duration(seconds: 45),
-    receiveTimeout: const Duration(seconds: 90),
+    receiveTimeout: const Duration(seconds: 120),
     sendTimeout: const Duration(seconds: 45),
   ));
 
   static const _baseSystem = '''
 You are JagX AI by JagX and JRILICENSE.
-Write like a clear human tutor. Short sentences when possible.
-
-FORMATTING RULES (important):
-- Do NOT use markdown bold with asterisks (**like this**).
-- Do NOT wrap every heading in # or **.
-- For math: write steps in plain text. Example: Step 1: ... then the equation on its own line.
-- Prefer plain numbers and words over heavy symbols decoration.
-- Lists can use simple dashes or numbers: 1. 2. 3.
-- Never mention other AI brands. You are only JagX AI.
-
-When the user asks for a story, book chapter, essay, or PDF-ready text, write complete clean content they can export.
+Write like a clear human. Short sentences when possible.
+Do NOT use markdown bold with asterisks (**like this**).
+For math: plain numbered steps, no ** stars.
+Never name other AI brands. You are only JagX AI.
 Reply in the user's language.
 ''';
 
@@ -36,7 +29,6 @@ Reply in the user's language.
 
   static String cleanOutput(String text) {
     var t = text;
-    // strip common AI markdown bold/italic noise
     t = t.replaceAllMapped(
         RegExp(r'\*\*([^*]+)\*\*'), (m) => m.group(1) ?? '');
     t = t.replaceAllMapped(
@@ -50,8 +42,10 @@ Reply in the user's language.
     required List<Map<String, String>> messages,
     String? agentId,
   }) async {
-    if (modelId == 'oracle') {
-      return 'Oracle is Coming soon. Use Forge or JagX Bot.';
+    // Bot agents: prefer OpenRouter (secret key) then JagX backend
+    if (agentId != null) {
+      final orFirst = await _agentOpenRouter(agentId, messages);
+      if (orFirst != null) return cleanOutput(orFirst);
     }
 
     final jagx = await _jagxChat(messages: messages);
@@ -69,6 +63,7 @@ Reply in the user's language.
         key: key,
         system: system,
         messages: messages,
+        preferModel: agentId != null ? Agents.byId(agentId).openRouterModel : null,
       );
       if (or != null) return cleanOutput(or);
     }
@@ -81,6 +76,79 @@ Reply in the user's language.
     required List<Map<String, String>> messages,
   }) async {
     return chat(modelId: 'forge', messages: messages, agentId: agentId);
+  }
+
+  /// Multi-agent run like Grok Bot: plan → specialists → final merge.
+  static Future<String> multiAgentRun({
+    required String goal,
+    required void Function(String log) onLog,
+    String? webContext,
+  }) async {
+    final ctx = (webContext == null || webContext.isEmpty)
+        ? goal
+        : '$goal\n\nWEB CONTEXT:\n$webContext';
+
+    onLog('Nimbus engaged · multi-agent');
+    onLog('Atlas planning…');
+    final plan = await agentChat(
+      agentId: 'atlas',
+      messages: [
+        {'role': 'user', 'content': 'Plan only for this goal:\n$ctx'}
+      ],
+    );
+
+    onLog('Nova coding pass…');
+    final code = await agentChat(
+      agentId: 'nova',
+      messages: [
+        {
+          'role': 'user',
+          'content':
+              'Goal:\n$ctx\n\nPlan:\n$plan\n\nIf code is needed, write it. If not, say none.'
+        }
+      ],
+    );
+
+    onLog('Mira research pass…');
+    final research = await agentChat(
+      agentId: 'mira',
+      messages: [
+        {
+          'role': 'user',
+          'content': 'Goal:\n$ctx\n\nPlan:\n$plan\n\nSummarize useful facts only.'
+        }
+      ],
+    );
+
+    onLog('Nimbus merging final answer…');
+    final finalAns = await agentChat(
+      agentId: 'nimbus',
+      messages: [
+        {
+          'role': 'user',
+          'content':
+              'Goal:\n$ctx\n\nPlan:\n$plan\n\nCoder notes:\n$code\n\nResearch:\n$research\n\nWrite the final useful answer for the user. Plain text only.'
+        }
+      ],
+    );
+    onLog('Done');
+    return cleanOutput(finalAns);
+  }
+
+  static Future<String?> _agentOpenRouter(
+    String agentId,
+    List<Map<String, String>> messages,
+  ) async {
+    final key = Env.openRouterKey.trim();
+    if (key.isEmpty) return null;
+    final a = Agents.byId(agentId);
+    final system = '$_baseSystem\n\nYou are ${a.name} (${a.role}) of JagX Bot.\n${a.systemHint}';
+    return _openRouter(
+      key: key,
+      system: system,
+      messages: messages,
+      preferModel: a.openRouterModel,
+    );
   }
 
   static Future<String?> _jagxChat({
@@ -150,8 +218,13 @@ Reply in the user's language.
     required String key,
     required String system,
     required List<Map<String, String>> messages,
+    String? preferModel,
   }) async {
-    for (final model in _orModels) {
+    final models = <String>[
+      if (preferModel != null && preferModel.isNotEmpty) preferModel,
+      ..._orModels,
+    ];
+    for (final model in models) {
       try {
         final res = await _dio.post(
           'https://openrouter.ai/api/v1/chat/completions',
@@ -197,9 +270,6 @@ Reply in the user's language.
     if (t.isEmpty) return 'Say something and I will answer.';
     if (RegExp(r'^(hi|hello|hey|yo|sup)\b').hasMatch(t)) {
       return 'Hi. I am JagX AI, built by JagX and JRILICENSE. How can I help?';
-    }
-    if (t.contains('who are you')) {
-      return 'I am JagX AI, created by JagX and JRILICENSE.';
     }
     return 'The model is waking up. Try again in a moment.';
   }

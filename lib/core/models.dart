@@ -14,38 +14,16 @@ class JagxModel {
   final bool comingSoon;
 }
 
-/// Models users can pick in Ask / Build — Bot is a separate screen, not listed here.
+/// Ask/Build uses Fast only for now. Multi-agent lives in JagX Bot.
 class Models {
-  static const list = [
-    JagxModel(
-      id: 'jagx-0.3',
-      name: 'JagX 0.3',
-      subtitle: 'Fast · everyday',
-      badge: 'Fast',
-    ),
-    JagxModel(
-      id: 'jagx-0.4',
-      name: 'JagX 0.4',
-      subtitle: 'Expert · deep reasoning & code',
-      badge: 'Expert',
-    ),
-    JagxModel(
-      id: 'forge',
-      name: 'Forge',
-      subtitle: 'Most powerful regular model',
-      badge: 'Power',
-    ),
-    JagxModel(
-      id: 'oracle',
-      name: 'Oracle',
-      subtitle: 'Full agent — coming soon',
-      badge: 'Soon',
-      comingSoon: true,
-    ),
-  ];
+  static const fast = JagxModel(
+    id: 'jagx-0.3',
+    name: 'Fast',
+    subtitle: 'Everyday answers',
+    badge: 'Fast',
+  );
 
-  static JagxModel get fast => list.first;
+  static const list = [fast];
 
-  static JagxModel byId(String id) =>
-      list.firstWhere((m) => m.id == id, orElse: () => fast);
+  static JagxModel byId(String id) => fast;
 }
