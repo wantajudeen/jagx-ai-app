@@ -1,7 +1,7 @@
 name: jagx_ai
 description: JagX AI by JagX and JRILICENSE
 publish_to: "none"
-version: 3.3.0+17
+version: 3.4.0+18
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -20,6 +20,8 @@ dependencies:
   intl: ^0.19.0
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.8.0
+  image_picker: ^1.1.2
+  file_picker: ^8.1.2
 
 dev_dependencies:
   flutter_test:
@@ -31,7 +33,7 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: assets/icons/app_icon.png
-  adaptive_icon_background: "#0A0A0A"
+  adaptive_icon_background: "#000000"
   adaptive_icon_foreground: assets/icons/app_icon.png
 
 flutter:

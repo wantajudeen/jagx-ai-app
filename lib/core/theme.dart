@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// JagX visual system — near-black surfaces, soft white type, blue accent like modern AI apps.
+/// Pure black UI — white/gray type, soft silver accent (no blue).
 class Jx {
-  static const bg = Color(0xFF0A0A0A);
-  static const surface = Color(0xFF111111);
-  static const card = Color(0xFF171717);
-  static const cardHover = Color(0xFF1F1F1F);
+  static const bg = Color(0xFF000000);
+  static const surface = Color(0xFF0A0A0A);
+  static const card = Color(0xFF141414);
+  static const cardHover = Color(0xFF1C1C1C);
   static const border = Color(0xFF2A2A2A);
-  static const text = Color(0xFFF5F5F5);
-  static const muted = Color(0xFFA3A3A3);
-  static const dim = Color(0xFF737373);
-  static const accent = Color(0xFF3B82F6); // blue primary like Grok CTA
-  static const accentSoft = Color(0xFF60A5FA);
-  static const violet = Color(0xFF8B5CF6);
-  static const userBubble = Color(0xFF1C1C1E);
-  static const success = Color(0xFF34D399);
+  static const text = Color(0xFFF2F2F2);
+  static const muted = Color(0xFF9A9A9A);
+  static const dim = Color(0xFF6A6A6A);
+  static const accent = Color(0xFFE8E8E8); // soft white
+  static const accentSoft = Color(0xFFCFCFCF);
+  static const userBubble = Color(0xFF1A1A1A);
+  static const success = Color(0xFF4ADE80);
   static const danger = Color(0xFFF87171);
 }
 
@@ -30,9 +29,9 @@ class JagxTheme {
       scaffoldBackgroundColor: Jx.bg,
       colorScheme: const ColorScheme.dark(
         primary: Jx.accent,
-        secondary: Jx.violet,
+        secondary: Jx.accentSoft,
         surface: Jx.surface,
-        onPrimary: Colors.white,
+        onPrimary: Colors.black,
         onSurface: Jx.text,
         outline: Jx.border,
       ),
@@ -54,16 +53,16 @@ class JagxTheme {
         fillColor: Jx.card,
         hintStyle: const TextStyle(color: Jx.dim),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Jx.accent, width: 1.2),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Jx.border),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -75,58 +74,74 @@ class JagxTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       dividerColor: Jx.border,
-      listTileTheme: const ListTileThemeData(
-        iconColor: Jx.muted,
-        textColor: Jx.text,
-      ),
     );
   }
 }
 
-/// Shared logo mark widget
+/// Abstract JagX mark — ring with diagonal slash (distinct, minimal).
 class JagxMark extends StatelessWidget {
-  const JagxMark({super.key, this.size = 40, this.radius = 12});
+  const JagxMark({
+    super.key,
+    this.size = 48,
+    this.color = const Color(0xFF7A7A7A),
+    this.strokeWidth,
+  });
+
   final double size;
-  final double radius;
+  final Color color;
+  final double? strokeWidth;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+      child: CustomPaint(
+        painter: _JagxLogoPainter(
+          color: color,
+          stroke: strokeWidth ?? size * 0.09,
         ),
-        borderRadius: BorderRadius.circular(radius),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF3B82F6).withOpacity(0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
-      child: CustomPaint(painter: _JxGlyphPainter()),
     );
   }
 }
 
-class _JxGlyphPainter extends CustomPainter {
+class _JagxLogoPainter extends CustomPainter {
+  _JagxLogoPainter({required this.color, required this.stroke});
+  final Color color;
+  final double stroke;
+
   @override
   void paint(Canvas canvas, Size size) {
     final p = Paint()
-      ..color = Colors.white
-      ..strokeWidth = size.width * 0.11
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    final w = size.width;
-    final h = size.height;
-    // Stylized X made of two strokes (JagX mark)
-    canvas.drawLine(Offset(w * 0.28, h * 0.28), Offset(w * 0.72, h * 0.72), p);
-    canvas.drawLine(Offset(w * 0.72, h * 0.28), Offset(w * 0.28, h * 0.72), p);
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+
+    final c = Offset(size.width / 2, size.height / 2);
+    final r = size.width * 0.32;
+
+    // open ring (gap on lower-right)
+    canvas.drawArc(
+      Rect.fromCircle(center: c, radius: r),
+      -2.2,
+      4.6,
+      false,
+      p,
+    );
+
+    // diagonal slash through the ring
+    final slash = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke * 1.05
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(size.width * 0.22, size.height * 0.78),
+      Offset(size.width * 0.78, size.height * 0.22),
+      slash,
+    );
   }
 
   @override
