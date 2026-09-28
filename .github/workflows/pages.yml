@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -23,37 +23,51 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Inject Supabase + API into index.html
+      - name: Build site with Supabase config.json
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           set -e
+          mkdir -p _site
           python3 << 'PY'
-          import os
+          import os, json
           from pathlib import Path
           html = Path("index.html").read_text(encoding="utf-8")
           url = (os.environ.get("SUPABASE_URL") or "").strip()
           key = (os.environ.get("SUPABASE_ANON_KEY") or "").strip()
-          if not url or not key:
-              print("WARNING: SUPABASE secrets empty — auth will show setup message")
+          if url and key:
+              html = html.replace("__SUPABASE_URL__", url)
+              html = html.replace("__SUPABASE_ANON_KEY__", key)
+              # also replace placeholder hardcode if present
+              import re
+              html = re.sub(
+                  r"var SUPABASE_ANON_KEY = '[^']*';",
+                  f"var SUPABASE_ANON_KEY = '{key}';",
+                  html,
+                  count=1,
+              )
+              html = re.sub(
+                  r"var SUPABASE_URL = '[^']*';",
+                  f"var SUPABASE_URL = '{url}';",
+                  html,
+                  count=1,
+              )
+              Path("_site/config.json").write_text(
+                  json.dumps({"url": url, "anon": key}), encoding="utf-8"
+              )
+              print("injected secrets ok", len(url), len(key))
           else:
-              print("Injecting SUPABASE_URL length", len(url), "key length", len(key))
-          html = html.replace("__SUPABASE_URL__", url)
-          html = html.replace("__SUPABASE_ANON_KEY__", key)
-          Path("index.html").write_text(html, encoding="utf-8")
-          Path("_site").mkdir(exist_ok=True)
+              print("WARNING: secrets empty")
+              Path("_site/config.json").write_text("{}", encoding="utf-8")
           Path("_site/index.html").write_text(html, encoding="utf-8")
           if Path("CNAME").exists():
               Path("_site/CNAME").write_text(Path("CNAME").read_text())
-          print("site ready")
           PY
 
       - uses: actions/configure-pages@v5
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
-
       - id: deployment
         uses: actions/deploy-pages@v4
