@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 
-/// Minimal empty state — logo only, like modern AI apps.
 class EmptyChat extends StatelessWidget {
   final int mode;
   final String? hello;
@@ -21,21 +20,15 @@ class EmptyChat extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const JagxMark(size: 72, color: Color(0xFF5C5C5C)),
-          const SizedBox(height: 28),
-          if (hello != null && hello!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
-                hello!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Jx.muted,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+          const JagxMark(size: 64, color: Color(0xFF7A7A7A)),
+          if (hello != null && hello!.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Text(
+              hello!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Jx.muted, fontSize: 15),
             ),
+          ],
         ],
       ),
     );

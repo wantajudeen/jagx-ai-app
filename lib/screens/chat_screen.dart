@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/ai.dart';
 import '../core/auth.dart';
+import '../core/export_doc.dart';
 import '../core/models.dart';
 import '../core/profile.dart';
 import '../core/theme.dart';
@@ -39,7 +40,7 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 2, vsync: this);
     _tabs.addListener(() {
       if (!_tabs.indexIsChanging) setState(() {});
     });
@@ -53,9 +54,7 @@ class _ChatScreenState extends State<ChatScreen>
     setState(() {
       _displayName =
           (n != null && n.isNotEmpty) ? n : (dn ?? 'JagX User');
-      _hello = n == null || n.isEmpty
-          ? null
-          : '${Profile.greeting()}, $n';
+      _hello = n == null || n.isEmpty ? null : '${Profile.greeting()}, $n';
     });
   }
 
@@ -106,7 +105,7 @@ class _ChatScreenState extends State<ChatScreen>
           children: [
             ListTile(
               leading: const Icon(Icons.photo_outlined, color: Jx.text),
-              title: const Text('Photo library',
+              title: const Text('Photo',
                   style: TextStyle(color: Jx.text)),
               onTap: () async {
                 Navigator.pop(ctx);
@@ -122,8 +121,7 @@ class _ChatScreenState extends State<ChatScreen>
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt_outlined, color: Jx.text),
-              title:
-                  const Text('Camera', style: TextStyle(color: Jx.text)),
+              title: const Text('Camera', style: TextStyle(color: Jx.text)),
               onTap: () async {
                 Navigator.pop(ctx);
                 final img = await ImagePicker()
@@ -138,14 +136,10 @@ class _ChatScreenState extends State<ChatScreen>
             ),
             ListTile(
               leading: const Icon(Icons.attach_file, color: Jx.text),
-              title:
-                  const Text('File', style: TextStyle(color: Jx.text)),
+              title: const Text('File', style: TextStyle(color: Jx.text)),
               onTap: () async {
                 Navigator.pop(ctx);
-                final res = await FilePicker.platform.pickFiles(
-                  type: FileType.any,
-                  withData: false,
-                );
+                final res = await FilePicker.platform.pickFiles();
                 if (res != null && res.files.isNotEmpty) {
                   setState(() {
                     _pendingFile = res.files.first;
@@ -169,7 +163,7 @@ class _ChatScreenState extends State<ChatScreen>
       return;
     }
 
-    final tab = _tabs.index;
+    final isBuild = _tabs.index == 1;
     var userLine = text;
     if (_pendingImage != null) {
       userLine = text.isEmpty
@@ -179,6 +173,13 @@ class _ChatScreenState extends State<ChatScreen>
       userLine = text.isEmpty
           ? '[File: ${_pendingFile!.name}]'
           : '$text\n[File: ${_pendingFile!.name}]';
+    }
+
+    // Nudge for long-form exportable content
+    var promptText = userLine;
+    if (_wantsBook(text)) {
+      promptText =
+          '$userLine\n\nWrite the full content in plain text, chapter by chapter if needed. No markdown bold stars.';
     }
 
     setState(() {
@@ -192,34 +193,22 @@ class _ChatScreenState extends State<ChatScreen>
     });
     _scrollDown();
 
-    if (tab == 1 || _wantsImage(text)) {
-      final url = await Ai.imagine(text.isEmpty ? 'abstract art' : text);
-      setState(() {
-        _messages.add(_Msg('Image ready:\n$url', false));
-        _streaming = null;
-        _loading = false;
-      });
-      await _saveHistory();
-      _scrollDown();
-      return;
-    }
+    final history = <Map<String, String>>[
+      for (final m in _messages)
+        if (m != _messages.last)
+          {'role': m.user ? 'user' : 'assistant', 'content': m.text},
+      {'role': 'user', 'content': promptText},
+    ];
 
-    final history = _messages
-        .map((m) => {
-              'role': m.user ? 'user' : 'assistant',
-              'content': m.text,
-            })
-        .toList();
-
-    final modelId = tab == 2 ? 'forge' : _model.id;
+    final modelId = isBuild ? 'forge' : _model.id;
     final reply = await Ai.chat(modelId: modelId, messages: history);
 
     var built = '';
-    const step = 24;
+    const step = 28;
     for (var i = 0; i < reply.length; i += step) {
       built = reply.substring(0, (i + step).clamp(0, reply.length));
       setState(() => _streaming = built);
-      await Future.delayed(const Duration(milliseconds: 3));
+      await Future.delayed(const Duration(milliseconds: 2));
     }
 
     setState(() {
@@ -231,12 +220,14 @@ class _ChatScreenState extends State<ChatScreen>
     _scrollDown();
   }
 
-  bool _wantsImage(String text) {
+  bool _wantsBook(String text) {
     final t = text.toLowerCase();
-    return t.contains('imagine') ||
-        t.contains('generate image') ||
-        t.contains('draw ') ||
-        t.contains('create an image');
+    return t.contains('story') ||
+        t.contains('book') ||
+        t.contains('chapter') ||
+        t.contains('pdf') ||
+        t.contains('essay') ||
+        t.contains('novel');
   }
 
   void _toast(String m) {
@@ -267,40 +258,25 @@ class _ChatScreenState extends State<ChatScreen>
       builder: (_) => SafeArea(
         child: ListView(
           shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
-              child: Text('Model',
+          children: Models.list.map((m) {
+            return ListTile(
+              title: Text(m.name,
                   style: TextStyle(
-                      color: Jx.text,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16)),
-            ),
-            ...Models.list.map((m) {
-              final selected = m.id == _model.id;
-              return ListTile(
-                title: Text(m.name,
-                    style: TextStyle(
-                      color: m.comingSoon ? Jx.dim : Jx.text,
-                      fontWeight: FontWeight.w600,
-                    )),
-                subtitle: Text(m.subtitle,
-                    style: const TextStyle(color: Jx.muted, fontSize: 12)),
-                trailing: selected
-                    ? const Icon(Icons.check, color: Jx.text)
-                    : null,
-                onTap: () {
-                  Navigator.pop(context);
-                  if (m.comingSoon) {
-                    _toast('Oracle is Coming soon');
-                  } else {
-                    setState(() => _model = m);
-                  }
-                },
-              );
-            }),
-          ],
+                    color: m.comingSoon ? Jx.dim : Jx.text,
+                    fontWeight: FontWeight.w600,
+                  )),
+              subtitle: Text(m.subtitle,
+                  style: const TextStyle(color: Jx.muted, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(context);
+                if (m.comingSoon) {
+                  _toast('Oracle is Coming soon');
+                } else {
+                  setState(() => _model = m);
+                }
+              },
+            );
+          }).toList(),
         ),
       ),
     );
@@ -317,41 +293,21 @@ class _ChatScreenState extends State<ChatScreen>
     await p.remove('jx_chat_history');
   }
 
-  Widget _drawerTile({
-    required IconData icon,
-    required String title,
-    String? badge,
-    VoidCallback? onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: Jx.muted, size: 22),
-      title: Row(
-        children: [
-          Text(title, style: const TextStyle(color: Jx.text, fontSize: 15)),
-          if (badge != null) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Jx.cardHover,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(badge,
-                  style: const TextStyle(
-                      color: Jx.muted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600)),
-            ),
-          ],
-        ],
-      ),
-      onTap: onTap,
-    );
+  Future<void> _exportPdf(_Msg m) async {
+    try {
+      _toast('Building PDF…');
+      await ExportDoc.sharePdf(
+        title: 'JagX export',
+        body: m.text,
+      );
+    } catch (e) {
+      _toast('Could not export PDF');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final tab = _tabs.index;
+    final isBuild = _tabs.index == 1;
     final chip = _model.badge ?? 'Fast';
 
     return Scaffold(
@@ -359,139 +315,64 @@ class _ChatScreenState extends State<ChatScreen>
       drawer: Drawer(
         backgroundColor: Jx.surface,
         child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 12, 8),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: Jx.cardHover,
-                      child: Text(
-                        _displayName.isNotEmpty
-                            ? _displayName[0].toUpperCase()
-                            : 'J',
-                        style: const TextStyle(
-                            color: Jx.text,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: Jx.text,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right, color: Jx.dim),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        context.push('/settings');
-                      },
-                    ),
-                  ],
+              ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Jx.cardHover,
+                  child: Text(
+                    _displayName.isNotEmpty
+                        ? _displayName[0].toUpperCase()
+                        : 'J',
+                    style: const TextStyle(color: Jx.text),
+                  ),
                 ),
+                title: Text(_displayName,
+                    style: const TextStyle(
+                        color: Jx.text, fontWeight: FontWeight.w600)),
+                trailing: const Icon(Icons.chevron_right, color: Jx.dim),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/settings');
+                },
               ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  children: [
-                    _drawerTile(
-                        icon: Icons.bolt_outlined,
-                        title: 'Automations',
-                        onTap: () {
-                          Navigator.pop(context);
-                          _toast('Automations coming soon');
-                        }),
-                    _drawerTile(
-                        icon: Icons.inventory_2_outlined,
-                        title: 'Library',
-                        onTap: () {
-                          Navigator.pop(context);
-                          _toast('Chats stay on this device');
-                        }),
-                    _drawerTile(
-                        icon: Icons.folder_outlined,
-                        title: 'Projects',
-                        onTap: () {
-                          Navigator.pop(context);
-                          _tabs.animateTo(2);
-                        }),
-                    _drawerTile(
-                        icon: Icons.smart_toy_outlined,
-                        title: 'JagX Bot',
-                        badge: 'Agents',
-                        onTap: () {
-                          Navigator.pop(context);
-                          context.push('/bot');
-                        }),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      child: Material(
-                        color: Jx.cardHover,
-                        borderRadius: BorderRadius.circular(14),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(14),
-                          onTap: () {
-                            Navigator.pop(context);
-                            context.push('/premium');
-                          },
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 12),
-                            child: Text(
-                              'JagX Premium · Ask, Build, Bot',
-                              style: TextStyle(
-                                  color: Jx.text,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Text('Quick links',
-                          style: TextStyle(
-                              color: Jx.dim,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600)),
-                    ),
-                    _drawerTile(
-                        icon: Icons.hub_outlined,
-                        title: 'Connectors',
-                        onTap: () {
-                          Navigator.pop(context);
-                          context.push('/connectors');
-                        }),
-                    _drawerTile(
-                        icon: Icons.settings_outlined,
-                        title: 'Settings',
-                        onTap: () {
-                          Navigator.pop(context);
-                          context.push('/settings');
-                        }),
-                    _drawerTile(
-                        icon: Icons.edit_outlined,
-                        title: 'New chat',
-                        onTap: () {
-                          Navigator.pop(context);
-                          _newChat();
-                        }),
-                  ],
-                ),
+              const Divider(color: Jx.border),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, color: Jx.muted),
+                title:
+                    const Text('New chat', style: TextStyle(color: Jx.text)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _newChat();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.smart_toy_outlined, color: Jx.muted),
+                title:
+                    const Text('JagX Bot', style: TextStyle(color: Jx.text)),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/bot');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.hub_outlined, color: Jx.muted),
+                title:
+                    const Text('Connectors', style: TextStyle(color: Jx.text)),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/connectors');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.settings_outlined, color: Jx.muted),
+                title:
+                    const Text('Settings', style: TextStyle(color: Jx.text)),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/settings');
+                },
               ),
             ],
           ),
@@ -510,7 +391,6 @@ class _ChatScreenState extends State<ChatScreen>
               const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           tabs: const [
             Tab(text: 'Ask'),
-            Tab(text: 'Imagine'),
             Tab(text: 'Build'),
           ],
         ),
@@ -525,19 +405,24 @@ class _ChatScreenState extends State<ChatScreen>
         children: [
           Expanded(
             child: _messages.isEmpty && _streaming == null
-                ? EmptyChat(mode: tab, hello: _hello)
+                ? EmptyChat(mode: isBuild ? 2 : 0, hello: _hello)
                 : ListView(
                     controller: _scroll,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     children: [
-                      ..._messages.map((m) => _Bubble(m)),
+                      ..._messages.map((m) => _Bubble(
+                            m,
+                            onExport: m.user || m.text.length < 80
+                                ? null
+                                : () => _exportPdf(m),
+                          )),
                       if (_streaming != null)
                         _Bubble(_Msg(_streaming!, false), streaming: true),
                       if (_loading && _streaming == null)
                         const Padding(
                           padding: EdgeInsets.only(left: 8, top: 8),
-                          child: JagxMark(size: 28, color: Color(0xFF5C5C5C)),
+                          child: JagxMark(size: 26, color: Color(0xFF6A6A6A)),
                         ),
                     ],
                   ),
@@ -581,8 +466,6 @@ class _ChatScreenState extends State<ChatScreen>
                       label: Text(_pendingFile!.name,
                           style: const TextStyle(
                               color: Jx.text, fontSize: 12)),
-                      deleteIcon: const Icon(Icons.close,
-                          size: 16, color: Jx.muted),
                       onDeleted: () =>
                           setState(() => _pendingFile = null),
                     ),
@@ -610,11 +493,9 @@ class _ChatScreenState extends State<ChatScreen>
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
-                        hintText: tab == 2
+                        hintText: isBuild
                             ? 'Describe what to build…'
-                            : tab == 1
-                                ? 'Describe an image…'
-                                : 'Ask anything',
+                            : 'Ask anything',
                         hintStyle: const TextStyle(color: Jx.dim),
                         border: InputBorder.none,
                         filled: false,
@@ -640,9 +521,6 @@ class _ChatScreenState extends State<ChatScreen>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.bolt,
-                                    size: 14, color: Jx.muted),
-                                const SizedBox(width: 4),
                                 Text(chip,
                                     style: const TextStyle(
                                         fontSize: 12, color: Jx.muted)),
@@ -693,9 +571,10 @@ class _Msg {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble(this.msg, {this.streaming = false});
+  const _Bubble(this.msg, {this.streaming = false, this.onExport});
   final _Msg msg;
   final bool streaming;
+  final VoidCallback? onExport;
 
   @override
   Widget build(BuildContext context) {
@@ -732,14 +611,24 @@ class _Bubble extends StatelessWidget {
                     const TextStyle(color: Jx.text, fontSize: 15, height: 1.5),
               ),
             if (!msg.user && !streaming)
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.copy, size: 15, color: Jx.dim),
-                  onPressed: () =>
-                      Clipboard.setData(ClipboardData(text: msg.text)),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (onExport != null)
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'Save PDF',
+                      icon: const Icon(Icons.picture_as_pdf_outlined,
+                          size: 16, color: Jx.dim),
+                      onPressed: onExport,
+                    ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.copy, size: 15, color: Jx.dim),
+                    onPressed: () =>
+                        Clipboard.setData(ClipboardData(text: msg.text)),
+                  ),
+                ],
               ),
           ],
         ),
