@@ -14,8 +14,14 @@
   function openPanel(id){
     document.getElementById('drawer').classList.remove('open');
     document.getElementById('scrim').classList.remove('open');
+    var main=document.getElementById('main');
+    if(main) main.classList.add('panel-mode');
     document.getElementById('thread').style.display='none';
-    allPanels().forEach(function(p){var el=document.getElementById(p); if(el) el.classList.toggle('open',p===id);});
+    allPanels().forEach(function(p){
+      var el=document.getElementById(p); if(!el) return;
+      if(p===id){ el.classList.add('open'); el.style.display='flex'; }
+      else { el.classList.remove('open'); el.style.display='none'; }
+    });
   }
   function renderSkills(){
     var el=document.getElementById('skillList'); if(!el) return;
@@ -51,7 +57,7 @@
   function downloadPdf(){
     var text=lastBotText()||'No answer yet.';
     var w=window.open('','_blank');
-    w.document.write('<html><head><title>JagX notes</title><style>body{font-family:Georgia,serif;padding:32px;max-width:720px;margin:auto;line-height:1.5}h1{font-size:20px}</style></head><body><h1>JagX AI</h1><pre style="white-space:pre-wrap;font-family:Georgia,serif">'+
+    w.document.write('<html><head><title>Notes</title><style>body{font-family:Georgia,serif;padding:32px;max-width:720px;margin:auto;line-height:1.5}</style></head><body><pre style="white-space:pre-wrap;font-family:Georgia,serif">'+
       text.replace(/&/g,'&').replace(/</g,'<')+'</pre><script>window.onload=function(){window.print()}<\/script></body></html>');
     w.document.close();
   }
@@ -60,13 +66,13 @@
     if(!u) return;
     if(!/^https?:\/\//i.test(u)) u='https://'+u;
     var input=document.getElementById('input');
-    input.value='Read this link and summarize clearly. If it is TikTok or a blocked page, say what you can infer from the URL only:\n'+u;
+    input.value='Read this link and summarize clearly:\n'+u;
     var bu=document.getElementById('browseUrl'); if(bu) bu.value=u;
     try{
       var r=await fetch('https://r.jina.ai/'+u);
       var t=await r.text();
       if(t && t.length>40){
-        input.value='Here is extracted text from '+u+' (may be incomplete for TikTok). Summarize and answer based on it:\n\n'+t.slice(0,8000);
+        input.value='Extracted text from '+u+':\n\n'+t.slice(0,8000);
       }
     }catch(e){}
     if(typeof window.JagXSend==='function') window.JagXSend();
@@ -95,12 +101,12 @@
     var st=document.getElementById('ghStatus');
     var repo=(document.getElementById('ghRepo').value||'').trim();
     var path=(document.getElementById('ghPath').value||'').trim();
-    var msg=(document.getElementById('ghMsg').value||'Update via JagX').trim();
+    var msg=(document.getElementById('ghMsg').value||'Update via commit').trim();
     var body=document.getElementById('ghBody').value||'';
     var tok=vaultToken();
-    if(!tok){st.textContent='Add a Vault item labeled GitHub with a PAT first.';return;}
-    if(!repo||!path){st.textContent='Need owner/repo and path.';return;}
-    st.textContent='Pushing…';
+    if(!tok){st.textContent='Settings → Vault → label GitHub + paste PAT first.';return;}
+    if(!repo||!path){st.textContent='Need owner/repo and file path.';return;}
+    st.textContent='Committing…';
     try{
       var get=await fetch('https://api.github.com/repos/'+repo+'/contents/'+path,{headers:{Authorization:'Bearer '+tok,'Accept':'application/vnd.github+json'}});
       var sha=null;
@@ -109,7 +115,7 @@
       if(sha) payload.sha=sha;
       var put=await fetch('https://api.github.com/repos/'+repo+'/contents/'+path,{method:'PUT',headers:{Authorization:'Bearer '+tok,'Accept':'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(payload)});
       var out=await put.json();
-      st.textContent=put.ok?('Pushed '+path): (out.message||('Error '+put.status));
+      st.textContent=put.ok?('Committed '+path+(out.commit&&out.commit.html_url?' — open on GitHub':'')): (out.message||('Error '+put.status));
     }catch(e){st.textContent=String(e.message||e);}
   }
   function bind(){
@@ -139,9 +145,10 @@
     };
     var draft=document.getElementById('skDraft');
     if(draft) draft.onclick=function(){
+      var main=document.getElementById('main'); if(main) main.classList.remove('panel-mode');
       document.getElementById('thread').style.display='';
-      allPanels().forEach(function(p){var el=document.getElementById(p); if(el) el.classList.remove('open');});
-      document.getElementById('input').value='Draft a reusable JagX skill. Give a short name and the exact instruction text I should paste into Skills.';
+      allPanels().forEach(function(p){var el=document.getElementById(p); if(el){ el.classList.remove('open'); el.style.display='none'; }});
+      document.getElementById('input').value='Draft a reusable skill. Give a short name and the exact instruction text.';
       document.getElementById('send').click();
     };
     var pdf=document.getElementById('btnPdf'); if(pdf) pdf.onclick=downloadPdf;
