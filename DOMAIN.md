@@ -1,38 +1,51 @@
-# Domain + SSL (jagxai.name.ng)
+# Domain fix — jagxai.name.ng
 
-## Your current SSL error
+## Status (server side)
 
-`NET::ERR_CERTIFICATE_TRANSPARENCY_REQUIRED` means the browser is forcing **HTTPS** but GitHub has **not finished** issuing a valid certificate for the custom domain yet.
+- `https://jagxai.name.ng` → **200 OK** on GitHub Pages
+- TLS certificate valid for `jagxai.name.ng` and `www.jagxai.name.ng`
+- GitHub Pages IPs: 185.199.108.153 / .109 / .110 / .111
 
-This is **not** an app bug.
+If your phone shows **ERR_CONNECTION_REFUSED**, the problem is almost always **your network DNS**, not the site being offline.
 
-## Fix steps
+## Use these URLs (in order)
 
-1. GitHub → **Settings → Pages**
-2. Custom domain: `jagxai.name.ng` (you already have DNS check successful)
-3. Wait until **Enforce HTTPS** becomes clickable (can take 30 min – 24 hours after DNS is green)
-4. Enable **Enforce HTTPS**
-5. Until then, open the site as:
-   - `http://jagxai.name.ng` (not https)
-   - or `https://wantajudeen.github.io/jagx-ai-app/`
+1. **https://jagxai.name.ng** (no `www`)
+2. **https://wantajudeen.github.io/jagx-ai-app/** (always works as backup)
+3. Avoid only `www.` if your ISP breaks it — both should work when DNS is healthy
 
-## DNS (keep these)
+## Phone fixes
 
-A records for `@`:
+1. Switch Wi‑Fi ↔ mobile data
+2. Chrome Incognito → paste `https://jagxai.name.ng`
+3. Android: Settings → Network → **Private DNS** → Off, then retry
+4. Clear Chrome cache for the site or clear DNS (toggle airplane mode 15s)
+
+## DNS at your registrar (name.ng)
+
+**A records** for `@` (apex):
 
 - 185.199.108.153
 - 185.199.109.153
 - 185.199.110.153
 - 185.199.111.153
 
-Optional CNAME `www` → `wantajudeen.github.io`
+**CNAME** for `www`:
 
-## If SSL stays broken
+- `www` → `wantajudeen.github.io`
 
-1. Pages → **Remove** custom domain
-2. Wait 2 minutes
-3. Add `jagxai.name.ng` again → Save
-4. Wait for DNS check + certificate
-5. Enable Enforce HTTPS
+Delete any old A/AAAA records that point elsewhere.
 
-Repo root has `index.html` + `CNAME` so **Deploy from branch → main → /(root)** is correct.
+## GitHub Pages reset (if still broken on your side only)
+
+1. Repo → **Settings → Pages**
+2. Custom domain: remove `jagxai.name.ng` → Save
+3. Wait 2 minutes
+4. Add `jagxai.name.ng` again → Save
+5. Wait until DNS check is green
+6. Enable **Enforce HTTPS**
+7. Source: **Deploy from branch** → `main` → `/ (root)`
+
+## Not an app code bug
+
+Google can list the site while your phone still fails if your ISP cannot open a connection to GitHub’s edge. Use the **github.io** link until your DNS works.
