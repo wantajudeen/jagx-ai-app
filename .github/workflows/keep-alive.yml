@@ -1,0 +1,29 @@
+name: Keep Render awake
+
+on:
+  schedule:
+    # every 10 minutes (GitHub may delay a bit on free)
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping JagX backend health
+        run: |
+          set -e
+          # Do NOT use /robots.txt — Render free intercepts it while asleep
+          for url in \
+            "https://jagx-ai-v2.onrender.com/health" \
+            "https://jagx-ai-v2.onrender.com/"; do
+            code=$(curl -sS -o /tmp/out -w "%{http_code}" --max-time 90 "$url" || echo 000)
+            echo "$url -> $code"
+            head -c 200 /tmp/out || true
+            echo
+            if [ "$code" = "200" ] || [ "$code" = "301" ] || [ "$code" = "302" ]; then
+              exit 0
+            fi
+          done
+          echo "Backend did not return OK (may still be waking)."
+          exit 0
