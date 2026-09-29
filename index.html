@@ -128,7 +128,26 @@ pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padd
   <div class="composer-wrap"><div class="composer"><textarea id="input" rows="1" placeholder="Sign in to chat"></textarea><div class="bar"><button class="plus" type="button" id="btnPlus">+</button><span class="chip" id="modeChip">Ask · Fast</span><button class="send" type="button" id="send">↑</button></div></div><div class="foot">JagX AI · JagX & JRILICENSE</div></div>
 </main>
 <input type="file" id="filePick" accept="image/*,.pdf,.txt,.md,.csv" hidden/>
-<div class="modal" id="authModal"><div class="card"><h2 id="authTitle">Sign in</h2><p class="sub">Required to chat.</p><button class="full ghost" type="button" id="btnGoogle">Continue with Google</button><button class="full ghost" type="button" id="btnMagic" style="margin-top:8px">Email magic link (Resend)</button><div class="or">or password</div><div id="nameWrap" style="display:none"><label>Full name</label><input id="authName"/></div><label>Email</label><input id="authEmail" type="email"/><label>Password</label><input id="authPass" type="password"/><div class="err" id="authErr" style="display:none"></div><div class="ok" id="authOk" style="display:none"></div><button class="full solid" type="button" id="authSubmit">Sign in</button><div class="switch"><button type="button" id="authToggle">New here? Create an account</button></div></div></div>
+<div class="modal" id="authModal"><div class="card">
+  <h2 id="authTitle">Sign in</h2>
+  <p class="sub">Required to chat. OTP is sent to your email (Resend).</p>
+  <button class="full ghost" type="button" id="btnGoogle">Continue with Google</button>
+  <div class="or">or email OTP</div>
+  <label>Email</label><input id="authEmail" type="email" placeholder="you@email.com"/>
+  <button class="full solid" type="button" id="btnSendOtp" style="margin-top:12px">Send OTP code</button>
+  <div id="otpWrap" style="display:none;margin-top:12px">
+    <label>6-digit OTP from email</label>
+    <input id="authOtp" inputmode="numeric" maxlength="8" placeholder="123456"/>
+    <button class="full solid" type="button" id="btnVerifyOtp" style="margin-top:10px">Verify & sign in</button>
+  </div>
+  <div class="or">or password</div>
+  <div id="nameWrap" style="display:none"><label>Full name</label><input id="authName"/></div>
+  <label>Password</label><input id="authPass" type="password"/>
+  <div class="err" id="authErr" style="display:none"></div>
+  <div class="ok" id="authOk" style="display:none"></div>
+  <button class="full solid" type="button" id="authSubmit">Sign in with password</button>
+  <div class="switch"><button type="button" id="authToggle">New here? Create an account</button></div>
+</div></div>
 <div class="modal" id="dlModal"><div class="card"><h2>Android app</h2><a class="full solid" style="display:grid;place-items:center;text-decoration:none" href="https://github.com/wantajudeen/jagx-ai-app/releases/download/apk-latest/JagX-AI.apk">Download APK</a><button class="full ghost" type="button" id="dlClose" style="margin-top:8px">Close</button></div></div>
 <script src="./app.js"></script>
 <script src="./features.js"></script>
