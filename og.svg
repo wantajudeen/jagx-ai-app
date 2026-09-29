@@ -1,8 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#0a0a0a"/>
   <rect x="40" y="40" width="1120" height="550" rx="28" fill="none" stroke="#2a2a2a" stroke-width="3"/>
-  <text x="80" y="260" font-family="Inter,system-ui,sans-serif" font-size="96" font-weight="700" fill="#f3f3f3">JagX AI</text>
-  <text x="80" y="340" font-family="Inter,system-ui,sans-serif" font-size="36" fill="#a0a0a0">Nigeria & Africa AI assistant</text>
-  <text x="80" y="400" font-family="Inter,system-ui,sans-serif" font-size="28" fill="#787878">Chat · Code · Build · JagX Bot</text>
-  <text x="80" y="520" font-family="Inter,system-ui,sans-serif" font-size="24" fill="#5a5a5a">Built by JagX & JRILICENSE</text>
+  <g transform="translate(80,170) scale(2.2)">
+    <rect width="64" height="64" rx="16" fill="#0b0b0b" stroke="#2a2a2a"/>
+    <g fill="none" stroke="#d6d6d6" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 14 V38 C18 48 26 52 32 52 C38 52 46 48 46 38"/>
+      <path d="M22 22 L42 42"/>
+      <path d="M42 22 L28 36"/>
+    </g>
+  </g>
+  <text x="250" y="250" font-family="Inter,system-ui,sans-serif" font-size="72" font-weight="700" fill="#f3f3f3">JagX AI</text>
+  <text x="250" y="310" font-family="Inter,system-ui,sans-serif" font-size="28" fill="#a0a0a0">Nigeria & Africa AI assistant</text>
+  <text x="80" y="430" font-family="Inter,system-ui,sans-serif" font-size="24" fill="#787878">Chat · Code · Assignments · Skills · Sandbox</text>
+  <text x="80" y="520" font-family="Inter,system-ui,sans-serif" font-size="22" fill="#5a5a5a">Built by JagX & JRILICENSE</text>
 </svg>
