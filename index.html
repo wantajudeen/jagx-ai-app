@@ -1,1 +1,285 @@
-PLACEHOLDER_REPLACE
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Cache-Control" content="no-cache"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>JagX AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#000;--card:#171717;--line:#2a2a2a;--text:#f3f3f3;--muted:#9a9a9a;--dim:#6e6e6e}
+*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+button,input,textarea,select{font:inherit;color:inherit;border:none;background:none}button{cursor:pointer}
+.top{height:52px;display:flex;align-items:center;gap:8px;padding:0 10px}
+.icon-btn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center}
+.tabs{flex:1;display:flex;justify-content:center;gap:22px}
+.tab{font-size:15px;font-weight:600;color:var(--dim);padding:8px 2px;position:relative}
+.tab.on{color:var(--text)}.tab.on::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:#fff}
+.main{flex:1;min-height:0;display:flex;flex-direction:column;width:100%;max-width:760px;margin:0 auto}
+.thread{flex:1;overflow-y:auto;padding:16px}
+.empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#555}
+.empty b{font-size:18px;letter-spacing:.12em}
+.msg{margin:0 0 16px}.msg.user{display:flex;justify-content:flex-end}
+.bubble{max-width:min(100%,640px);font-size:15px;line-height:1.55;word-break:break-word}
+.msg.user .bubble{background:#1a1a1a;border-radius:18px;padding:10px 14px;white-space:pre-wrap}
+.msg.bot .bubble table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;display:block;overflow-x:auto}
+.msg.bot .bubble th,.msg.bot .bubble td{border:1px solid #2a2a2a;padding:8px 10px;text-align:left}
+.msg.bot .bubble th{background:#141414}.msg.bot .bubble ul{margin:8px 0 8px 18px}.msg.bot .bubble p{margin:0 0 10px}
+.agent{font-size:11px;color:var(--dim);margin-bottom:6px}
+.thinking{color:var(--muted);font-size:13px;margin:6px 0 12px}
+.composer-wrap{padding:8px 14px 14px}.composer{background:var(--card);border-radius:24px;padding:10px 12px}
+.composer textarea{width:100%;outline:0;resize:none;max-height:140px;font-size:15px}
+.bar{display:flex;align-items:center;gap:6px;margin-top:4px}
+.plus,.send{width:34px;height:34px;border-radius:50%;display:grid;place-items:center}
+.plus{color:var(--muted);font-size:20px}.chip{font-size:12px;color:var(--muted);background:#0a0a0a;border-radius:999px;padding:6px 10px;font-weight:600}
+.send{background:#fff;color:#000;margin-left:auto;font-weight:700}.send:disabled{opacity:.35}
+.foot{text-align:center;color:var(--dim);font-size:11px;margin-top:8px}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30;display:none}.scrim.open{display:block}
+.drawer{position:fixed;left:0;top:0;bottom:0;width:min(340px,90vw);background:#111;z-index:31;transform:translateX(-105%);transition:transform .2s;display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+.dbody{flex:1;overflow-y:auto;padding:16px 14px 8px}
+.who{display:flex;align-items:center;gap:12px;padding:6px 4px 16px}
+.av{width:42px;height:42px;border-radius:50%;background:#2f6b32;display:grid;place-items:center;font-weight:700}
+.who .nm{font-size:16px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.group{background:#1a1a1a;border-radius:16px;overflow:hidden;margin-bottom:16px}
+.gitem{width:100%;text-align:left;padding:14px;font-size:15px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #222}
+.gitem:last-child{border-bottom:0}.gitem:hover{background:#202020}
+.sec{color:var(--dim);font-size:13px;padding:4px 6px 8px}
+.hitem{width:100%;text-align:left;padding:12px 8px;border-radius:12px}
+.hitem:hover{background:#1a1a1a}.ht{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hs{font-size:12px;color:var(--dim);margin-top:3px}
+.dbot{display:flex;gap:8px;padding:10px 12px 16px;align-items:center}
+.dbot input{flex:1;background:#1a1a1a;border-radius:999px;padding:10px 14px;font-size:14px}
+.dbot .r{width:42px;height:42px;border-radius:50%;background:#1a1a1a;display:grid;place-items:center}
+.panel{display:none;padding:8px 16px 20px;overflow-y:auto;flex:1}.panel.open{display:block}
+.ph{display:flex;align-items:center;gap:8px;padding:8px 0 14px;font-size:18px;font-weight:600}
+.lead{color:var(--muted);font-size:13px;margin-bottom:14px;line-height:1.5}
+.box{background:#171717;border-radius:16px;padding:14px;margin-bottom:10px}
+.srow{width:100%;display:flex;align-items:center;gap:12px;padding:14px;background:#171717;border-radius:16px;margin-bottom:8px;text-align:left}
+.srow .sub{font-size:12px;color:var(--dim);margin-top:3px}.srow .grow{flex:1}
+.lbl{font-size:12px;color:var(--dim);padding:16px 4px 8px}
+.tog{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 10px;color:var(--muted)}.tog.on{color:#000;background:#fff}
+.browser{height:200px;border-radius:14px;overflow:hidden;background:#0a0a0a;margin-top:10px}
+.browser iframe{width:100%;height:100%;border:0}
+.bar2{display:flex;gap:6px;margin-top:8px}.bar2 input{flex:1;background:#0a0a0a;border-radius:10px;padding:8px 10px;font-size:13px;border:1px solid var(--line)}
+.full{width:100%;margin-top:12px;height:42px;border-radius:11px;font-weight:600}.ghost{border:1px solid var(--line);padding:8px 12px;border-radius:11px}.solid{background:#fff;color:#000;border-radius:11px}
+.tiny{font-size:12px;color:var(--dim);margin-top:6px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;z-index:40;padding:16px}.modal.open{display:flex}
+.card{width:100%;max-width:400px;background:#111;border:1px solid var(--line);border-radius:16px;padding:20px 18px;max-height:86vh;overflow:auto}
+.card h2{font-size:18px;margin-bottom:4px}.card .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+.card label,.box label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.card input,.box input,.box select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0a0a0a}
+.err{color:#f87171;font-size:13px;margin-top:10px}.ok{color:#86efac;font-size:13px;margin-top:10px}
+.or{text-align:center;color:var(--dim);font-size:12px;margin:12px 0}.switch{text-align:center;margin-top:12px;font-size:13px;color:var(--muted)}
+.locked .composer{opacity:.5;pointer-events:none}
+pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0;font-size:13px;position:relative}
+</style></head><body>
+<header class="top">
+  <button class="icon-btn" type="button" id="btnMenu">☰</button>
+  <div class="tabs"><button class="tab on" type="button" id="tabAsk">Ask</button><button class="tab" type="button" id="tabBuild">Build</button></div>
+  <button class="icon-btn" type="button" id="btnNew">✎</button>
+</header>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="dbody">
+    <div class="who"><div class="av" id="av">J</div><div class="nm" id="userChip">Guest</div><button class="icon-btn" type="button" id="btnAuth">»</button></div>
+    <div class="group">
+      <button class="gitem" type="button" id="dAuto">Automations</button>
+      <button class="gitem" type="button" id="dLib">Library</button>
+      <button class="gitem" type="button" id="dProj">Projects</button>
+      <button class="gitem" type="button" id="dBot">JagX Bot</button>
+    </div>
+    <div class="sec">Conversations</div>
+    <div id="histList"></div>
+  </div>
+  <div class="dbot">
+    <input id="drawerSearch" placeholder="Search"/>
+    <button class="r" type="button" id="dSet">⚙</button>
+    <button class="r" type="button" id="dNew">✎</button>
+  </div>
+</aside>
+<main class="main locked" id="main">
+  <div class="thread" id="thread"><div class="empty" id="empty"><b>JX</b><span style="color:#6e6e6e;font-size:13px">Ask anything</span></div></div>
+  <div class="panel" id="panelBot">
+    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>JagX Bot</div>
+    <p class="lead">Work income, connectors, and careful trading analysis. Trading is never guaranteed — low risk by default.</p>
+    <div class="box"><div style="display:flex;justify-content:space-between;align-items:center"><div><b>Live session</b><div class="tiny">Nimbus · Atlas · Nova · Mira</div></div><button class="tog" id="botLive" type="button">Start</button></div></div>
+    <div class="box"><b>Work income</b><div class="tiny">Gmail + Drive · GitHub · Notion</div>
+      <button class="full ghost" type="button" id="askEarn">Ask Bot: 7-day earn plan</button></div>
+    <div class="box"><b>Trading desk (low risk)</b>
+      <div class="tiny">Connect type trading. Analyzes setup, risk %, stop, news. No guaranteed profit. Demo first.</div>
+      <button class="full ghost" type="button" id="askTrade">Ask Bot: market plan today</button></div>
+    <div class="box"><b>Workspace browser</b>
+      <div class="bar2"><input id="browseUrl" placeholder="https://news or chart"/><button class="ghost" type="button" id="browseGo">Open</button></div>
+      <div class="browser"><iframe id="browseFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div>
+    </div>
+  </div>
+  <div class="panel" id="panelConn">
+    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Connectors</div>
+    <p class="lead">Turn On tools JagX Bot can plan with.</p>
+    <div id="connList"></div>
+    <div class="box"><b>Add connector</b>
+      <label>Name</label><input id="cName" placeholder="Broker or Gmail"/>
+      <label>Type</label><select id="cType"><option>gmail</option><option>drive</option><option>github</option><option>notion</option><option>trading</option><option>webhook</option><option>custom</option></select>
+      <label>Endpoint or note</label><input id="cEnd" placeholder="API URL or account note"/>
+      <button class="full solid" type="button" id="cAdd">Connect</button>
+    </div>
+  </div>
+  <div class="panel" id="panelVault">
+    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Vault</div>
+    <p class="lead">Keys stay on device. Bot sees labels only.</p>
+    <div id="vaultList"></div>
+    <div class="box"><label>Label</label><input id="vLabel"/><label>Secret</label><input id="vSecret" type="password"/><button class="full solid" type="button" id="vAdd">Save</button></div>
+  </div>
+  <div class="panel" id="panelSet">
+    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Settings</div>
+    <div class="lbl">App</div>
+    <button class="srow" type="button"><div class="grow"><b>Appearance</b><div class="sub">Dark</div></div></button>
+    <button class="srow" type="button" id="clearHist"><div class="grow"><b>History</b><div class="sub">Clear conversations</div></div></button>
+    <div class="lbl">JagX</div>
+    <button class="srow" type="button" id="dConn2"><div class="grow"><b>Connectors</b><div class="sub">Gmail, Drive, GitHub, trading</div></div></button>
+    <button class="srow" type="button" id="dVault2"><div class="grow"><b>Vault</b><div class="sub">API keys by label</div></div></button>
+    <button class="srow" type="button" id="dBot2"><div class="grow"><b>JagX Bot</b><div class="sub">Live session</div></div></button>
+    <button class="srow" type="button" id="dDl"><div class="grow"><b>Get Android app</b><div class="sub">Public APK</div></div></button>
+  </div>
+  <div class="panel" id="panelAuto"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Automations</div><p class="lead">Ask Bot to turn a task into a daily or weekly run.</p></div>
+  <div class="panel" id="panelLib"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Library</div><p class="lead">Files from chats. Use + to attach.</p></div>
+  <div class="panel" id="panelProj"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Projects</div><p class="lead">New chat, then name the work in the first message.</p></div>
+  <div class="composer-wrap" id="composerWrap">
+    <div class="composer">
+      <textarea id="input" rows="1" placeholder="Sign in to chat"></textarea>
+      <div class="bar"><button class="plus" type="button" id="btnPlus">+</button><span class="chip" id="modeChip">Ask · Fast</span><button class="send" type="button" id="send">↑</button></div>
+    </div>
+    <div class="foot">JagX AI · JagX & JRILICENSE</div>
+  </div>
+</main>
+<input type="file" id="filePick" accept="image/*,.pdf,.txt,.md,.csv" hidden/>
+<div class="modal" id="authModal"><div class="card">
+  <h2 id="authTitle">Sign in</h2><p class="sub">Required to chat, save history, and use Vault.</p>
+  <button class="full ghost" type="button" id="btnGoogle">Continue with Google</button>
+  <div class="or">or email</div>
+  <div id="nameWrap" style="display:none"><label>Full name</label><input id="authName"/></div>
+  <label>Email</label><input id="authEmail" type="email"/>
+  <label>Password</label><input id="authPass" type="password"/>
+  <div class="err" id="authErr" style="display:none"></div><div class="ok" id="authOk" style="display:none"></div>
+  <button class="full solid" type="button" id="authSubmit">Sign in</button>
+  <div class="switch"><button type="button" id="authToggle">New here? Create an account</button></div>
+</div></div>
+<div class="modal" id="dlModal"><div class="card">
+  <h2>Android app</h2><p class="sub">Public APK.</p>
+  <a class="full solid" style="display:grid;place-items:center;text-decoration:none" href="https://github.com/wantajudeen/jagx-ai-app/releases/download/apk-latest/JagX-AI.apk">Download APK</a>
+  <button class="full ghost" type="button" id="dlClose" style="margin-top:8px">Close</button>
+</div></div>
+<script>
+(function(){
+  var API='https://jagx-ai-v2.onrender.com';
+  var SUPABASE_URL='https://xxxyqzuwvavqsccnlkxa.supabase.co';
+  var SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4eHlxenV3dmF2cXNjY25sa3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjY4MDcsImV4cCI6MjEwNTE0MjgwN30.pd3D3ULeR90gM7HB8xAlERr8swUyc_aJaIxDqc-vH2Y';
+  var supabase=null,session=null,modeSignUp=false,mode='ask',botOn=false,pendingFile=null;
+  var chats=[],chatId=null,history=[],vault=[],conns=[];
+  var thinkEl=null,thinkTimer=null,thinkStart=0;
+  var PANELS=['panelBot','panelConn','panelVault','panelSet','panelAuto','panelLib','panelProj'];
+  var thread=document.getElementById('thread'),empty=document.getElementById('empty');
+  var input=document.getElementById('input'),sendBtn=document.getElementById('send'),main=document.getElementById('main');
+  var authModal=document.getElementById('authModal'),authErr=document.getElementById('authErr'),authOk=document.getElementById('authOk');
+  var drawer=document.getElementById('drawer'),scrim=document.getElementById('scrim');
+  function uid(){return 'c_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+  function sk(k){var id=session&&session.user&&session.user.id;return (id||'guest')+'_'+k;}
+  function showErr(m){authErr.style.display='block';authErr.textContent=m;authOk.style.display='none';}
+  function showOk(m){authOk.style.display='block';authOk.textContent=m;authErr.style.display='none';}
+  function openDrawer(){drawer.classList.add('open');scrim.classList.add('open');}
+  function closeDrawer(){drawer.classList.remove('open');scrim.classList.remove('open');}
+  function when(d){var n=Date.now()-(d||0);if(n<6e4)return 'Now';if(n<864e5)return 'Today';if(n<1728e5)return 'Yesterday';return new Date(d||Date.now()).toLocaleDateString();}
+  function loadLocal(){
+    try{chats=JSON.parse(localStorage.getItem(sk('chats'))||'[]');}catch(e){chats=[];}
+    try{vault=JSON.parse(localStorage.getItem(sk('vault'))||'[]');}catch(e){vault=[];}
+    try{conns=JSON.parse(localStorage.getItem(sk('conns'))||'[]');}catch(e){conns=[];}
+    if(!chats.length){chatId=uid();chats=[{id:chatId,title:'New conversation',msgs:[],updated:Date.now()}];}
+    if(!chatId)chatId=chats[0].id;
+    var cur=chats.find(function(c){return c.id===chatId;})||chats[0];chatId=cur.id;history=cur.msgs||[];
+  }
+  function saveLocal(){
+    var cur=chats.find(function(c){return c.id===chatId;});
+    if(cur){cur.msgs=history;cur.updated=Date.now();if((!cur.title||cur.title==='New conversation')&&history.length){var first=history.find(function(m){return m.role==='user';});if(first)cur.title=String(first.content).slice(0,48);}}
+    try{localStorage.setItem(sk('chats'),JSON.stringify(chats));localStorage.setItem(sk('vault'),JSON.stringify(vault));localStorage.setItem(sk('conns'),JSON.stringify(conns));}catch(e){}
+    if(supabase&&session&&session.user){supabase.from('messages').upsert({user_id:session.user.id,chat_id:'all',payload:{chats:chats,conns:conns},updated_at:new Date().toISOString()}).then(function(){}).catch(function(){});}
+    renderHist();
+  }
+  function renderHist(){
+    var el=document.getElementById('histList');el.innerHTML='';
+    var q=(document.getElementById('drawerSearch').value||'').toLowerCase();
+    chats.slice().sort(function(a,b){return (b.updated||0)-(a.updated||0);}).forEach(function(c){
+      if(q&&String(c.title||'').toLowerCase().indexOf(q)<0)return;
+      var b=document.createElement('button');b.className='hitem';b.type='button';
+      b.innerHTML='<div class="ht"></div><div class="hs"></div>';
+      b.querySelector('.ht').textContent=c.title||'Conversation';b.querySelector('.hs').textContent=when(c.updated);
+      b.onclick=function(){chatId=c.id;history=c.msgs||[];closeDrawer();showChat();renderAll();};
+      el.appendChild(b);
+    });
+  }
+  function setSession(s){
+    session=s;
+    if(s){main.classList.remove('locked');authModal.classList.remove('open');
+      input.placeholder=botOn?'Give JagX Bot a task…':(mode==='build'?'Describe what to build…':'Ask anything');
+      var u=s.user||{},label=(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email||'Signed in';
+      document.getElementById('userChip').textContent=label;document.getElementById('av').textContent=(label[0]||'J').toUpperCase();
+      loadLocal();renderHist();renderAll();renderConns();renderVault();
+    }else{main.classList.add('locked');authModal.classList.add('open');input.placeholder='Sign in to chat';
+      document.getElementById('userChip').textContent='Guest';document.getElementById('av').textContent='J';}
+  }
+  function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+  async function boot(){
+    try{await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');}catch(e){try{await loadScript('https://unpkg.com/@supabase/supabase-js@2');}catch(e2){return showErr('Auth library failed');}}
+    if(!window.supabase)return showErr('Auth missing');
+    try{supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);var r=await supabase.auth.getSession();setSession(r.data&&r.data.session);supabase.auth.onAuthStateChange(function(_e,s){setSession(s);});}catch(e){showErr(String(e.message||e));}
+  }
+  document.getElementById('btnMenu').onclick=openDrawer;scrim.onclick=closeDrawer;
+  function showPanel(id){document.getElementById('thread').style.display='none';PANELS.forEach(function(p){document.getElementById(p).classList.toggle('open',p===id);});}
+  function showChat(){document.getElementById('thread').style.display='';PANELS.forEach(function(p){document.getElementById(p).classList.remove('open');});}
+  document.querySelectorAll('[data-back]').forEach(function(b){b.onclick=showChat;});
+  document.getElementById('dNew').onclick=function(){closeDrawer();newChat();};
+  document.getElementById('btnNew').onclick=newChat;
+  document.getElementById('dBot').onclick=function(){closeDrawer();showPanel('panelBot');};
+  document.getElementById('dBot2').onclick=function(){showPanel('panelBot');};
+  document.getElementById('dConn2').onclick=function(){showPanel('panelConn');};
+  document.getElementById('dVault2').onclick=function(){showPanel('panelVault');};
+  document.getElementById('dSet').onclick=function(){closeDrawer();showPanel('panelSet');};
+  document.getElementById('dAuto').onclick=function(){closeDrawer();showPanel('panelAuto');};
+  document.getElementById('dLib').onclick=function(){closeDrawer();showPanel('panelLib');};
+  document.getElementById('dProj').onclick=function(){closeDrawer();showPanel('panelProj');};
+  document.getElementById('dDl').onclick=function(){document.getElementById('dlModal').classList.add('open');};
+  document.getElementById('dlClose').onclick=function(){document.getElementById('dlModal').classList.remove('open');};
+  document.getElementById('drawerSearch').oninput=renderHist;
+  document.getElementById('tabAsk').onclick=function(){mode='ask';botOn=false;this.classList.add('on');document.getElementById('tabBuild').classList.remove('on');document.getElementById('modeChip').textContent='Ask · Fast';input.placeholder=session?'Ask anything':'Sign in to chat';showChat();};
+  document.getElementById('tabBuild').onclick=function(){mode='build';botOn=false;this.classList.add('on');document.getElementById('tabAsk').classList.remove('on');document.getElementById('modeChip').textContent='Build · Fast';input.placeholder=session?'Describe what to build…':'Sign in to chat';showChat();};
+  document.getElementById('botLive').onclick=function(){botOn=true;mode='bot';showChat();document.getElementById('modeChip').textContent='Bot · Live';input.placeholder='Give JagX Bot a task…';document.getElementById('tabAsk').classList.remove('on');document.getElementById('tabBuild').classList.remove('on');};
+  document.getElementById('askEarn').onclick=function(){botOn=true;mode='bot';showChat();document.getElementById('modeChip').textContent='Bot · Live';input.value='Help me earn with JagX. Tell me exactly which apps to connect and the first 7-day plan.';send();};
+  document.getElementById('askTrade').onclick=function(){botOn=true;mode='bot';showChat();document.getElementById('modeChip').textContent='Bot · Live';input.value='Give me a low-risk market plan for today. Use current themes, risk rules (max 1% risk per idea), stops, and what news matters. Analyze only until I confirm a live broker API.';send();};
+  document.getElementById('browseGo').onclick=function(){var u=(document.getElementById('browseUrl').value||'').trim();if(!u)return;if(!/^https?:\/\//i.test(u))u='https://'+u;document.getElementById('browseFrame').src=u;};
+  document.getElementById('authToggle').onclick=function(){modeSignUp=!modeSignUp;document.getElementById('authTitle').textContent=modeSignUp?'Create account':'Sign in';document.getElementById('authSubmit').textContent=modeSignUp?'Create account':'Sign in';document.getElementById('authToggle').textContent=modeSignUp?'Already have an account? Sign in':'New here? Create an account';document.getElementById('nameWrap').style.display=modeSignUp?'block':'none';};
+  document.getElementById('authSubmit').onclick=async function(){
+    if(!supabase)return showErr('Auth loading…');
+    var email=(document.getElementById('authEmail').value||'').trim(),password=document.getElementById('authPass').value||'',name=(document.getElementById('authName').value||'').trim();
+    if(!email||!password)return showErr('Email and password required');
+    try{if(modeSignUp){if(!name)return showErr('Enter your name');var up=await supabase.auth.signUp({email:email,password:password,options:{data:{full_name:name}}});if(up.error)return showErr(up.error.message);if(!up.data.session)return showOk('Check email to confirm, then sign in.');setSession(up.data.session);}else{var inn=await supabase.auth.signInWithPassword({email:email,password:password});if(inn.error)return showErr(inn.error.message);setSession(inn.data.session);}}catch(e){showErr(String(e.message||e));}
+  };
+  document.getElementById('btnGoogle').onclick=async function(){if(!supabase)return showErr('Auth loading…');var r=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin}});if(r.error)showErr(r.error.message);};
+  document.getElementById('btnAuth').onclick=async function(){closeDrawer();if(session&&supabase){await supabase.auth.signOut();setSession(null);history=[];renderAll();}else authModal.classList.add('open');};
+  document.getElementById('btnPlus').onclick=function(){document.getElementById('filePick').click();};
+  document.getElementById('filePick').onchange=function(e){var f=e.target.files&&e.target.files[0];if(f)pendingFile=f;};
+  document.getElementById('clearHist').onclick=function(){chats=[{id:uid(),title:'New conversation',msgs:[],updated:Date.now()}];chatId=chats[0].id;history=[];saveLocal();renderAll();};
+  function renderConns(){var el=document.getElementById('connList');el.innerHTML='';if(!conns.length){el.innerHTML='<div class="box"><div class="tiny">Nothing connected yet.</div></div>';return;}conns.forEach(function(c){var d=document.createElement('button');d.className='srow';d.type='button';d.innerHTML='<div class="grow"><b></b><div class="sub"></div></div><span class="tog"></span>';d.querySelector('b').textContent=c.name;d.querySelector('.sub').textContent=c.type+(c.end?' · '+c.end:'');var t=d.querySelector('.tog');t.textContent=c.on?'On':'Off';if(c.on)t.classList.add('on');d.onclick=function(){c.on=!c.on;saveLocal();renderConns();};el.appendChild(d);});}
+  document.getElementById('cAdd').onclick=function(){var name=(document.getElementById('cName').value||'').trim(),type=document.getElementById('cType').value,end=(document.getElementById('cEnd').value||'').trim();if(!name)return;conns.push({id:uid(),name:name,type:type,end:end,on:true});document.getElementById('cName').value='';document.getElementById('cEnd').value='';saveLocal();renderConns();};
+  function renderVault(){var el=document.getElementById('vaultList');el.innerHTML='';if(!vault.length){el.innerHTML='<div class="box"><div class="tiny">Vault empty.</div></div>';return;}vault.forEach(function(v,i){var d=document.createElement('div');d.className='srow';d.innerHTML='<div class="grow"><b></b><div class="sub">••••••••</div></div><button class="tog" type="button">Remove</button>';d.querySelector('b').textContent=v.label;d.querySelector('.tog').onclick=function(){vault.splice(i,1);saveLocal();renderVault();};el.appendChild(d);});}
+  document.getElementById('vAdd').onclick=function(){var label=(document.getElementById('vLabel').value||'').trim(),secret=document.getElementById('vSecret').value||'';if(!label||!secret)return;vault.push({id:uid(),label:label,secret:btoa(unescape(encodeURIComponent(secret)))});document.getElementById('vLabel').value='';document.getElementById('vSecret').value='';saveLocal();renderVault();};
+  function newChat(){chatId=uid();chats.unshift({id:chatId,title:'New conversation',msgs:[],updated:Date.now()});history=[];saveLocal();showChat();renderAll();}
+  function escapeHtml(s){return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>');}
+  function formatBot(text){var raw=String(text||'');raw=raw.replace(/<br\s*\/?>/gi,'\n').replace(/<\/?[^>]+>/g,'');raw=raw.replace(/\*\*([^*]+)\*\*/g,'$1');var lines=raw.split('\n'),out=[],i=0;while(i<lines.length){var line=lines[i];if(/^\s*\|.+\|\s*$/.test(line)){var rows=[];while(i<lines.length&&/^\s*\|.+\|\s*$/.test(lines[i])){var cells=lines[i].trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(function(c){return c.trim();});if(!cells.every(function(c){return /^:?-+:?$/.test(c)||c==='';}))rows.push(cells);i++;}if(rows.length){var h='<table><thead><tr>'+rows[0].map(function(c){return '<th>'+escapeHtml(c)+'</th>';}).join('')+'</tr></thead><tbody>';for(var r=1;r<rows.length;r++)h+='<tr>'+rows[r].map(function(c){return '<td>'+escapeHtml(c)+'</td>';}).join('')+'</tr>';h+='</tbody></table>';out.push(h);}continue;}if(/^\s*```/.test(line)){var code=[];i++;while(i<lines.length&&!/^\s*```/.test(lines[i])){code.push(lines[i]);i++;}if(i<lines.length)i++;out.push('<pre class="code"><code>'+escapeHtml(code.join('\n'))+'</code></pre>');continue;}if(/^\s*[-*•]\s+/.test(line)){var items=[];while(i<lines.length&&/^\s*[-*•]\s+/.test(lines[i])){items.push('<li>'+escapeHtml(lines[i].replace(/^\s*[-*•]\s+/,''))+'</li>');i++;}out.push('<ul>'+items.join('')+'</ul>');continue;}if(line.trim()===''){out.push('<div style="height:8px"></div>');i++;continue;}out.push('<p>'+escapeHtml(line)+'</p>');i++;}return out.join('');}
+  function renderAll(){thread.innerHTML='';if(!history.length){thread.appendChild(empty);empty.style.display='';return;}empty.style.display='none';history.forEach(function(m){var row=document.createElement('div');row.className='msg '+(m.role==='user'?'user':'bot');var bub=document.createElement('div');bub.className='bubble';if(m.role==='user')bub.textContent=m.content;else{if(m.agent){var ag=document.createElement('div');ag.className='agent';ag.textContent=m.agent;bub.appendChild(ag);}var body=document.createElement('div');body.innerHTML=formatBot(m.content);bub.appendChild(body);}row.appendChild(bub);thread.appendChild(row);});thread.scrollTop=thread.scrollHeight;}
+  function startThinking(){stopThinking();thinkStart=Date.now();thinkEl=document.createElement('div');thinkEl.className='thinking';thinkEl.textContent=botOn?'JagX Bot thinking…':'Thinking…';thread.appendChild(thinkEl);thinkTimer=setInterval(function(){var s=Math.floor((Date.now()-thinkStart)/1000);if(thinkEl)thinkEl.textContent=(botOn?'JagX Bot thinking · ':'Thinking · ')+s+'s';},400);}
+  function stopThinking(){if(thinkTimer)clearInterval(thinkTimer);thinkTimer=null;if(thinkEl&&thinkEl.parentNode)thinkEl.parentNode.removeChild(thinkEl);thinkEl=null;}
+  function contextPrefix(text){var bits=[];bits.push('You are JagX Bot (JagX & JRILICENSE). Help with legal work income and careful market analysis.');bits.push('RULES: Never promise guaranteed profit or that a trade will surely work. All trading can lose money. Prefer capital preservation.');bits.push('EARNING: give a practical 7-day plan and which connectors to enable. Exact steps.');bits.push('TRADING: markets, risk, position sizing, stops, diversification, news impact, multi-year cycles, day-of analysis. Default LOW RISK: small size, defined stop, no leverage unless user insists (then warn). Prefer paper/demo first.');bits.push('When trading connector is On: analyze setup, risk, invalidation, checklist. Do not claim live order placement unless a real broker API is in the connector note. Ask for symbol, account type, risk % per trade.');bits.push('CURRENT CONTEXT: use today date, macro themes, workspace browser URL. If data is missing, say what live feed is needed.');bits.push('Tone: clear, mature, no hype.');if(botOn)bits.push('Multi-agent: Nimbus, Atlas, Mira, Nova.');var on=conns.filter(function(c){return c.on;});if(on.length)bits.push('Connected: '+on.map(function(c){return c.name+' ('+c.type+(c.end?': '+c.end:'')+')';}).join('; ')+'.');else bits.push('No connectors on. Recommend what to connect first.');if(vault.length)bits.push('Vault labels only: '+vault.map(function(v){return v.label;}).join(', ')+'.');var bu=(document.getElementById('browseUrl')&&document.getElementById('browseUrl').value)||'';if(bu)bits.push('Browser URL: '+bu);bits.push('Today: '+new Date().toISOString());return bits.join('\n')+'\n\nUser: '+text;}
+  async function send(){if(!session){authModal.classList.add('open');return;}var text=(input.value||'').trim();if((!text&&!pendingFile)||sendBtn.disabled)return;if(pendingFile){text=text||('[File: '+pendingFile.name+']');pendingFile=null;}input.value='';history.push({role:'user',content:text});renderAll();saveLocal();sendBtn.disabled=true;startThinking();try{var payload={message:contextPrefix(text),history:history.filter(function(x){return !x.image;}).slice(0,-1).slice(-12)};var r=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'jagx-984199d487c01240f4515157a11cd6b4'},body:JSON.stringify(payload)});var data=await r.json().catch(function(){return {};});stopThinking();history.push({role:'assistant',agent:botOn?'JagX Bot':'JagX',content:r.ok?(data.response||''):(data.detail||data.message||('Error '+r.status))});renderAll();saveLocal();}catch(e){stopThinking();history.push({role:'assistant',content:'Network issue — try again.'});renderAll();}finally{sendBtn.disabled=false;input.focus();}}
+  sendBtn.onclick=send;input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});boot();
+})();
+</script></body></html>
