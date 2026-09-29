@@ -23,8 +23,6 @@ button,input,textarea,select{font:inherit;color:inherit;border:none;background:n
 .msg{margin:0 0 16px}.msg.user{display:flex;justify-content:flex-end}
 .bubble{max-width:min(100%,640px);font-size:15px;line-height:1.55;word-break:break-word}
 .msg.user .bubble{background:#1a1a1a;border-radius:18px;padding:10px 14px;white-space:pre-wrap}
-.msg.bot .bubble table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;display:block;overflow-x:auto}
-.msg.bot .bubble th,.msg.bot .bubble td{border:1px solid #2a2a2a;padding:8px 10px;text-align:left}
 .composer-wrap{padding:8px 14px 14px}.composer{background:var(--card);border-radius:24px;padding:10px 12px}
 .composer textarea{width:100%;outline:0;resize:none;max-height:140px;font-size:15px}
 .bar{display:flex;align-items:center;gap:6px;margin-top:4px}
@@ -104,10 +102,10 @@ pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padd
   <div class="thread" id="thread"><div class="empty" id="empty"><img src="./logo.svg" alt="" width="56" height="56" style="border-radius:14px"/><span style="color:#6e6e6e;font-size:13px">Ask anything</span></div></div>
   <div class="panel" id="panelBot">
     <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Bot</div>
-    <p class="lead">Like a small team: turn Live on, give one task. Bots share context in chat (Nimbus · Atlas · Nova · Mira + any you add).</p>
+    <p class="lead">Team mode: Start Live, then give one task. You will see Nimbus → Atlas → Nova → Mira work, then the answer.</p>
     <div class="box">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <div><b>Team session</b><div class="tiny">Start → chat becomes Bot · Live</div></div>
+        <div><b>Team session</b><div class="tiny">Start → Bot · Live in chat</div></div>
         <button class="tog" id="botLive" type="button">Start</button>
       </div>
     </div>
@@ -115,25 +113,29 @@ pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padd
     <div id="botRoster"></div>
     <div class="box">
       <b>New bot</b>
-      <label>Name</label><input id="botName" placeholder="e.g. Research, Code, Ops"/>
+      <label>Name</label><input id="botName" placeholder="e.g. Social, Research"/>
       <label>Job / instructions</label><textarea id="botJob" rows="3" placeholder="What this bot always does…"></textarea>
       <button class="full solid" type="button" id="botAdd">Add bot</button>
     </div>
     <div class="box">
+      <b>Social accounts</b>
+      <div class="tiny">Grok Bot logs you into X/Facebook on a <b>cloud PC</b>. Here: Settings → Connectors (X / Facebook) + Vault for API tokens. Bot drafts posts; live publish needs API token or a real cloud worker.</div>
+    </div>
+    <div class="box">
       <b>Open a site</b>
-      <div class="tiny">Most sites block iframes — opens in a new tab.</div>
+      <div class="tiny">Opens in a new tab (iframes are blocked by most sites).</div>
       <div class="bar2"><input id="browseUrl" placeholder="https://…"/><button class="ghost" type="button" id="browseGo">Open</button></div>
     </div>
   </div>
-  <div class="panel" id="panelConn"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Connectors</div><div id="connList"></div><div class="box"><b>Add connector</b><label>Name</label><input id="cName"/><label>Type</label><select id="cType"><option>gmail</option><option>github</option><option>trading</option><option>custom</option></select><label>Note</label><input id="cEnd"/><button class="full solid" type="button" id="cAdd">Connect</button></div></div>
-  <div class="panel" id="panelVault"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Vault</div><p class="lead">Save secrets on this device. For GitHub, label = <b>GitHub</b>, secret = your PAT (repo scope).</p><div id="vaultList"></div><div class="box"><label>Label</label><input id="vLabel" placeholder="GitHub"/><label>Secret / token</label><input id="vSecret" type="password"/><button class="full solid" type="button" id="vAdd">Save</button></div></div>
+  <div class="panel" id="panelConn"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Connectors</div><div id="connList"></div><div class="box"><b>Add connector</b><label>Name</label><input id="cName" placeholder="My X account"/><label>Type</label><select id="cType"><option value="x">X (Twitter)</option><option value="facebook">Facebook</option><option value="gmail">Gmail</option><option value="github">GitHub</option><option value="trading">Trading</option><option value="custom">Custom</option></select><label>Note</label><input id="cEnd" placeholder="@handle or page name"/><button class="full solid" type="button" id="cAdd">Connect</button></div></div>
+  <div class="panel" id="panelVault"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Vault</div><p class="lead">Tokens stay on this device. Label e.g. <b>X</b> or <b>GitHub</b> + paste API token (not your Facebook password).</p><div id="vaultList"></div><div class="box"><label>Label</label><input id="vLabel" placeholder="X"/><label>Secret / token</label><input id="vSecret" type="password"/><button class="full solid" type="button" id="vAdd">Save</button></div></div>
   <div class="panel" id="panelSet">
     <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Settings</div>
     <div class="lbl">Account</div>
     <button class="srow" type="button" id="btnSignOut"><div class="grow"><b>Sign out</b></div></button>
     <div class="lbl">Tools</div>
-    <button class="srow" type="button" id="dConnFromSet"><div class="grow"><b>Connectors</b></div></button>
-    <button class="srow" type="button" id="dVaultFromSet"><div class="grow"><b>Vault</b></div></button>
+    <button class="srow" type="button" id="dConnFromSet"><div class="grow"><b>Connectors</b><div class="sub">X, Facebook, Gmail…</div></div></button>
+    <button class="srow" type="button" id="dVaultFromSet"><div class="grow"><b>Vault</b><div class="sub">API tokens on device</div></div></button>
     <button class="srow" type="button" id="dSkills"><div class="grow"><b>Skills</b></div></button>
     <button class="srow" type="button" id="dPlug"><div class="grow"><b>Plugins</b></div></button>
     <button class="srow" type="button" id="dGh"><div class="grow"><b>GitHub</b></div></button>
@@ -141,7 +143,7 @@ pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padd
     <div class="lbl">App</div>
     <button class="srow" type="button" id="clearHist"><div class="grow"><b>Clear history</b></div></button>
     <button class="srow" type="button" id="dDl"><div class="grow"><b>Get Android app</b></div></button>
-    <div class="box" style="margin-top:12px"><b>About</b><div class="tiny">Version 1.3.0</div></div>
+    <div class="box" style="margin-top:12px"><b>About</b><div class="tiny">Version 1.3.1</div></div>
   </div>
   <div class="panel" id="panelTools"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Shortcuts</div>
     <button class="srow" type="button" data-prompt="Help me complete this school assignment. Explain first, then write a clean answer. Assignment: "><div class="grow"><b>Assignment helper</b></div></button>
@@ -153,7 +155,7 @@ pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padd
   <div class="panel" id="panelBox"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Code test</div><textarea id="boxCode" rows="8"></textarea><button class="full solid" type="button" id="boxRun">Run</button></div>
   <div class="panel" id="panelGh">
     <div class="ph"><button type="button" class="icon-btn" data-back>×</button>GitHub</div>
-    <p class="lead">1) Settings → Vault → label <b>GitHub</b> + PAT.<br/>2) Commit & push a file.</p>
+    <p class="lead">Vault → label GitHub + PAT, then commit & push.</p>
     <div class="box">
       <label>Owner / repo</label><input id="ghRepo" placeholder="username/repo-name"/>
       <label>File path</label><input id="ghPath" placeholder="src/App.jsx"/>
@@ -167,11 +169,11 @@ pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padd
   <div class="panel" id="panelLib"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Library</div><p class="lead">Attach files with +.</p></div>
   <div class="panel" id="panelProj">
     <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Projects</div>
-    <p class="lead">Create a project first, then open it. Chat stays under that project.</p>
+    <p class="lead">Create a project first, then open it.</p>
     <div class="box">
       <b>New project</b>
-      <label>Name</label><input id="projName" placeholder="e.g. School essay, Client site"/>
-      <label>Goal (optional)</label><input id="projGoal" placeholder="What should this achieve?"/>
+      <label>Name</label><input id="projName" placeholder="e.g. School essay"/>
+      <label>Goal (optional)</label><input id="projGoal"/>
       <button class="full solid" type="button" id="projCreate">Create project</button>
     </div>
     <div class="lbl">Your projects</div>
@@ -182,13 +184,14 @@ pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padd
 <input type="file" id="filePick" accept="image/*,.pdf,.txt,.md,.csv" hidden/>
 <div class="modal" id="authModal"><div class="card">
   <h2 id="authTitle">Sign in</h2>
-  <p class="sub">OTP is sent to your email (Resend).</p>
-  <button class="full ghost" type="button" id="btnGoogle">Continue with Google</button>
+  <p class="sub">Use Google, email OTP, or password.</p>
+  <button class="full ghost" type="button" id="btnGoogle">Sign in with Google</button>
   <div class="or">or email OTP</div>
   <label>Email</label><input id="authEmail" type="email"/>
   <button class="full solid" type="button" id="btnSendOtp" style="margin-top:12px">Send OTP code</button>
   <div id="otpWrap" style="display:none;margin-top:12px">
-    <label>6-digit OTP</label><input id="authOtp" inputmode="numeric" maxlength="8"/>
+    <label>OTP from email (often 8 digits)</label>
+    <input id="authOtp" inputmode="numeric" maxlength="10" autocomplete="one-time-code" placeholder="12345678"/>
     <button class="full solid" type="button" id="btnVerifyOtp" style="margin-top:10px">Verify & sign in</button>
   </div>
   <div class="or">or password</div>
