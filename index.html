@@ -3,14 +3,9 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>JagX AI — Nigeria & Africa AI Assistant | Chat, Code, Build & Work Tools</title>
-<meta name="description" content="JagX AI is a Nigerian-built AI assistant for Africa: chat, coding help, multi-agent JagX Bot, connectors, secure vault, and work tools. Built by JagX & JRILICENSE for students, founders, and developers across Nigeria and Africa."/>
+<title>JagX AI — Nigeria & Africa AI Assistant</title>
 <meta name="theme-color" content="#000000"/>
-<link rel="canonical" href="https://jagxai.name.ng/"/>
 <link rel="icon" href="./logo.svg" type="image/svg+xml"/>
-<link rel="apple-touch-icon" href="./logo.svg"/>
-<meta property="og:title" content="JagX AI — Nigeria & Africa AI Assistant"/>
-<meta property="og:image" content="https://jagxai.name.ng/og.svg"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 :root{--bg:#000;--card:#171717;--line:#2a2a2a;--text:#f3f3f3;--muted:#9a9a9a;--dim:#6e6e6e}
@@ -45,7 +40,7 @@ button,input,textarea,select{font:inherit;color:inherit;border:none;background:n
 .av{width:42px;height:42px;border-radius:50%;background:#2f6b32;display:grid;place-items:center;font-weight:700}
 .who .nm{font-size:16px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .group{background:#1a1a1a;border-radius:16px;overflow:hidden;margin-bottom:16px}
-.gitem{width:100%;text-align:left;padding:14px;font-size:15px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #222}
+.gitem{width:100%;text-align:left;padding:14px;font-size:15px;border-bottom:1px solid #222}
 .gitem:last-child{border-bottom:0}
 .sec{color:var(--dim);font-size:13px;padding:4px 6px 8px}
 .hitem{width:100%;text-align:left;padding:12px 8px;border-radius:12px}
@@ -53,7 +48,12 @@ button,input,textarea,select{font:inherit;color:inherit;border:none;background:n
 .dbot{display:flex;gap:8px;padding:10px 12px 16px;align-items:center}
 .dbot input{flex:1;background:#1a1a1a;border-radius:999px;padding:10px 14px;font-size:14px}
 .dbot .r{width:42px;height:42px;border-radius:50%;background:#1a1a1a;display:grid;place-items:center}
-.panel{display:none;padding:8px 16px 20px;overflow-y:auto;flex:1}.panel.open{display:block}
+.panel{display:none!important;padding:8px 16px 20px;overflow-y:auto;flex:1;min-height:0;flex-direction:column}
+.panel.open{display:flex!important}
+.panel label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
+.panel input,.panel select,.panel textarea{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0a0a0a;color:var(--text);box-sizing:border-box}
+.main.panel-mode #thread{display:none!important}
+.main.panel-mode .composer-wrap{display:none!important}
 .ph{display:flex;align-items:center;gap:8px;padding:8px 0 14px;font-size:18px;font-weight:600}
 .lead{color:var(--muted);font-size:13px;margin-bottom:14px;line-height:1.5}
 .box{background:#171717;border-radius:16px;padding:14px;margin-bottom:10px}
@@ -76,6 +76,7 @@ button,input,textarea,select{font:inherit;color:inherit;border:none;background:n
 pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0;font-size:13px}
 .thinking{color:var(--muted);font-size:13px;margin:6px 0 12px}
 .lbl{font-size:12px;color:var(--dim);padding:8px 4px 6px}
+.agent{font-size:11px;color:var(--dim);margin-bottom:6px}
 </style></head><body>
 <header class="top">
   <button class="icon-btn" type="button" id="btnMenu">☰</button>
@@ -90,7 +91,7 @@ pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padd
       <button class="gitem" type="button" id="dAuto">Automations</button>
       <button class="gitem" type="button" id="dLib">Library</button>
       <button class="gitem" type="button" id="dProj">Projects</button>
-      <button class="gitem" type="button" id="dBot">JagX Bot</button>
+      <button class="gitem" type="button" id="dBot">Bot</button>
     </div>
     <div class="sec">Conversations</div>
     <div id="histList"></div>
@@ -102,62 +103,71 @@ pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padd
   </div>
 </aside>
 <main class="main locked" id="main">
-  <div class="thread" id="thread"><div class="empty" id="empty"><img src="./logo.svg" alt="JagX" width="56" height="56" style="border-radius:14px"/><span style="color:#6e6e6e;font-size:13px">Ask · Build · just chat</span></div></div>
-  <div class="panel" id="panelBot"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>JagX Bot</div><p class="lead">Work, code, assignments. Trading is never guaranteed.</p><div class="box"><div style="display:flex;justify-content:space-between;align-items:center"><div><b>Live session</b><div class="tiny">Nimbus · Atlas · Nova · Mira</div></div><button class="tog" id="botLive" type="button">Start</button></div></div><div class="box"><b>Workspace browser</b><div class="bar2"><input id="browseUrl" placeholder="https://"/><button class="ghost" type="button" id="browseGo">Open</button></div><div class="browser"><iframe id="browseFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div></div></div>
+  <div class="thread" id="thread"><div class="empty" id="empty"><img src="./logo.svg" alt="" width="56" height="56" style="border-radius:14px"/><span style="color:#6e6e6e;font-size:13px">Ask anything</span></div></div>
+  <div class="panel" id="panelBot"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Bot</div><p class="lead">Work, code, assignments. Trading is never guaranteed.</p><div class="box"><div style="display:flex;justify-content:space-between;align-items:center"><div><b>Live session</b><div class="tiny">Nimbus · Atlas · Nova · Mira</div></div><button class="tog" id="botLive" type="button">Start</button></div></div><div class="box"><b>Workspace browser</b><div class="bar2"><input id="browseUrl" placeholder="https://"/><button class="ghost" type="button" id="browseGo">Open</button></div><div class="browser"><iframe id="browseFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div></div></div>
   <div class="panel" id="panelConn"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Connectors</div><div id="connList"></div><div class="box"><b>Add connector</b><label>Name</label><input id="cName"/><label>Type</label><select id="cType"><option>gmail</option><option>github</option><option>trading</option><option>custom</option></select><label>Note</label><input id="cEnd"/><button class="full solid" type="button" id="cAdd">Connect</button></div></div>
-  <div class="panel" id="panelVault"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Vault</div><div id="vaultList"></div><div class="box"><label>Label</label><input id="vLabel" placeholder="GitHub"/><label>Secret</label><input id="vSecret" type="password"/><button class="full solid" type="button" id="vAdd">Save</button></div></div>
+  <div class="panel" id="panelVault"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Vault</div><p class="lead">Save secrets on this device. For GitHub, label = <b>GitHub</b>, secret = your PAT (repo scope).</p><div id="vaultList"></div><div class="box"><label>Label</label><input id="vLabel" placeholder="GitHub"/><label>Secret / token</label><input id="vSecret" type="password"/><button class="full solid" type="button" id="vAdd">Save</button></div></div>
   <div class="panel" id="panelSet">
     <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Settings</div>
     <div class="lbl">Account</div>
     <button class="srow" type="button" id="btnSignOut"><div class="grow"><b>Sign out</b><div class="sub">End this session</div></div></button>
-    <div class="lbl">JagX</div>
-    <button class="srow" type="button" id="dConnFromSet"><div class="grow"><b>Connectors</b><div class="sub">Gmail, GitHub, trading, custom</div></div></button>
-    <button class="srow" type="button" id="dVaultFromSet"><div class="grow"><b>Vault</b><div class="sub">API keys stay on this device</div></div></button>
-    <button class="srow" type="button" id="dSkills"><div class="grow"><b>Skills</b><div class="sub">Custom instructions for the bot</div></div></button>
-    <button class="srow" type="button" id="dPlug"><div class="grow"><b>Plugins</b><div class="sub">PDF, links, GitHub tools</div></div></button>
-    <button class="srow" type="button" id="dGh"><div class="grow"><b>GitHub push</b><div class="sub">Push files with your token</div></div></button>
-    <button class="srow" type="button" id="dTools"><div class="grow"><b>Tools</b><div class="sub">Assignments, PDF, read link</div></div></button>
+    <div class="lbl">Tools</div>
+    <button class="srow" type="button" id="dConnFromSet"><div class="grow"><b>Connectors</b><div class="sub">Apps the bot can plan with</div></div></button>
+    <button class="srow" type="button" id="dVaultFromSet"><div class="grow"><b>Vault</b><div class="sub">Tokens & passwords on device</div></div></button>
+    <button class="srow" type="button" id="dSkills"><div class="grow"><b>Skills</b><div class="sub">Custom instructions</div></div></button>
+    <button class="srow" type="button" id="dPlug"><div class="grow"><b>Plugins</b><div class="sub">PDF, links, GitHub</div></div></button>
+    <button class="srow" type="button" id="dGh"><div class="grow"><b>GitHub</b><div class="sub">Commit & push a file</div></div></button>
+    <button class="srow" type="button" id="dTools"><div class="grow"><b>Shortcuts</b><div class="sub">Assignments, PDF, read link</div></div></button>
     <div class="lbl">App</div>
-    <button class="srow" type="button" id="clearHist"><div class="grow"><b>Clear history</b><div class="sub">Remove local conversations</div></div></button>
-    <button class="srow" type="button" id="dDl"><div class="grow"><b>Get Android app</b><div class="sub">Download APK</div></div></button>
-    <div class="box" style="margin-top:12px">
-      <b>About</b>
-      <div class="tiny" id="aboutVer">JagX AI · version 1.2.0</div>
-      <div class="tiny">Built by JagX & JRILICENSE · Nigeria & Africa</div>
+    <button class="srow" type="button" id="clearHist"><div class="grow"><b>Clear history</b></div></button>
+    <button class="srow" type="button" id="dDl"><div class="grow"><b>Get Android app</b></div></button>
+    <div class="box" style="margin-top:12px"><b>About</b><div class="tiny" id="aboutVer">Version 1.2.1</div><div class="tiny">JRILICENSE</div></div>
+  </div>
+  <div class="panel" id="panelTools"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Shortcuts</div><p class="lead">Or just ask in chat.</p>
+    <button class="srow" type="button" data-prompt="Help me complete this school assignment. Explain first, then write a clean answer. Assignment: "><div class="grow"><b>Assignment helper</b></div></button>
+    <button class="srow" type="button" id="btnPdf"><div class="grow"><b>Download last answer as PDF</b></div></button>
+    <div class="box"><b>Read a link</b><div class="bar2"><input id="linkUrl" placeholder="https://…"/><button class="ghost" type="button" id="linkGo">Read</button></div></div>
+  </div>
+  <div class="panel" id="panelSkills"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Skills</div><div id="skillList"></div><div class="box"><label>Name</label><input id="skName"/><label>What it does</label><textarea id="skBody" rows="4"></textarea><button class="full solid" type="button" id="skAdd">Save skill</button><button class="full ghost" type="button" id="skDraft">Draft with AI</button></div></div>
+  <div class="panel" id="panelPlug"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Plugins</div><div id="plugList"></div></div>
+  <div class="panel" id="panelBox"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Code test</div><textarea id="boxCode" rows="8"></textarea><button class="full solid" type="button" id="boxRun">Run</button><div class="browser" style="height:280px"><iframe id="boxFrame" sandbox="allow-scripts"></iframe></div></div>
+  <div class="panel" id="panelGh">
+    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>GitHub</div>
+    <p class="lead">1) Settings → Vault → label <b>GitHub</b> + PAT (repo scope).<br/>2) Fill path + content → <b>Commit & push</b>.</p>
+    <div class="box">
+      <label for="ghRepo">Owner / repo</label>
+      <input id="ghRepo" placeholder="username/repo-name" autocomplete="off"/>
+      <label for="ghPath">File path</label>
+      <input id="ghPath" placeholder="src/App.jsx" autocomplete="off"/>
+      <label for="ghMsg">Commit message</label>
+      <input id="ghMsg" placeholder="Update file" autocomplete="off"/>
+      <label for="ghBody">File content</label>
+      <textarea id="ghBody" rows="8" style="font-family:ui-monospace,monospace;font-size:12px" placeholder="Full file content to push"></textarea>
+      <button class="full solid" type="button" id="ghPush">Commit & push</button>
+      <div class="tiny" id="ghStatus">Uses your token from Vault only.</div>
     </div>
   </div>
-  <div class="panel" id="panelTools"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Tools</div><p class="lead">Shortcuts. Reading links and writing code also work just by asking in chat.</p>
-    <button class="srow" type="button" data-prompt="Help me complete this school assignment. Explain first, then write a clean answer I can save as PDF. Assignment: "><div class="grow"><b>Assignment helper</b><div class="sub">Explain then write</div></div></button>
-    <button class="srow" type="button" id="btnPdf"><div class="grow"><b>Download last answer as PDF</b></div></button>
-    <div class="box"><b>Read a link</b><div class="bar2"><input id="linkUrl" placeholder="TikTok, article, GitHub…"/><button class="ghost" type="button" id="linkGo">Read</button></div><div class="tiny">Some apps block scrapers. Paste text if Read fails.</div></div>
-  </div>
-  <div class="panel" id="panelSkills"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Skills</div><p class="lead">Saved instructions the bot follows every chat.</p><div id="skillList"></div><div class="box"><label>Name</label><input id="skName"/><label>What it does</label><textarea id="skBody" rows="4" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:#0a0a0a"></textarea><button class="full solid" type="button" id="skAdd">Save skill</button><button class="full ghost" type="button" id="skDraft">Ask JagX to draft a skill</button></div></div>
-  <div class="panel" id="panelPlug"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Plugins</div><div id="plugList"></div></div>
-  <div class="panel" id="panelBox" style="display:none"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Code test</div><p class="lead">Optional internal preview. Users normally just chat.</p><textarea id="boxCode" rows="8" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;background:#0a0a0a;font-family:ui-monospace,monospace;font-size:12px"></textarea><button class="full solid" type="button" id="boxRun">Run</button><div class="browser" style="height:280px"><iframe id="boxFrame" sandbox="allow-scripts"></iframe></div></div>
-  <div class="panel" id="panelGh"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>GitHub</div><p class="lead">Vault item labeled GitHub with a PAT, then push a file.</p><label>Owner/repo</label><input id="ghRepo" placeholder="user/repo"/><label>Path</label><input id="ghPath" placeholder="src/App.jsx"/><label>Commit</label><input id="ghMsg" placeholder="Add file"/><label>Content</label><textarea id="ghBody" rows="6" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:#0a0a0a;font-family:ui-monospace,monospace;font-size:12px"></textarea><button class="full solid" type="button" id="ghPush">Push file</button><div class="tiny" id="ghStatus"></div></div>
-  <div class="panel" id="panelAuto"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Automations</div><p class="lead">Ask Bot to turn a task into a daily run.</p></div>
+  <div class="panel" id="panelAuto"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Automations</div><p class="lead">Ask the bot to turn a task into a daily run.</p></div>
   <div class="panel" id="panelLib"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Library</div><p class="lead">Attach files with +.</p></div>
   <div class="panel" id="panelProj"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Projects</div><p class="lead">New chat, name the work first.</p></div>
-  <div class="composer-wrap"><div class="composer"><textarea id="input" rows="1" placeholder="Sign in to chat"></textarea><div class="bar"><button class="plus" type="button" id="btnPlus">+</button><span class="chip" id="modeChip">Ask · Fast</span><button class="send" type="button" id="send">↑</button></div></div><div class="foot">JagX AI · JagX & JRILICENSE</div></div>
+  <div class="composer-wrap"><div class="composer"><textarea id="input" rows="1" placeholder="Sign in to chat"></textarea><div class="bar"><button class="plus" type="button" id="btnPlus">+</button><span class="chip" id="modeChip">Ask · Fast</span><button class="send" type="button" id="send">↑</button></div></div><div class="foot">JRILICENSE</div></div>
 </main>
 <input type="file" id="filePick" accept="image/*,.pdf,.txt,.md,.csv" hidden/>
 <div class="modal" id="authModal"><div class="card">
   <h2 id="authTitle">Sign in</h2>
-  <p class="sub">Required to chat. OTP is sent to your email (Resend).</p>
+  <p class="sub">OTP is sent to your email (Resend).</p>
   <button class="full ghost" type="button" id="btnGoogle">Continue with Google</button>
   <div class="or">or email OTP</div>
-  <label>Email</label><input id="authEmail" type="email" placeholder="you@email.com"/>
+  <label>Email</label><input id="authEmail" type="email"/>
   <button class="full solid" type="button" id="btnSendOtp" style="margin-top:12px">Send OTP code</button>
   <div id="otpWrap" style="display:none;margin-top:12px">
-    <label>6-digit OTP from email</label>
-    <input id="authOtp" inputmode="numeric" maxlength="8" placeholder="123456"/>
+    <label>6-digit OTP</label><input id="authOtp" inputmode="numeric" maxlength="8"/>
     <button class="full solid" type="button" id="btnVerifyOtp" style="margin-top:10px">Verify & sign in</button>
   </div>
   <div class="or">or password</div>
   <div id="nameWrap" style="display:none"><label>Full name</label><input id="authName"/></div>
   <label>Password</label><input id="authPass" type="password"/>
-  <div class="err" id="authErr" style="display:none"></div>
-  <div class="ok" id="authOk" style="display:none"></div>
+  <div class="err" id="authErr" style="display:none"></div><div class="ok" id="authOk" style="display:none"></div>
   <button class="full solid" type="button" id="authSubmit">Sign in with password</button>
   <div class="switch"><button type="button" id="authToggle">New here? Create an account</button></div>
 </div></div>
