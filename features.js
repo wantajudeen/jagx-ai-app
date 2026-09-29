@@ -2,7 +2,6 @@
   var skills=[], plugins=[
     {id:'pdf',name:'PDF export',on:true,note:'Download last answer'},
     {id:'links',name:'Link reader',on:true,note:'Read public URLs'},
-    {id:'sandbox',name:'Code sandbox',on:true,note:'HTML/JS preview'},
     {id:'github',name:'GitHub push',on:false,note:'Needs token in Vault'}
   ];
   function sk(){var id=(window.__jagxUserId)||'guest';return id+'_skills';}
@@ -11,12 +10,18 @@
   function saveSk(){try{localStorage.setItem(sk(),JSON.stringify(skills));}catch(e){}}
   function savePl(){try{localStorage.setItem('jagx_plugins',JSON.stringify(plugins));}catch(e){}}
   window.JagXSkills=function(){return skills.filter(function(s){return s.on!==false;});};
-
+  function allPanels(){return ['panelBot','panelConn','panelVault','panelSet','panelAuto','panelLib','panelProj','panelTools','panelSkills','panelPlug','panelBox','panelGh'];}
+  function openPanel(id){
+    document.getElementById('drawer').classList.remove('open');
+    document.getElementById('scrim').classList.remove('open');
+    document.getElementById('thread').style.display='none';
+    allPanels().forEach(function(p){var el=document.getElementById(p); if(el) el.classList.toggle('open',p===id);});
+  }
   function renderSkills(){
     var el=document.getElementById('skillList'); if(!el) return;
     el.innerHTML='';
     if(!skills.length){el.innerHTML='<div class="box"><div class="tiny">No skills yet.</div></div>';return;}
-    skills.forEach(function(s,i){
+    skills.forEach(function(s){
       var d=document.createElement('div'); d.className='srow';
       d.innerHTML='<div class="grow"><b></b><div class="sub"></div></div><button class="tog" type="button">On</button>';
       d.querySelector('b').textContent=s.name;
@@ -56,7 +61,7 @@
     if(!/^https?:\/\//i.test(u)) u='https://'+u;
     var input=document.getElementById('input');
     input.value='Read this link and summarize clearly. If it is TikTok or a blocked page, say what you can infer from the URL only:\n'+u;
-    document.getElementById('browseUrl').value=u;
+    var bu=document.getElementById('browseUrl'); if(bu) bu.value=u;
     try{
       var r=await fetch('https://r.jina.ai/'+u);
       var t=await r.text();
@@ -72,8 +77,8 @@
     var frame=document.getElementById('boxFrame');
     var html=code;
     if(!/<\s*html/i.test(code) && !/<\s*body/i.test(code)){
-      html='<!DOCTYPE html><html><body><script>'+code.replace(/<\/script/gi,'<\\/script')+'<\/script></body></html>';
       if(/<\s*(div|p|h1|style|button)/i.test(code)) html='<!DOCTYPE html><html><head></head><body>'+code+'</body></html>';
+      else html='<!DOCTYPE html><html><body><script>'+code.replace(/<\/script/gi,'<\\/script')+'<\/script></body></html>';
     }
     frame.srcdoc=html;
   }
@@ -107,18 +112,22 @@
       st.textContent=put.ok?('Pushed '+path): (out.message||('Error '+put.status));
     }catch(e){st.textContent=String(e.message||e);}
   }
-
   function bind(){
-    var map={dSkills:'panelSkills',dPlug:'panelPlug',dBox:'panelBox',dGh:'panelGh'};
+    var map={dSkills:'panelSkills',dPlug:'panelPlug',dGh:'panelGh',dTools:'panelTools'};
     Object.keys(map).forEach(function(id){
       var b=document.getElementById(id); if(!b) return;
-      b.onclick=function(){document.getElementById('drawer').classList.remove('open');document.getElementById('scrim').classList.remove('open');
-        document.getElementById('thread').style.display='none';
-        ['panelBot','panelConn','panelVault','panelSet','panelAuto','panelLib','panelProj','panelTools','panelSkills','panelPlug','panelBox','panelGh'].forEach(function(p){var el=document.getElementById(p); if(el) el.classList.toggle('open',p===map[id]);});
+      b.onclick=function(){
+        openPanel(map[id]);
         if(id==='dSkills') renderSkills();
         if(id==='dPlug') renderPlugs();
       };
     });
+    var so=document.getElementById('btnSignOut');
+    if(so) so.onclick=function(){ var a=document.getElementById('btnAuth'); if(a) a.click(); };
+    var cfs=document.getElementById('dConnFromSet');
+    if(cfs) cfs.onclick=function(){ openPanel('panelConn'); };
+    var vfs=document.getElementById('dVaultFromSet');
+    if(vfs) vfs.onclick=function(){ openPanel('panelVault'); };
     var add=document.getElementById('skAdd');
     if(add) add.onclick=function(){
       var n=(document.getElementById('skName').value||'').trim();
@@ -131,7 +140,7 @@
     var draft=document.getElementById('skDraft');
     if(draft) draft.onclick=function(){
       document.getElementById('thread').style.display='';
-      ['panelSkills'].forEach(function(p){document.getElementById(p).classList.remove('open');});
+      allPanels().forEach(function(p){var el=document.getElementById(p); if(el) el.classList.remove('open');});
       document.getElementById('input').value='Draft a reusable JagX skill. Give a short name and the exact instruction text I should paste into Skills.';
       document.getElementById('send').click();
     };
