@@ -3,188 +3,260 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>JagX AI — Nigeria & Africa AI Assistant</title>
-<meta name="theme-color" content="#000000"/>
+<title>JagX AI</title>
+<meta name="theme-color" content="#0a0a0a"/>
+<meta name="description" content="JagX AI — chat, build, and bot team. Nigeria & Africa focused assistant."/>
 <link rel="icon" href="./logo.svg" type="image/svg+xml"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-:root{--bg:#000;--card:#171717;--line:#2a2a2a;--text:#f3f3f3;--muted:#9a9a9a;--dim:#6e6e6e}
-*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
-body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+:root{
+  --bg:#0a0a0a;--panel:#111113;--card:#18181b;--line:#27272a;
+  --text:#fafafa;--muted:#a1a1aa;--dim:#71717a;--accent:#fff;
+  --user:#1c1c1f;--green:#22c55e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;overflow:hidden}
 button,input,textarea,select{font:inherit;color:inherit;border:none;background:none}button{cursor:pointer}
-.top{height:52px;display:flex;align-items:center;gap:8px;padding:0 10px}
-.icon-btn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center}
-.tabs{flex:1;display:flex;justify-content:center;gap:22px}
-.tab{font-size:15px;font-weight:600;color:var(--dim);padding:8px 2px;position:relative}
-.tab.on{color:var(--text)}.tab.on::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:#fff}
-.main{flex:1;min-height:0;display:flex;flex-direction:column;width:100%;max-width:760px;margin:0 auto}
-.thread{flex:1;overflow-y:auto;padding:16px}
-.empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#555}
-.msg{margin:0 0 16px}.msg.user{display:flex;justify-content:flex-end}
-.bubble{max-width:min(100%,640px);font-size:15px;line-height:1.55;word-break:break-word}
-.msg.user .bubble{background:#1a1a1a;border-radius:18px;padding:10px 14px;white-space:pre-wrap}
-.composer-wrap{padding:8px 14px 14px}.composer{background:var(--card);border-radius:24px;padding:10px 12px}
-.composer textarea{width:100%;outline:0;resize:none;max-height:140px;font-size:15px}
-.bar{display:flex;align-items:center;gap:6px;margin-top:4px}
+a{color:inherit;text-decoration:none}
+.side{width:260px;min-width:260px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100%}
+.side-top{padding:14px 12px;display:flex;align-items:center;gap:10px}
+.side-top img{width:28px;height:28px;border-radius:8px}
+.side-top b{font-size:15px;font-weight:600;letter-spacing:-.02em}
+.nav{padding:6px 8px;flex:1;overflow-y:auto}
+.nav a,.nav button.navb{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);margin-bottom:2px}
+.nav a:hover,.nav button.navb:hover{background:#1a1a1d;color:var(--text)}
+.nav a.on,.nav button.navb.on{background:#1f1f23;color:var(--text)}
+.nav .sec{font-size:11px;color:var(--dim);padding:12px 12px 6px;text-transform:uppercase;letter-spacing:.06em}
+.hitem{width:100%;text-align:left;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.hitem:hover{background:#1a1a1d;color:var(--text)}
+.hitem .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:none;color:inherit;text-align:left;font:inherit;cursor:pointer}
+.hitem .del{opacity:0;font-size:12px;color:var(--dim);padding:2px 6px;border-radius:6px}
+.hitem:hover .del{opacity:1}
+.hitem .del:hover{background:#3f1d1d;color:#f87171}
+.side-bot{padding:10px;border-top:1px solid var(--line)}
+.who{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px}
+.who:hover{background:#1a1a1d}
+.av{width:32px;height:32px;border-radius:50%;background:#166534;display:grid;place-items:center;font-weight:700;font-size:13px}
+.wrap{flex:1;display:flex;flex-direction:column;min-width:0;height:100%}
+.top{height:52px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid transparent}
+.icon-btn{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.icon-btn:hover{background:#1a1a1d;color:var(--text)}
+.top-title{flex:1;text-align:center;font-size:14px;font-weight:600;color:var(--muted)}
+.main{flex:1;min-height:0;display:flex;flex-direction:column;max-width:820px;width:100%;margin:0 auto}
+.thread{flex:1;overflow-y:auto;padding:20px 16px}
+.empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--dim)}
+.empty h1{font-size:28px;font-weight:600;color:var(--text);letter-spacing:-.03em}
+.empty p{font-size:14px;max-width:360px;text-align:center;line-height:1.5}
+.msg{margin:0 0 18px}.msg.user{display:flex;justify-content:flex-end}
+.bubble{max-width:min(100%,640px);font-size:15px;line-height:1.6;word-break:break-word}
+.msg.user .bubble{background:var(--user);border:1px solid var(--line);border-radius:18px;padding:10px 14px;white-space:pre-wrap}
+.msg.bot .bubble table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;display:block;overflow-x:auto}
+.msg.bot .bubble th,.msg.bot .bubble td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+.agent{font-size:11px;color:var(--dim);margin-bottom:6px;font-weight:500}
+.thinking{color:var(--muted);font-size:13px;margin:6px 0 12px}
+pre.code{background:#0c0c0e;border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0;font-size:13px;position:relative}
+.copy-btn{position:absolute;top:8px;right:8px;font-size:11px;padding:4px 8px;border-radius:6px;background:#27272a;color:var(--muted)}
+.copy-btn:hover{color:var(--text)}
+.composer-wrap{padding:8px 16px 16px}
+.composer{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:12px 14px}
+.composer:focus-within{border-color:#3f3f46}
+.composer textarea{width:100%;outline:0;resize:none;max-height:160px;font-size:15px;line-height:1.45;background:transparent}
+.bar{display:flex;align-items:center;gap:6px;margin-top:8px}
 .plus,.send{width:34px;height:34px;border-radius:50%;display:grid;place-items:center}
-.plus{color:var(--muted);font-size:20px}.chip{font-size:12px;color:var(--muted);background:#0a0a0a;border-radius:999px;padding:6px 10px;font-weight:600}
-.send{background:#fff;color:#000;margin-left:auto;font-weight:700}.send:disabled{opacity:.35}
+.plus{color:var(--muted);font-size:20px}.plus:hover{background:#27272a}
+.chip{font-size:12px;color:var(--muted);background:#0c0c0e;border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-weight:500}
+.send{background:#fafafa;color:#0a0a0a;margin-left:auto;font-weight:700}.send:disabled{opacity:.35}
 .foot{text-align:center;color:var(--dim);font-size:11px;margin-top:8px}
-.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30;display:none}.scrim.open{display:block}
-.drawer{position:fixed;left:0;top:0;bottom:0;width:min(340px,90vw);background:#111;z-index:31;transform:translateX(-105%);transition:transform .2s;display:flex;flex-direction:column}
-.drawer.open{transform:translateX(0)}
-.dbody{flex:1;overflow-y:auto;padding:16px 14px 8px}
-.who{display:flex;align-items:center;gap:12px;padding:6px 4px 16px}
-.av{width:42px;height:42px;border-radius:50%;background:#2f6b32;display:grid;place-items:center;font-weight:700}
-.who .nm{font-size:16px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.group{background:#1a1a1a;border-radius:16px;overflow:hidden;margin-bottom:16px}
-.gitem{width:100%;text-align:left;padding:14px;font-size:15px;border-bottom:1px solid #222}
-.gitem:last-child{border-bottom:0}
-.sec{color:var(--dim);font-size:13px;padding:4px 6px 8px}
-.hitem{width:100%;text-align:left;padding:12px 8px;border-radius:12px}
-.ht{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hs{font-size:12px;color:var(--dim);margin-top:3px}
-.dbot{display:flex;gap:8px;padding:10px 12px 16px;align-items:center}
-.dbot input{flex:1;background:#1a1a1a;border-radius:999px;padding:10px 14px;font-size:14px}
-.dbot .r{width:42px;height:42px;border-radius:50%;background:#1a1a1a;display:grid;place-items:center}
-.panel{display:none!important;padding:8px 16px 20px;overflow-y:auto;flex:1;min-height:0;flex-direction:column}
-.panel.open{display:flex!important}
-.panel label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
-.panel input,.panel select,.panel textarea{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0a0a0a;color:var(--text);box-sizing:border-box}
-.main.panel-mode #thread{display:none!important}
-.main.panel-mode .composer-wrap{display:none!important}
-.ph{display:flex;align-items:center;gap:8px;padding:8px 0 14px;font-size:18px;font-weight:600}
-.lead{color:var(--muted);font-size:13px;margin-bottom:14px;line-height:1.5}
-.box{background:#171717;border-radius:16px;padding:14px;margin-bottom:10px}
-.srow{width:100%;display:flex;align-items:center;gap:12px;padding:14px;background:#171717;border-radius:16px;margin-bottom:8px;text-align:left}
+.page{display:none;flex:1;min-height:0;flex-direction:column;overflow-y:auto;padding:16px;max-width:820px;width:100%;margin:0 auto}
+.page.on{display:flex}
+.ph{font-size:22px;font-weight:600;letter-spacing:-.02em;margin-bottom:6px}
+.lead{color:var(--muted);font-size:14px;margin-bottom:18px;line-height:1.55}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.box b{font-size:14px}
+.tiny{font-size:12px;color:var(--dim);margin-top:6px;line-height:1.45}
+.lbl{font-size:12px;color:var(--dim);padding:8px 4px 6px}
+label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
+.page input,.page select,.page textarea,.box input,.box select,.box textarea{
+  width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0c0c0e;color:var(--text)
+}
+.srow{width:100%;display:flex;align-items:center;gap:12px;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;text-align:left}
 .srow .sub{font-size:12px;color:var(--dim);margin-top:3px}.srow .grow{flex:1}
-.tog{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 10px;color:var(--muted)}.tog.on{color:#000;background:#fff}
-.bar2{display:flex;gap:6px;margin-top:8px}.bar2 input{flex:1;background:#0a0a0a;border-radius:10px;padding:8px 10px;font-size:13px;border:1px solid var(--line)}
-.full{width:100%;margin-top:12px;height:42px;border-radius:11px;font-weight:600}.ghost{border:1px solid var(--line);padding:8px 12px;border-radius:11px}.solid{background:#fff;color:#000;border-radius:11px}
-.tiny{font-size:12px;color:var(--dim);margin-top:6px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;z-index:40;padding:16px}.modal.open{display:flex}
+.tog{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 10px;color:var(--muted)}.tog.on{color:#0a0a0a;background:#fafafa}
+.full{width:100%;margin-top:12px;height:42px;border-radius:11px;font-weight:600}
+.ghost{border:1px solid var(--line);padding:8px 12px;border-radius:11px}
+.solid{background:#fafafa;color:#0a0a0a;border-radius:11px}
+.menu-fab{display:none}
+@media(max-width:800px){
+  .side{position:fixed;left:0;top:0;bottom:0;z-index:40;transform:translateX(-105%);transition:transform .2s}
+  .side.open{transform:translateX(0)}
+  .menu-fab{display:grid}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:35;display:none}.scrim.open{display:block}
+}
+@media(min-width:801px){.scrim{display:none!important}}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}.modal.open{display:flex}
 .card{width:100%;max-width:400px;background:#111;border:1px solid var(--line);border-radius:16px;padding:20px 18px;max-height:86vh;overflow:auto}
 .card h2{font-size:18px;margin-bottom:4px}.card .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
-.card label,.box label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
-.card input,.box input,.box select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0a0a0a}
 .err{color:#f87171;font-size:13px;margin-top:10px}.ok{color:#86efac;font-size:13px;margin-top:10px}
-.or{text-align:center;color:var(--dim);font-size:12px;margin:12px 0}.switch{text-align:center;margin-top:12px;font-size:13px;color:var(--muted)}
+.or{text-align:center;color:var(--dim);font-size:12px;margin:12px 0}
 .locked .composer{opacity:.5;pointer-events:none}
-pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto;margin:10px 0;font-size:13px}
-.thinking{color:var(--muted);font-size:13px;margin:6px 0 12px}
-.lbl{font-size:12px;color:var(--dim);padding:8px 4px 6px}
-.agent{font-size:11px;color:var(--dim);margin-bottom:6px}
-</style></head><body>
-<header class="top">
-  <button class="icon-btn" type="button" id="btnMenu">☰</button>
-  <div class="tabs"><button class="tab on" type="button" id="tabAsk">Ask</button><button class="tab" type="button" id="tabBuild">Build</button></div>
-  <button class="icon-btn" type="button" id="btnNew">✎</button>
-</header>
-<div class="scrim" id="scrim"></div>
-<aside class="drawer" id="drawer">
-  <div class="dbody">
-    <div class="who"><div class="av" id="av">J</div><div class="nm" id="userChip">Guest</div><button class="icon-btn" type="button" id="btnAuth">»</button></div>
-    <div class="group">
-      <button class="gitem" type="button" id="dAuto">Automations</button>
-      <button class="gitem" type="button" id="dLib">Library</button>
-      <button class="gitem" type="button" id="dProj">Projects</button>
-      <button class="gitem" type="button" id="dBot">Bot</button>
-    </div>
-    <div class="sec">Conversations</div>
+.steps{display:grid;gap:8px;margin:12px 0}
+.step{padding:12px;border-radius:12px;border:1px solid var(--line);background:#0c0c0e;font-size:13px;color:var(--muted)}
+.step strong{color:var(--text);display:block;margin-bottom:4px}
+</style>
+</head>
+<body>
+<aside class="side" id="side">
+  <div class="side-top"><img src="./logo.svg" alt=""/><b>JagX AI</b></div>
+  <nav class="nav">
+    <a href="#/chat" data-route="chat" class="on">Chat</a>
+    <a href="#/build" data-route="build">Build</a>
+    <a href="#/bot" data-route="bot">Bot</a>
+    <a href="#/projects" data-route="projects">Projects</a>
+    <a href="#/github" data-route="github">GitHub</a>
+    <a href="#/settings" data-route="settings">Settings</a>
+    <div class="sec">Chats</div>
     <div id="histList"></div>
-  </div>
-  <div class="dbot">
-    <input id="drawerSearch" placeholder="Search"/>
-    <button class="r" type="button" id="dSet">⚙</button>
-    <button class="r" type="button" id="dNew">✎</button>
+  </nav>
+  <div class="side-bot">
+    <button type="button" class="who" id="btnAuth" style="width:100%">
+      <div class="av" id="av">J</div>
+      <div style="flex:1;text-align:left;overflow:hidden">
+        <div id="userChip" style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Guest</div>
+        <div class="tiny" style="margin:0">Account</div>
+      </div>
+    </button>
   </div>
 </aside>
-<main class="main locked" id="main">
-  <div class="thread" id="thread"><div class="empty" id="empty"><img src="./logo.svg" alt="" width="56" height="56" style="border-radius:14px"/><span style="color:#6e6e6e;font-size:13px">Ask anything</span></div></div>
-  <div class="panel" id="panelBot">
-    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Bot</div>
-    <p class="lead">Team mode: Start Live, then give one task. You will see Nimbus → Atlas → Nova → Mira work, then the answer.</p>
-    <div class="box">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <div><b>Team session</b><div class="tiny">Start → Bot · Live in chat</div></div>
-        <button class="tog" id="botLive" type="button">Start</button>
+<div class="scrim" id="scrim"></div>
+<div class="wrap">
+  <header class="top">
+    <button class="icon-btn menu-fab" type="button" id="btnMenu">☰</button>
+    <div class="top-title" id="topTitle">Chat</div>
+    <button class="icon-btn" type="button" id="btnNew" title="New chat">✎</button>
+  </header>
+  <div class="main locked" id="main">
+    <div class="page on" id="page-chat" style="padding:0;display:flex">
+      <div class="thread" id="thread"><div class="empty" id="empty">
+        <img src="./logo.svg" width="48" height="48" style="border-radius:12px;opacity:.9"/>
+        <h1>How can I help?</h1>
+        <p>Ask anything, or switch to Build / Bot in the sidebar.</p>
+      </div></div>
+      <div class="composer-wrap"><div class="composer">
+        <textarea id="input" rows="1" placeholder="Sign in to chat"></textarea>
+        <div class="bar">
+          <button class="plus" type="button" id="btnPlus">+</button>
+          <span class="chip" id="modeChip">Chat · Fast</span>
+          <button class="send" type="button" id="send">↑</button>
+        </div>
+      </div><div class="foot">JRILICENSE · JagX</div></div>
+    </div>
+    <div class="page" id="page-bot">
+      <div class="ph">Bot</div>
+      <p class="lead">A small team on one task. Same JagX brain, shown as Nimbus → Atlas → Nova → Mira.</p>
+      <div class="box">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div><b>Live session</b><div class="tiny">Turns chat into Bot mode</div></div>
+          <button class="tog" id="botLive" type="button">Start</button>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="step"><strong>1. Start Live</strong>Then open Chat and give one clear task.</div>
+        <div class="step"><strong>2. Team runs</strong>You see each agent, then one answer.</div>
+        <div class="step"><strong>3. GitHub</strong>Vault PAT → GitHub page → Commit &amp; push.</div>
+      </div>
+      <div class="lbl">Your bots</div>
+      <div id="botRoster"></div>
+      <div class="box">
+        <b>Add bot</b>
+        <label>Name</label><input id="botName" placeholder="e.g. Social"/>
+        <label>Instructions</label><textarea id="botJob" rows="3"></textarea>
+        <button class="full solid" type="button" id="botAdd">Add</button>
       </div>
     </div>
-    <div class="lbl">Your bots</div>
-    <div id="botRoster"></div>
-    <div class="box">
-      <b>New bot</b>
-      <label>Name</label><input id="botName" placeholder="e.g. Social, Research"/>
-      <label>Job / instructions</label><textarea id="botJob" rows="3" placeholder="What this bot always does…"></textarea>
-      <button class="full solid" type="button" id="botAdd">Add bot</button>
+    <div class="page" id="page-projects">
+      <div class="ph">Projects</div>
+      <p class="lead">Create a project first. Chat stays under that name.</p>
+      <div class="box">
+        <b>New project</b>
+        <label>Name</label><input id="projName"/>
+        <label>Goal</label><input id="projGoal"/>
+        <button class="full solid" type="button" id="projCreate">Create</button>
+      </div>
+      <div class="lbl">Yours</div>
+      <div id="projList"></div>
     </div>
-    <div class="box">
-      <b>Social accounts</b>
-      <div class="tiny">Grok Bot logs you into X/Facebook on a <b>cloud PC</b>. Here: Settings → Connectors (X / Facebook) + Vault for API tokens. Bot drafts posts; live publish needs API token or a real cloud worker.</div>
+    <div class="page" id="page-github">
+      <div class="ph">GitHub</div>
+      <p class="lead">Push code the AI wrote into <b>your</b> repos with your PAT.</p>
+      <div class="steps">
+        <div class="step"><strong>1. PAT</strong>GitHub → Settings → Developer settings → tokens → repo scope.</div>
+        <div class="step"><strong>2. Vault</strong>Settings → Vault → label GitHub → paste token.</div>
+        <div class="step"><strong>3. Push</strong>owner/repo, path, content → Commit &amp; push.</div>
+      </div>
+      <div class="box">
+        <label>Owner / repo</label><input id="ghRepo" placeholder="wantajudeen/my-app"/>
+        <label>File path</label><input id="ghPath" placeholder="src/App.jsx"/>
+        <label>Commit message</label><input id="ghMsg" placeholder="Update via JagX"/>
+        <label>File content</label><textarea id="ghBody" rows="10"></textarea>
+        <button class="full solid" type="button" id="ghPush">Commit &amp; push</button>
+        <div class="tiny" id="ghStatus"></div>
+      </div>
     </div>
-    <div class="box">
-      <b>Open a site</b>
-      <div class="tiny">Opens in a new tab (iframes are blocked by most sites).</div>
-      <div class="bar2"><input id="browseUrl" placeholder="https://…"/><button class="ghost" type="button" id="browseGo">Open</button></div>
+    <div class="page" id="page-settings">
+      <div class="ph">Settings</div>
+      <div class="lbl">Account</div>
+      <button class="srow" type="button" id="btnSignOut"><div class="grow"><b>Sign out</b></div></button>
+      <div class="lbl">Tools</div>
+      <button class="srow" type="button" id="goConn"><div class="grow"><b>Connectors</b><div class="sub">X, Facebook, Gmail…</div></div></button>
+      <button class="srow" type="button" id="goVault"><div class="grow"><b>Vault</b><div class="sub">Tokens on this device</div></div></button>
+      <button class="srow" type="button" id="goSkills"><div class="grow"><b>Skills</b></div></button>
+      <button class="srow" type="button" id="clearHist"><div class="grow"><b>Clear all chat history</b></div></button>
+      <button class="srow" type="button" id="dDl"><div class="grow"><b>Get Android app</b></div></button>
+      <div class="box" style="margin-top:12px"><b>About</b><div class="tiny">v1.4.0 · #/chat #/build #/bot #/projects #/github #/settings</div></div>
+    </div>
+    <div class="page" id="page-conn">
+      <div class="ph">Connectors</div>
+      <p class="lead">Each user connects their own apps.</p>
+      <div id="connList"></div>
+      <div class="box">
+        <b>Add</b>
+        <label>Name</label><input id="cName"/>
+        <label>Type</label>
+        <select id="cType">
+          <option value="x">X</option><option value="facebook">Facebook</option>
+          <option value="gmail">Gmail</option><option value="github">GitHub</option>
+          <option value="trading">Trading</option><option value="custom">Custom</option>
+        </select>
+        <label>Note</label><input id="cEnd"/>
+        <button class="full solid" type="button" id="cAdd">Connect</button>
+      </div>
+    </div>
+    <div class="page" id="page-vault">
+      <div class="ph">Vault</div>
+      <p class="lead">Secrets on this device. Label <b>GitHub</b> for push.</p>
+      <div id="vaultList"></div>
+      <div class="box">
+        <label>Label</label><input id="vLabel" placeholder="GitHub"/>
+        <label>Token</label><input id="vSecret" type="password"/>
+        <button class="full solid" type="button" id="vAdd">Save</button>
+      </div>
+    </div>
+    <div class="page" id="page-skills">
+      <div class="ph">Skills</div>
+      <div id="skillList"></div>
+      <div class="box">
+        <label>Name</label><input id="skName"/>
+        <label>What it does</label><textarea id="skBody" rows="4"></textarea>
+        <button class="full solid" type="button" id="skAdd">Save skill</button>
+      </div>
     </div>
   </div>
-  <div class="panel" id="panelConn"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Connectors</div><div id="connList"></div><div class="box"><b>Add connector</b><label>Name</label><input id="cName" placeholder="My X account"/><label>Type</label><select id="cType"><option value="x">X (Twitter)</option><option value="facebook">Facebook</option><option value="gmail">Gmail</option><option value="github">GitHub</option><option value="trading">Trading</option><option value="custom">Custom</option></select><label>Note</label><input id="cEnd" placeholder="@handle or page name"/><button class="full solid" type="button" id="cAdd">Connect</button></div></div>
-  <div class="panel" id="panelVault"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Vault</div><p class="lead">Tokens stay on this device. Label e.g. <b>X</b> or <b>GitHub</b> + paste API token (not your Facebook password).</p><div id="vaultList"></div><div class="box"><label>Label</label><input id="vLabel" placeholder="X"/><label>Secret / token</label><input id="vSecret" type="password"/><button class="full solid" type="button" id="vAdd">Save</button></div></div>
-  <div class="panel" id="panelSet">
-    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Settings</div>
-    <div class="lbl">Account</div>
-    <button class="srow" type="button" id="btnSignOut"><div class="grow"><b>Sign out</b></div></button>
-    <div class="lbl">Tools</div>
-    <button class="srow" type="button" id="dConnFromSet"><div class="grow"><b>Connectors</b><div class="sub">X, Facebook, Gmail…</div></div></button>
-    <button class="srow" type="button" id="dVaultFromSet"><div class="grow"><b>Vault</b><div class="sub">API tokens on device</div></div></button>
-    <button class="srow" type="button" id="dSkills"><div class="grow"><b>Skills</b></div></button>
-    <button class="srow" type="button" id="dPlug"><div class="grow"><b>Plugins</b></div></button>
-    <button class="srow" type="button" id="dGh"><div class="grow"><b>GitHub</b></div></button>
-    <button class="srow" type="button" id="dTools"><div class="grow"><b>Shortcuts</b></div></button>
-    <div class="lbl">App</div>
-    <button class="srow" type="button" id="clearHist"><div class="grow"><b>Clear history</b></div></button>
-    <button class="srow" type="button" id="dDl"><div class="grow"><b>Get Android app</b></div></button>
-    <div class="box" style="margin-top:12px"><b>About</b><div class="tiny">Version 1.3.1</div></div>
-  </div>
-  <div class="panel" id="panelTools"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Shortcuts</div>
-    <button class="srow" type="button" data-prompt="Help me complete this school assignment. Explain first, then write a clean answer. Assignment: "><div class="grow"><b>Assignment helper</b></div></button>
-    <button class="srow" type="button" id="btnPdf"><div class="grow"><b>Download last answer as PDF</b></div></button>
-    <div class="box"><b>Read a link</b><div class="bar2"><input id="linkUrl" placeholder="https://…"/><button class="ghost" type="button" id="linkGo">Read</button></div></div>
-  </div>
-  <div class="panel" id="panelSkills"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Skills</div><div id="skillList"></div><div class="box"><label>Name</label><input id="skName"/><label>What it does</label><textarea id="skBody" rows="4"></textarea><button class="full solid" type="button" id="skAdd">Save skill</button><button class="full ghost" type="button" id="skDraft">Draft with AI</button></div></div>
-  <div class="panel" id="panelPlug"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Plugins</div><div id="plugList"></div></div>
-  <div class="panel" id="panelBox"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Code test</div><textarea id="boxCode" rows="8"></textarea><button class="full solid" type="button" id="boxRun">Run</button></div>
-  <div class="panel" id="panelGh">
-    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>GitHub</div>
-    <p class="lead">Vault → label GitHub + PAT, then commit & push.</p>
-    <div class="box">
-      <label>Owner / repo</label><input id="ghRepo" placeholder="username/repo-name"/>
-      <label>File path</label><input id="ghPath" placeholder="src/App.jsx"/>
-      <label>Commit message</label><input id="ghMsg" placeholder="Update file"/>
-      <label>File content</label><textarea id="ghBody" rows="8"></textarea>
-      <button class="full solid" type="button" id="ghPush">Commit & push</button>
-      <div class="tiny" id="ghStatus"></div>
-    </div>
-  </div>
-  <div class="panel" id="panelAuto"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Automations</div><p class="lead">Ask the bot to turn a task into a daily run.</p></div>
-  <div class="panel" id="panelLib"><div class="ph"><button type="button" class="icon-btn" data-back>×</button>Library</div><p class="lead">Attach files with +.</p></div>
-  <div class="panel" id="panelProj">
-    <div class="ph"><button type="button" class="icon-btn" data-back>×</button>Projects</div>
-    <p class="lead">Create a project first, then open it.</p>
-    <div class="box">
-      <b>New project</b>
-      <label>Name</label><input id="projName" placeholder="e.g. School essay"/>
-      <label>Goal (optional)</label><input id="projGoal"/>
-      <button class="full solid" type="button" id="projCreate">Create project</button>
-    </div>
-    <div class="lbl">Your projects</div>
-    <div id="projList"></div>
-  </div>
-  <div class="composer-wrap"><div class="composer"><textarea id="input" rows="1" placeholder="Sign in to chat"></textarea><div class="bar"><button class="plus" type="button" id="btnPlus">+</button><span class="chip" id="modeChip">Ask · Fast</span><button class="send" type="button" id="send">↑</button></div></div><div class="foot">JRILICENSE</div></div>
-</main>
+</div>
 <input type="file" id="filePick" accept="image/*,.pdf,.txt,.md,.csv" hidden/>
 <div class="modal" id="authModal"><div class="card">
   <h2 id="authTitle">Sign in</h2>
-  <p class="sub">Use Google, email OTP, or password.</p>
+  <p class="sub">Google, email OTP, or password.</p>
   <button class="full ghost" type="button" id="btnGoogle">Sign in with Google</button>
   <div class="or">or email OTP</div>
   <label>Email</label><input id="authEmail" type="email"/>
@@ -192,16 +264,20 @@ pre.code{background:#0a0a0a;border:1px solid var(--line);border-radius:12px;padd
   <div id="otpWrap" style="display:none;margin-top:12px">
     <label>OTP from email (often 8 digits)</label>
     <input id="authOtp" inputmode="numeric" maxlength="10" autocomplete="one-time-code" placeholder="12345678"/>
-    <button class="full solid" type="button" id="btnVerifyOtp" style="margin-top:10px">Verify & sign in</button>
+    <button class="full solid" type="button" id="btnVerifyOtp" style="margin-top:10px">Verify &amp; sign in</button>
   </div>
   <div class="or">or password</div>
   <div id="nameWrap" style="display:none"><label>Full name</label><input id="authName"/></div>
   <label>Password</label><input id="authPass" type="password"/>
   <div class="err" id="authErr" style="display:none"></div><div class="ok" id="authOk" style="display:none"></div>
   <button class="full solid" type="button" id="authSubmit">Sign in with password</button>
-  <div class="switch"><button type="button" id="authToggle">New here? Create an account</button></div>
+  <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--muted)"><button type="button" id="authToggle">New here? Create an account</button></div>
 </div></div>
-<div class="modal" id="dlModal"><div class="card"><h2>Android app</h2><a class="full solid" style="display:grid;place-items:center;text-decoration:none" href="https://github.com/wantajudeen/jagx-ai-app/releases/download/apk-latest/JagX-AI.apk">Download APK</a><button class="full ghost" type="button" id="dlClose" style="margin-top:8px">Close</button></div></div>
+<div class="modal" id="dlModal"><div class="card"><h2>Android app</h2>
+  <a class="full solid" style="display:grid;place-items:center;text-decoration:none" href="https://github.com/wantajudeen/jagx-ai-app/releases/download/apk-latest/JagX-AI.apk">Download APK</a>
+  <button class="full ghost" type="button" id="dlClose" style="margin-top:8px">Close</button>
+</div></div>
 <script src="./app.js"></script>
 <script src="./features.js"></script>
-</body></html>
+</body>
+</html>
