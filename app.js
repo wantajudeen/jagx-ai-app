@@ -1,5 +1,6 @@
 (function(){
   var API='https://jagx-ai-v2.onrender.com';
+  var API_KEY='jagx-984199d487c01240f4515157a11cd6b4';
   var SUPABASE_URL='https://xxxyqzuwvavqsccnlkxa.supabase.co';
   var SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4eHlxenV3dmF2cXNjY25sa3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjY4MDcsImV4cCI6MjEwNTE0MjgwN30.pd3D3ULeR90gM7HB8xAlERr8swUyc_aJaIxDqc-vH2Y';
   var supabase=null,session=null,modeSignUp=false,mode='ask',botOn=false,pendingFile=null;
@@ -163,7 +164,7 @@
     saveLocal(); renderBots();
   };
   function newChat(){chatId=uid();chats.unshift({id:chatId,title:'New conversation',msgs:[],updated:Date.now()});history=[];activeProject=null;saveLocal();showChat();renderAll();}
-  function escapeHtml(s){return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>');}
+  function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function formatBot(text){var raw=String(text||'');raw=raw.replace(/<br\s*\/?>/gi,'\n').replace(/<\/?[^>]+>/g,'');raw=raw.replace(/\*\*([^*]+)\*\*/g,'$1');var lines=raw.split('\n'),out=[],i=0;while(i<lines.length){var line=lines[i];if(/^\s*\|.+\|\s*$/.test(line)){var rows=[];while(i<lines.length&&/^\s*\|.+\|\s*$/.test(lines[i])){var cells=lines[i].trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(function(c){return c.trim();});if(!cells.every(function(c){return /^:?-+:?$/.test(c)||c==='';}))rows.push(cells);i++;}if(rows.length){var h='<table><thead><tr>'+rows[0].map(function(c){return '<th>'+escapeHtml(c)+'</th>';}).join('')+'</tr></thead><tbody>';for(var r=1;r<rows.length;r++)h+='<tr>'+rows[r].map(function(c){return '<td>'+escapeHtml(c)+'</td>';}).join('')+'</tr>';h+='</tbody></table>';out.push(h);}continue;}if(/^\s*```/.test(line)){var code=[];i++;while(i<lines.length&&!/^\s*```/.test(lines[i])){code.push(lines[i]);i++;}if(i<lines.length)i++;out.push('<pre class="code"><code>'+escapeHtml(code.join('\n'))+'</code></pre>');continue;}if(/^\s*[-*•]\s+/.test(line)){var items=[];while(i<lines.length&&/^\s*[-*•]\s+/.test(lines[i])){items.push('<li>'+escapeHtml(lines[i].replace(/^\s*[-*•]\s+/,''))+'</li>');i++;}out.push('<ul>'+items.join('')+'</ul>');continue;}if(line.trim()===''){out.push('<div style="height:8px"></div>');i++;continue;}out.push('<p>'+escapeHtml(line)+'</p>');i++;}return out.join('');}
   function renderAll(){thread.innerHTML='';if(!history.length){thread.appendChild(empty);empty.style.display='';return;}empty.style.display='none';history.forEach(function(m){var row=document.createElement('div');row.className='msg '+(m.role==='user'?'user':'bot');var bub=document.createElement('div');bub.className='bubble';if(m.role==='user')bub.textContent=m.content;else{if(m.agent){var ag=document.createElement('div');ag.className='agent';ag.textContent=m.agent;bub.appendChild(ag);}var body=document.createElement('div');body.innerHTML=formatBot(m.content);bub.appendChild(body);}row.appendChild(bub);thread.appendChild(row);});thread.scrollTop=thread.scrollHeight;}
   function startThinking(){stopThinking();thinkStart=Date.now();thinkEl=document.createElement('div');thinkEl.className='thinking';thinkEl.textContent='Thinking…';thread.appendChild(thinkEl);thinkTimer=setInterval(function(){var s=Math.floor((Date.now()-thinkStart)/1000);if(thinkEl)thinkEl.textContent='Thinking · '+s+'s';},400);}
@@ -188,6 +189,26 @@
   }
   function contextPrefix(text){var bits=[];bits.push('You are a helpful assistant. Do not keep repeating the product name.');bits.push('RULES: Never promise guaranteed profit.');bits.push('Tone: clear, mature.');bits.push('School and code help when asked.');if(window.JagXSkills){var sks=window.JagXSkills();if(sks&&sks.length)bits.push('Active skills:\n'+sks.map(function(s){return '- '+s.name+': '+s.body;}).join('\n'));}if(botOn){bits.push('Multi-agent team mode.'); var onB=bots.filter(function(b){return b.on!==false;}); if(onB.length) bits.push('Active bots:\n'+onB.map(function(b){return '- '+b.name+': '+b.job;}).join('\n'));}
     if(activeProject) bits.push('Current project: '+activeProject.name+(activeProject.goal?' — '+activeProject.goal:''));var on=conns.filter(function(c){return c.on;});if(on.length)bits.push('Connected apps: '+on.map(function(c){return c.name+' ('+c.type+')';}).join('; ')+'. For X/Facebook: draft posts; never claim a post went live unless user confirms.');if(vault.length)bits.push('Vault labels only: '+vault.map(function(v){return v.label;}).join(', ')+'.');bits.push('Today: '+new Date().toISOString());return bits.join('\n')+'\n\nUser: '+text;}
-  async function send(){if(!session){authModal.classList.add('open');return;}var text=(input.value||'').trim();if((!text&&!pendingFile)||sendBtn.disabled)return;if(pendingFile){text=text||('[File: '+pendingFile.name+']');pendingFile=null;}input.value='';history.push({role:'user',content:text});renderAll();saveLocal();sendBtn.disabled=true;startThinking();try{if(botOn){await showAgentSteps();startThinking();}var payload={message:contextPrefix(text),history:history.filter(function(x){return !x.image;}).slice(0,-1).slice(-12)};var r=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'jagx-984199d487c01240f4515157a11cd6b4'},body:JSON.stringify(payload)});var data=await r.json().catch(function(){return {};});stopThinking();history.push({role:'assistant',agent:botOn?'Bot team':'',content:r.ok?(data.response||''):(data.detail||data.message||('Error '+r.status))});renderAll();saveLocal();}catch(e){stopThinking();history.push({role:'assistant',content:'Network issue — try again.'});renderAll();}finally{sendBtn.disabled=false;input.focus();}}
+  function cleanReply(s){
+    return String(s||'')
+      .replace(/[\u200B-\u200D\uFEFF\u2060]/g,'')
+      .replace(/\u00A0/g,' ')
+      .replace(/\*\*([^*]+)\*\*/g,'$1')
+      .trim();
+  }
+  async function logBotJob(text, status, result){
+    if(!supabase||!session||!session.user) return;
+    try{
+      await supabase.from('bot_jobs').insert({
+        user_id: session.user.id,
+        kind: botOn ? 'bot' : 'chat',
+        status: status||'done',
+        input: {message: String(text||'').slice(0,2000)},
+        result: {response: String(result||'').slice(0,8000)},
+        updated_at: new Date().toISOString()
+      });
+    }catch(e){}
+  }
+  async function send(){if(!session){authModal.classList.add('open');return;}var text=(input.value||'').trim();if((!text&&!pendingFile)||sendBtn.disabled)return;if(pendingFile){text=text||('[File: '+pendingFile.name+']');pendingFile=null;}input.value='';history.push({role:'user',content:text});renderAll();saveLocal();sendBtn.disabled=true;startThinking();try{if(botOn){await showAgentSteps();startThinking();}var payload={message:contextPrefix(text),history:history.filter(function(x){return !x.image;}).slice(0,-1).slice(-12)};var r=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY,'Accept':'application/json'},body:JSON.stringify(payload)});var data=await r.json().catch(function(){return {};});stopThinking();var reply='';if(r.ok){reply=cleanReply(data.response||data.message||'');if(!reply)reply='Empty reply from server.';}else if(r.status===401){reply='API key rejected. Check backend key.';}else{reply=cleanReply(data.detail||data.message||('Error '+r.status));}history.push({role:'assistant',agent:botOn?'Bot team':'',content:reply});renderAll();saveLocal();if(botOn)await logBotJob(text,r.ok?'done':'error',reply);}catch(e){stopThinking();history.push({role:'assistant',content:'Network issue — server may be waking up. Try again.');renderAll();}finally{sendBtn.disabled=false;input.focus();}}
   window.JagXSend=send;sendBtn.onclick=send;input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});boot();
 })();
