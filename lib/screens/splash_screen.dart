@@ -29,20 +29,14 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _go() async {
-    await Future.delayed(const Duration(milliseconds: 1000));
+    await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
-    if (Env.hasSupabase) {
-      if (!await Auth.isLoggedIn()) {
-        context.go('/auth');
+    // Guest chat allowed — do not block on auth
+    if (await Profile.needsOnboarding()) {
+      if (Env.hasSupabase && await Auth.isLoggedIn()) {
+        context.go('/onboarding');
         return;
       }
-    } else if (!await Auth.hasChosenEntry()) {
-      context.go('/auth');
-      return;
-    }
-    if (await Profile.needsOnboarding()) {
-      context.go('/onboarding');
-      return;
     }
     context.go('/chat');
   }
