@@ -64,21 +64,17 @@
     session=s;
     var topBtn=document.getElementById('btnTopSignIn');
     if(s){
-      main.classList.remove('locked');
-      authModal.classList.remove('open');
+      main.classList.remove('locked');authModal.classList.remove('open');
       var u=s.user||{},label=(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email||'Signed in';
       window.__jagxUserId=(u.id||'guest');
-      document.getElementById('userChip').textContent=label;
-      document.getElementById('av').textContent=(label[0]||'J').toUpperCase();
-      if(topBtn){topBtn.style.display='none';}
+      document.getElementById('userChip').textContent=label;document.getElementById('av').textContent=(label[0]||'J').toUpperCase();
+      if(topBtn)topBtn.style.display='none';
       if(input&&!input.value)input.placeholder=(mode==='build'?'Describe the full app to build…':(botOn?'Give the bot one clear task…':'Ask anything…'));
       loadLocal();renderHist();renderAll();renderConns();renderVault();renderProjects();renderBots();applyRoute();
     }else{
-      main.classList.remove('locked');
-      authModal.classList.remove('open');
+      main.classList.remove('locked');authModal.classList.remove('open');
       window.__jagxUserId='guest';
-      document.getElementById('userChip').textContent='Guest';
-      document.getElementById('av').textContent='J';
+      document.getElementById('userChip').textContent='Guest';document.getElementById('av').textContent='J';
       if(topBtn){topBtn.style.display='';topBtn.textContent='Sign in';}
       if(input&&!input.value)input.placeholder='Ask anything…';
       loadLocal();renderHist();renderAll();
@@ -147,9 +143,23 @@
     }catch(e){st.textContent='Failed: '+String(e.message||e);}
   };
   function newChat(){chatId=uid();chats.unshift({id:chatId,title:'New conversation',msgs:[],updated:Date.now()});history=[];activeProject=null;saveLocal();renderAll();}
-  function escapeHtml(s){return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>');}
+  function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function formatBot(text){
     var src=String(text||'').replace(/\r\n/g,'\n');
+    src=src.replace(/\\\[/g,'\n').replace(/\\\]/g,'\n');
+    src=src.replace(/\\\(/g,'').replace(/\\\)/g,'');
+    src=src.replace(/\$\$([\s\S]*?)\$\$/g,function(_,m){return '\n'+m.trim()+'\n';});
+    src=src.replace(/\$([^$\n]+)\$/g,'$1');
+    src=src.replace(/\\times/g,'×').replace(/\\div/g,'÷').replace(/\\pm/g,'±');
+    src=src.replace(/\\cdot/g,'·').replace(/\\leq/g,'≤').replace(/\\geq/g,'≥');
+    src=src.replace(/\\neq/g,'≠').replace(/\\approx/g,'≈').replace(/\\infty/g,'∞');
+    src=src.replace(/\\sqrt\{([^}]+)\}/g,'√($1)');
+    src=src.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g,'($1)/($2)');
+    src=src.replace(/\\left\(|\\right\)|\\left\[|\\right\]/g,'');
+    src=src.replace(/\\text\{([^}]*)\}/g,'$1');
+    src=src.replace(/\\,/g,' ').replace(/\\;/g,' ').replace(/\\!/g,'');
+    src=src.replace(/\\\\/g,'\n');
+    src=src.replace(/\n{3,}/g,'\n\n');
     var codes=[];
     src=src.replace(/```([\w+-]*)\n?([\s\S]*?)```/g,function(_,lang,code){
       codes.push('<pre class="code"><button type="button" class="copy-btn">Copy</button><code>'+escapeHtml(String(code).trim())+'</code></pre>');
@@ -159,19 +169,13 @@
     src=src.replace(/(?:^|\n)((?:\|[^\n]*\|(?:\n|$))+)/g,function(_,block){
       var lines=block.trim().split('\n').filter(function(l){return /\|/.test(l);});
       if(lines.length<2)return '\n'+block;
-      var rows=lines.map(function(l){
-        return l.replace(/^\|/,'').replace(/\|$/,'').split('|').map(function(c){return c.trim();});
-      });
+      var rows=lines.map(function(l){return l.replace(/^\|/,'').replace(/\|$/,'').split('|').map(function(c){return c.trim();});});
       var start=1;
       if(rows[1]&&rows[1].every(function(c){return /^:?-+:?$/.test(c);}))start=2;
       var html='<div class="md-table-wrap"><table class="md-table"><thead><tr>';
       rows[0].forEach(function(c){html+='<th>'+escapeHtml(c)+'</th>';});
       html+='</tr></thead><tbody>';
-      for(var i=start;i<rows.length;i++){
-        html+='<tr>';
-        rows[i].forEach(function(c){html+='<td>'+escapeHtml(c)+'</td>';});
-        html+='</tr>';
-      }
+      for(var i=start;i<rows.length;i++){html+='<tr>';rows[i].forEach(function(c){html+='<td>'+escapeHtml(c)+'</td>';});html+='</tr>';}
       html+='</tbody></table></div>';
       tables.push(html);
       return '\n%%TABLE'+(tables.length-1)+'%%\n';
@@ -203,6 +207,13 @@
         i--;out.push('<ol class="md-ul">'+oitems.join('')+'</ol>');continue;
       }
       if(line.trim()===''){out.push('');continue;}
+      var t=line.trim();
+      if(/^(Solution|Answer|Step\s*\d+|Final answer|Result|Explanation|Given|Find|Proof)[:.]?\s*$/i.test(t)||/^(Solution|Answer|Final answer)\s*:/i.test(t)){
+        out.push('<p class="md-p md-title"><b>'+inlineMd(t)+'</b></p>');continue;
+      }
+      if(/^[0-9a-zA-Z\(\)\s\+\-\*\/=×÷·√≤≥≠≈∞\.]+$/.test(t)&&/[=+\-×÷√]/.test(t)&&t.length<80){
+        out.push('<p class="md-math">'+escapeHtml(t)+'</p>');continue;
+      }
       out.push('<p class="md-p">'+inlineMd(line)+'</p>');
     }
     var html=out.join('\n');
@@ -241,7 +252,7 @@
   function contextPrefix(text){
     var extra='';
     if(mode==='build')extra+='[BUILD MODE] Deliver complete app structure and files.\n';
-    extra+='[FORMAT] Use clean markdown tables when comparing options. For math: show steps plainly (no latex dumps, no ** spam). Prefer real tables over ASCII pipes.\n';
+    extra+='[FORMAT] Never use LaTeX (no \\ [ \\] \\( \\) $$). For math write plain text steps like: 2x-2=26 then 2x=28 then x=14. Titles bold with **Solution**. Use markdown tables when comparing.\n';
     if(botOn)extra+='[BOT MODE] Multi-agent: Nimbus, Atlas, Nova, Mira. One clear result.\n';
     if(pendingAtts.length){extra+='[ATTACHMENTS]\n';pendingAtts.forEach(function(a){if((a.type||'').indexOf('image/')===0)extra+='(image: '+a.name+')\n';else extra+='File '+a.name+':\n'+String(a.data).slice(0,4000)+'\n';});}
     return extra+text;
