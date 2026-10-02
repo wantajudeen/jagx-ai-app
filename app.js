@@ -22,8 +22,8 @@
   function applyRoute(){
     var r=currentRoute();
     document.querySelectorAll('.nav a[data-route]').forEach(function(a){var dr=a.getAttribute('data-route');a.classList.toggle('on', dr===r || (r==='build'&&dr==='chat'));});
-    if(r==='build'){mode='build';botOn=false;document.getElementById('modeChip').textContent='Build · Fast';input.placeholder=session?'Describe the full app to build…':'Sign in';document.getElementById('topTitle').textContent='Build';}
-    else if(r==='chat'){mode='chat';botOn=false;document.getElementById('modeChip').textContent='Chat · Fast';input.placeholder=session?'Ask anything':'Sign in to chat';document.getElementById('topTitle').textContent='Chat';}
+    if(r==='build'){mode='build';botOn=false;document.getElementById('modeChip').textContent='Build · Fast';input.placeholder='Describe the full app to build…';document.getElementById('topTitle').textContent='Build';}
+    else if(r==='chat'){mode='chat';botOn=false;document.getElementById('modeChip').textContent='Chat · Fast';input.placeholder='Ask anything…';document.getElementById('topTitle').textContent='Chat';}
     else if(r==='bot'){document.getElementById('topTitle').textContent='Bot';renderBots();}
     else document.getElementById('topTitle').textContent=r.charAt(0).toUpperCase()+r.slice(1);
     document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');p.style.display='none';});
@@ -62,13 +62,27 @@
   }
   function setSession(s){
     session=s;
-    if(s){main.classList.remove('locked');authModal.classList.remove('open');
+    var topBtn=document.getElementById('btnTopSignIn');
+    if(s){
+      main.classList.remove('locked');
+      authModal.classList.remove('open');
       var u=s.user||{},label=(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||u.email||'Signed in';
       window.__jagxUserId=(u.id||'guest');
-      document.getElementById('userChip').textContent=label;document.getElementById('av').textContent=(label[0]||'J').toUpperCase();
+      document.getElementById('userChip').textContent=label;
+      document.getElementById('av').textContent=(label[0]||'J').toUpperCase();
+      if(topBtn){topBtn.style.display='none';}
+      if(input&&!input.value)input.placeholder=(mode==='build'?'Describe the full app to build…':(botOn?'Give the bot one clear task…':'Ask anything…'));
       loadLocal();renderHist();renderAll();renderConns();renderVault();renderProjects();renderBots();applyRoute();
-    }else{main.classList.add('locked');authModal.classList.add('open');input.placeholder='Sign in to chat';
-      document.getElementById('userChip').textContent='Guest';document.getElementById('av').textContent='J';}
+    }else{
+      main.classList.remove('locked');
+      authModal.classList.remove('open');
+      window.__jagxUserId='guest';
+      document.getElementById('userChip').textContent='Guest';
+      document.getElementById('av').textContent='J';
+      if(topBtn){topBtn.style.display='';topBtn.textContent='Sign in';}
+      if(input&&!input.value)input.placeholder='Ask anything…';
+      loadLocal();renderHist();renderAll();
+    }
   }
   function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
   async function boot(){
@@ -96,7 +110,7 @@
   document.getElementById('btnGoogle').onclick=async function(){if(!supabase)return showErr('Auth loading…');var r=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});if(r.error)showErr(r.error.message);};
   document.getElementById('btnSendOtp').onclick=async function(){if(!supabase)return showErr('Auth loading…');var email=(document.getElementById('authEmail').value||'').trim();if(!email)return showErr('Enter your email first');try{var r=await supabase.auth.signInWithOtp({email:email,options:{shouldCreateUser:true}});if(r.error)return showErr(r.error.message);document.getElementById('otpWrap').style.display='block';showOk('OTP sent (often 8 digits).');}catch(e){showErr(String(e.message||e));}};
   document.getElementById('btnVerifyOtp').onclick=async function(){if(!supabase)return showErr('Auth loading…');var email=(document.getElementById('authEmail').value||'').trim();var token=(document.getElementById('authOtp').value||'').trim();if(!email||!token)return showErr('Email and OTP required');try{var r=await supabase.auth.verifyOtp({email:email,token:token,type:'email'});if(r.error)return showErr(r.error.message);setSession(r.data&&r.data.session);showOk('Signed in.');}catch(e){showErr(String(e.message||e));}};
-  document.getElementById('btnAuth').onclick=async function(){closeSide();if(session&&supabase){await supabase.auth.signOut();setSession(null);history=[];renderAll();}else authModal.classList.add('open');};
+  document.getElementById('btnAuth').onclick=function(){closeSide();if(session){go('settings');}else authModal.classList.add('open');};
   var so=document.getElementById('btnSignOut');if(so)so.onclick=async function(){if(session&&supabase){await supabase.auth.signOut();setSession(null);}};
   document.getElementById('btnPlus').onclick=function(){document.getElementById('filePick').click();};
   document.getElementById('filePick').onchange=function(e){var files=e.target.files;if(!files)return;Array.prototype.forEach.call(files,function(f){if(pendingAtts.length>=4)return;var reader=new FileReader();reader.onload=function(){pendingAtts.push({name:f.name,type:f.type||'',data:reader.result});renderAttach();};if((f.type||'').indexOf('image/')===0)reader.readAsDataURL(f);else reader.readAsText(f.slice(0,Math.min(f.size,80000)));});e.target.value='';};
@@ -134,74 +148,68 @@
   };
   function newChat(){chatId=uid();chats.unshift({id:chatId,title:'New conversation',msgs:[],updated:Date.now()});history=[];activeProject=null;saveLocal();renderAll();}
   function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-  function formatBot(text){var raw=String(text||'');raw=raw.replace(/\*\*([^*]+)\*\*/g,'$1');var lines=raw.split('\n'),out=[],i=0;while(i<lines.length){var line=lines[i];if(/^\s*```/.test(line)){var code=[];i++;while(i<lines.length&&!/^\s*```/.test(lines[i])){code.push(lines[i]);i++;}if(i<lines.length)i++;out.push('<pre class="code"><button type="button" class="copy-btn">Copy</button><code>'+escapeHtml(code.join('\n'))+'</code></pre>');continue;}if(line.trim()===''){out.push('<div style="height:8px"></div>');i++;continue;}out.push('<p>'+escapeHtml(line)+'</p>');i++;}return out.join('');}
+  function formatBot(text){var raw=String(text||'');raw=raw.replace(/```([\w+-]*)\n([\s\S]*?)```/g,function(_,lang,code){return '<pre class="code"><button type="button" class="copy-btn">Copy</button><code>'+escapeHtml(code)+'</code></pre>';});raw=raw.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');raw=raw.replace(/`([^`]+)`/g,'<code>$1</code>');raw=raw.replace(/\n/g,'<br/>');return raw;}
   function renderAll(){
-    thread.innerHTML='';
-    if(!history.length){thread.appendChild(empty);empty.style.display='';return;}
+    if(!history.length){empty.style.display='flex';thread.querySelectorAll('.msg,.thinking').forEach(function(n){n.remove();});return;}
     empty.style.display='none';
-    history.forEach(function(m,idx){
-      var row=document.createElement('div');row.className='msg '+(m.role==='user'?'user':'bot');
-      var bub=document.createElement('div');bub.className='bubble';
-      if(m.role==='user'){
-        if(m.atts){m.atts.forEach(function(a){if(a.data){var im=document.createElement('img');im.src=a.data;im.style.cssText='max-width:200px;border-radius:12px;margin-bottom:8px;display:block';bub.appendChild(im);}});}
-        var tx=document.createElement('div');tx.textContent=m.content;bub.appendChild(tx);
+    thread.querySelectorAll('.msg').forEach(function(n){n.remove();});
+    history.forEach(function(m){
+      var div=document.createElement('div');div.className='msg '+(m.role==='user'?'user':'bot');
+      var b=document.createElement('div');b.className='bubble';
+      if(m.role==='assistant'){b.innerHTML=formatBot(m.content);b.querySelectorAll('.copy-btn').forEach(function(btn){btn.onclick=function(){var code=btn.parentNode.querySelector('code');if(code)navigator.clipboard.writeText(code.textContent||'');};});}
+      else b.textContent=m.content;
+      div.appendChild(b);
+      if(m.role==='assistant'){
         var act=document.createElement('div');act.className='msg-actions';
-        var ed=document.createElement('button');ed.type='button';ed.className='edit-btn';ed.textContent='Edit';
-        ed.onclick=(function(i){return function(){input.value=history[i].content||'';history=history.slice(0,i);saveLocal();renderAll();input.focus();};})(idx);
-        act.appendChild(ed);bub.appendChild(act);
-      } else {
-        if(m.agent){var ag=document.createElement('div');ag.className='agent';ag.textContent=m.agent;bub.appendChild(ag);}
-        var body=document.createElement('div');body.innerHTML=formatBot(m.content);bub.appendChild(body);
-        body.querySelectorAll('.copy-btn').forEach(function(btn){btn.onclick=function(){var code=btn.parentNode.querySelector('code');if(code)navigator.clipboard.writeText(code.textContent||'');btn.textContent='Copied';setTimeout(function(){btn.textContent='Copy';},1200);};});
-        var act2=document.createElement('div');act2.className='msg-actions';
-        ['Helpful','Bad','Copy'].forEach(function(lab){
-          var b=document.createElement('button');b.type='button';b.className='fb-btn'+(lab==='Bad'?' bad':'')+(m.fb==='up'&&lab==='Helpful'?' on':'')+(m.fb==='down'&&lab==='Bad'?' on':'');
-          b.textContent=lab;
-          b.onclick=function(){if(lab==='Copy'){navigator.clipboard.writeText(m.content||'');b.textContent='Copied';setTimeout(function(){b.textContent='Copy';},800);}else{m.fb=lab==='Helpful'?'up':'down';saveLocal();renderAll();}};
-          act2.appendChild(b);
-        });
-        bub.appendChild(act2);
+        var up=document.createElement('button');up.type='button';up.className='fb-btn';up.textContent='Good';up.onclick=function(){up.classList.add('on');};
+        var dn=document.createElement('button');dn.type='button';dn.className='fb-btn bad';dn.textContent='Bad';dn.onclick=function(){dn.classList.add('on');};
+        act.appendChild(up);act.appendChild(dn);div.appendChild(act);
       }
-      row.appendChild(bub);thread.appendChild(row);
+      if(m.role==='user'){
+        var act2=document.createElement('div');act2.className='msg-actions';act2.style.opacity='1';
+        var ed=document.createElement('button');ed.type='button';ed.className='edit-btn';ed.textContent='Edit';
+        ed.onclick=function(){input.value=m.content;input.focus();};
+        act2.appendChild(ed);div.appendChild(act2);
+      }
+      thread.appendChild(div);
     });
     thread.scrollTop=thread.scrollHeight;
   }
-  function startThinking(){stopThinking();thinkStart=Date.now();thinkEl=document.createElement('div');thinkEl.className='thinking';thinkEl.textContent='Thinking…';thread.appendChild(thinkEl);thinkTimer=setInterval(function(){var s=Math.floor((Date.now()-thinkStart)/1000);if(thinkEl)thinkEl.textContent='Thinking · '+s+'s';},400);}
-  function stopThinking(){if(thinkTimer)clearInterval(thinkTimer);thinkTimer=null;if(thinkEl&&thinkEl.parentNode)thinkEl.parentNode.removeChild(thinkEl);thinkEl=null;}
-  function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
-  async function showAgentSteps(){if(!botOn)return;var onB=bots.filter(function(b){return b.on!==false;});if(!onB.length)onB=[{name:'Nimbus'},{name:'Atlas'},{name:'Nova'},{name:'Mira'}];stopThinking();var box=document.createElement('div');box.className='thinking';thread.appendChild(box);for(var i=0;i<onB.length;i++){box.textContent=(onB[i].name||'Bot')+' working…';thread.scrollTop=thread.scrollHeight;await sleep(450);}box.textContent='Team synthesizing…';await sleep(300);if(box.parentNode)box.parentNode.removeChild(box);}
-  function contextPrefix(text){var bits=[];bits.push('You are JagX AI. Clear human writing. No ** bold.');bits.push('Never promise guaranteed profit.');if(mode==='build')bits.push('BUILD MODE: Full production-ready code. Complete files in fences.');if(botOn)bits.push('BOT TEAM MODE: thorough.');if(activeProject)bits.push('Project: '+activeProject.name);return bits.join('\n')+'\n\nUser: '+text;}
-  function cleanReply(s){return String(s||'').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\*\*([^*]+)\*\*/g,'$1').trim();}
+  function startThinking(){stopThinking();thinkStart=Date.now();thinkEl=document.createElement('div');thinkEl.className='thinking';thinkEl.textContent='Thinking…';thread.appendChild(thinkEl);empty.style.display='none';thinkTimer=setInterval(function(){if(!thinkEl)return;var s=Math.floor((Date.now()-thinkStart)/1000);thinkEl.textContent='Thinking · '+s+'s';},400);}
+  function stopThinking(){if(thinkTimer){clearInterval(thinkTimer);thinkTimer=null;}if(thinkEl&&thinkEl.parentNode)thinkEl.parentNode.removeChild(thinkEl);thinkEl=null;}
+  function contextPrefix(text){
+    var extra='';
+    if(mode==='build')extra+='[BUILD MODE] Deliver complete app structure and files.\n';
+    if(botOn)extra+='[BOT MODE] Multi-agent: Nimbus, Atlas, Nova, Mira. One clear result.\n';
+    if(pendingAtts.length){extra+='[ATTACHMENTS]\n';pendingAtts.forEach(function(a){if((a.type||'').indexOf('image/')===0)extra+='(image: '+a.name+')\n';else extra+='File '+a.name+':\n'+String(a.data).slice(0,4000)+'\n';});}
+    return extra+text;
+  }
   async function send(){
-    if(!session){authModal.classList.add('open');return;}
     var text=(input.value||'').trim();
     if((!text&&!pendingAtts.length&&!pendingFile)||sendBtn.disabled)return;
-    var attsMeta=[];
-    if(pendingAtts.length){
-      var notes=[];
-      pendingAtts.forEach(function(a){
-        if((a.type||'').indexOf('image/')===0){notes.push('[Image: '+a.name+']');attsMeta.push({name:a.name,type:a.type,data:a.data});}
-        else {notes.push('[Doc: '+a.name+']\n'+String(a.data||'').slice(0,6000));attsMeta.push({name:a.name,type:a.type});}
-      });
-      text=(text?text+'\n\n':'')+notes.join('\n\n');
-      pendingAtts=[];renderAttach();
-    } else if(pendingFile){text=text||('[File: '+pendingFile.name+']');pendingFile=null;}
     input.value='';
-    history.push({role:'user',content:text,atts:attsMeta.length?attsMeta:undefined});
+    var show=text||'(attachment)';
+    history.push({role:'user',content:show});
+    pendingAtts=[];renderAttach();
     renderAll();saveLocal();sendBtn.disabled=true;startThinking();
     try{
-      if(botOn){await showAgentSteps();startThinking();}
-      var r=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({message:contextPrefix(text),history:history.slice(0,-1).slice(-12)})});
+      var r=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':API_KEY},body:JSON.stringify({message:contextPrefix(text||'Describe the attachment'),history:history.slice(0,-1).slice(-12)})});
       var data=await r.json().catch(function(){return {};});
       stopThinking();
-      var reply=r.ok?cleanReply(data.response||''):(data.detail||('Error '+r.status));
-      if(!reply)reply='Empty reply.';
-      history.push({role:'assistant',agent:botOn?'Bot team':(mode==='build'?'Build':''),content:reply});
+      if(!r.ok){history.push({role:'assistant',content:data.detail||('Error '+r.status)});}
+      else{
+        var ans=data.response||data.message||'';
+        if(data.attachment&&data.attachment.url)ans+='\n\n![image]('+data.attachment.url+')';
+        history.push({role:'assistant',content:ans});
+      }
       renderAll();saveLocal();
-    }catch(e){stopThinking();history.push({role:'assistant',content:'Network issue — try again.');renderAll();}
+    }catch(e){stopThinking();history.push({role:'assistant',content:'Network issue — try again.'});renderAll();}
     finally{sendBtn.disabled=false;input.focus();}
   }
   window.JagXSend=send;window.JagXGo=go;sendBtn.onclick=send;
   input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+  var ac=document.getElementById('authClose');if(ac)ac.onclick=function(){authModal.classList.remove('open');};
+  var topSi=document.getElementById('btnTopSignIn');
+  if(topSi)topSi.onclick=function(){authModal.classList.add('open');};
   boot();
 })();
