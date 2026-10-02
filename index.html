@@ -95,7 +95,8 @@ label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
 .card h2{font-size:18px;margin-bottom:4px}.card .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
 .err{color:#f87171;font-size:13px;margin-top:10px}.ok{color:#86efac;font-size:13px;margin-top:10px}
 .or{text-align:center;color:var(--dim);font-size:12px;margin:12px 0}
-.locked .composer{opacity:.5;pointer-events:none}
+/* guest chat allowed */
+.locked .composer{opacity:1;pointer-events:auto}
 .steps{display:grid;gap:8px;margin:12px 0}
 .step{padding:12px;border-radius:12px;border:1px solid var(--line);background:#0c0c0e;font-size:13px;color:var(--muted)}
 .step strong{color:var(--text);display:block;margin-bottom:4px}
@@ -138,9 +139,12 @@ label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
   <header class="top">
     <button class="icon-btn menu-fab" type="button" id="btnMenu">☰</button>
     <div class="top-title" id="topTitle">Chat</div>
-    <button class="icon-btn" type="button" id="btnNew" title="New chat">✎</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button type="button" id="btnTopSignIn" class="chip" style="cursor:pointer;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:#161618;color:var(--text);font-size:13px;font-weight:600">Sign in</button>
+      <button class="icon-btn" type="button" id="btnNew" title="New chat">✎</button>
+    </div>
   </header>
-  <div class="main locked" id="main">
+  <div class="main" id="main">
     <div class="page on" id="page-chat" style="padding:0;display:flex">
       <div class="thread" id="thread"><div class="empty" id="empty">
         <img src="./logo.svg" width="48" height="48" style="border-radius:12px;opacity:.9"/>
@@ -149,7 +153,7 @@ label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
       </div></div>
       <div class="composer-wrap"><div class="composer">
         <div id="attachPrev" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
-        <textarea id="input" rows="1" placeholder="Sign in to chat"></textarea>
+        <textarea id="input" rows="1" placeholder="Ask anything…"></textarea>
         <div class="bar">
           <button class="plus" type="button" id="btnPlus" title="Attach">+</button>
           <span class="chip" id="modeChip">Chat · Fast</span>
@@ -214,7 +218,7 @@ label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
       <button class="srow" type="button" id="goSkills"><div class="grow"><b>Skills</b></div></button>
       <button class="srow" type="button" id="clearHist"><div class="grow"><b>Clear all chat history</b></div></button>
       <button class="srow" type="button" id="dDl"><div class="grow"><b>Download Android APK</b><div class="sub">Install without Google Play</div></div></button>
-      <div class="box" style="margin-top:12px"><b>About</b><div class="tiny">v1.5.0 · Attach images in composer · Edit · Feedback</div></div>
+      <div class="box" style="margin-top:12px"><b>About</b><div class="tiny">v1.5.1 · Guest chat · Sign in at top</div></div>
     </div>
     <div class="page" id="page-conn">
       <div class="ph">Connectors</div>
@@ -265,9 +269,10 @@ label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
 </div>
 <input type="file" id="filePick" accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" multiple hidden/>
 <div class="modal" id="authModal"><div class="card">
+  <div style="display:flex;justify-content:flex-end"><button type="button" id="authClose" class="icon-btn" style="font-size:18px" aria-label="Close">×</button></div>
   <div style="text-align:center;margin-bottom:14px"><img src="./logo.svg" width="48" height="48" style="border-radius:12px"/></div>
   <h2 id="authTitle" style="text-align:center">Welcome to JagX AI</h2>
-  <p class="sub" style="text-align:center">Sign in to chat, build, and run Bot.</p>
+  <p class="sub" style="text-align:center">Optional — chat works as guest. Sign in to sync history across devices.</p>
   <button class="full solid" type="button" id="btnGoogle">Sign in with Google</button>
   <div class="or">or email OTP</div>
   <label>Email</label><input id="authEmail" type="email"/>
