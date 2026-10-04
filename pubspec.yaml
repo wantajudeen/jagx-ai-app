@@ -1,7 +1,7 @@
 name: jagx_ai
 description: JagX AI by JagX and JRILICENSE
 publish_to: "none"
-version: 3.7.0+21
+version: 3.8.0+22
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
