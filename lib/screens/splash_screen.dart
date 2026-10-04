@@ -22,16 +22,15 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
     _c = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 800));
+        vsync: this, duration: const Duration(milliseconds: 900));
     _fade = CurvedAnimation(parent: _c, curve: Curves.easeOut);
     _c.forward();
     _go();
   }
 
   Future<void> _go() async {
-    await Future.delayed(const Duration(milliseconds: 900));
+    await Future.delayed(const Duration(milliseconds: 1100));
     if (!mounted) return;
-    // Guest chat allowed — do not block on auth
     if (await Profile.needsOnboarding()) {
       if (Env.hasSupabase && await Auth.isLoggedIn()) {
         context.go('/onboarding');
@@ -53,13 +52,32 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: Jx.bg,
       body: FadeTransition(
         opacity: _fade,
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              JagxMark(size: 80, color: Color(0xFF8A8A8A)),
-              SizedBox(height: 24),
-              Text(
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border:
+                      Border.all(color: const Color(0xFFD4AF37), width: 1.4),
+                ),
+                child: const Center(
+                  child: Text(
+                    'JX',
+                    style: TextStyle(
+                      color: Color(0xFFD4AF37),
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+              const Text(
                 'JagX AI',
                 style: TextStyle(
                   fontSize: 28,
@@ -68,10 +86,15 @@ class _SplashScreenState extends State<SplashScreen>
                   color: Jx.text,
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
-                'JagX & JRILICENSE',
-                style: TextStyle(color: Jx.dim, fontSize: 13),
+              const SizedBox(height: 10),
+              const Text(
+                'by JRILICENSE',
+                style: TextStyle(
+                  color: Color(0xFFD4AF37),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
+                ),
               ),
             ],
           ),
