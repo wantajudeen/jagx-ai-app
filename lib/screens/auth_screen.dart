@@ -46,6 +46,17 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
+  String _friendly(String err) {
+    final e = err.toLowerCase();
+    if (e.contains('failed host lookup') || e.contains('socketexception')) {
+      return 'Cannot reach Supabase. Check internet, or rebuild the APK with the correct SUPABASE_URL.';
+    }
+    if (e.contains('email not confirmed')) {
+      return 'Confirm your email first, then sign in.';
+    }
+    return err;
+  }
+
   Future<void> _submit() async {
     setState(() {
       _busy = true;
@@ -70,7 +81,7 @@ class _AuthScreenState extends State<AuthScreen> {
         if (confirm) {
           _info = err;
         } else {
-          _error = err;
+          _error = _friendly(err);
         }
       });
       return;
@@ -91,11 +102,10 @@ class _AuthScreenState extends State<AuthScreen> {
     if (err != null) {
       setState(() {
         _busy = false;
-        _error = err;
+        _error = _friendly(err);
       });
       return;
     }
-    // Session may arrive via onAuthStateChange after browser redirect.
     setState(() {
       _busy = false;
       _info = 'Finish Google sign-in in the browser, then return here.';
@@ -108,28 +118,35 @@ class _AuthScreenState extends State<AuthScreen> {
       backgroundColor: Jx.bg,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
           children: [
             Center(
               child: Container(
-                width: 72,
-                height: 72,
+                width: 88,
+                height: 88,
                 decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFD4AF37), width: 1.2),
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF7C3AED), Color(0xFF4C1D95)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1A1A1A), Color(0xFF0A0A0A)],
                   ),
-                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Center(
-                  child: Text('J',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w800)),
+                  child: Text(
+                    'JX',
+                    style: TextStyle(
+                      color: Color(0xFFD4AF37),
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
             Text(
               _signUp ? 'Create account' : 'Sign in',
               textAlign: TextAlign.center,
@@ -138,9 +155,20 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'JagX AI · real account via Supabase',
+              'JagX AI',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Jx.muted),
+              style: TextStyle(color: Jx.muted, fontSize: 14),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'by JRILICENSE',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFFD4AF37),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.6,
+              ),
             ),
             if (!Env.hasSupabase) ...[
               const SizedBox(height: 12),
@@ -169,7 +197,8 @@ class _AuthScreenState extends State<AuthScreen> {
                 Expanded(child: Divider(color: Jx.border)),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 10),
-                  child: Text('or email', style: TextStyle(color: Jx.dim, fontSize: 12)),
+                  child: Text('or email',
+                      style: TextStyle(color: Jx.dim, fontSize: 12)),
                 ),
                 Expanded(child: Divider(color: Jx.border)),
               ],
@@ -246,11 +275,28 @@ class _AuthScreenState extends State<AuthScreen> {
                 style: const TextStyle(color: Jx.muted),
               ),
             ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () => context.push('/privacy'),
-              child: const Text('Privacy Policy',
-                  style: TextStyle(color: Jx.dim, fontSize: 12)),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () => context.push('/terms'),
+                  child: const Text('Terms',
+                      style: TextStyle(color: Jx.dim, fontSize: 12)),
+                ),
+                const Text(' · ', style: TextStyle(color: Jx.dim)),
+                TextButton(
+                  onPressed: () => context.push('/privacy'),
+                  child: const Text('Privacy',
+                      style: TextStyle(color: Jx.dim, fontSize: 12)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'JagX is by JRILICENSE',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Jx.dim, fontSize: 11),
             ),
           ],
         ),
