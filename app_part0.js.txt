@@ -1,0 +1,25 @@
+(function(){
+  var API='https://jagx-ai-v2.onrender.com';
+  var API_KEY='jagx-984199d487c01240f4515157a11cd6b4';
+  var SUPABASE_URL='https://xxxyqzuwvavqsccnlkxa.supabase.co';
+  var SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4eHlxenV3dmF2cXNjY25sa3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjY4MDcsImV4cCI6MjEwNTE0MjgwN30.pd3D3ULeR90gM7HB8xAlERr8swUyc_aJaIxDqc-vH2Y';
+  var supabase=null,session=null,modeSignUp=false,mode='chat',botOn=false,pendingFile=null;var pendingAtts=[];
+  var chats=[],chatId=null,history=[],vault=[],conns=[],projects=[],bots=[],activeProject=null;
+  var thinkEl=null,thinkTimer=null,thinkStart=0;
+  var thread=document.getElementById('thread'),empty=document.getElementById('empty');
+  var input=document.getElementById('input'),sendBtn=document.getElementById('send'),main=document.getElementById('main');
+  var authModal=document.getElementById('authModal'),authErr=document.getElementById('authErr'),authOk=document.getElementById('authOk');
+  var side=document.getElementById('side'),scrim=document.getElementById('scrim');
+  function uid(){return 'c_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+  function sk(k){var id=session&&session.user&&session.user.id;return (id||'guest')+'_'+k;}
+  function showErr(m){authErr.style.display='block';authErr.textContent=m;authOk.style.display='none';}
+  function showOk(m){authOk.style.display='block';authOk.textContent=m;authErr.style.display='none';}
+  function openSide(){side.classList.add('open');scrim.classList.add('open');}
+  function closeSide(){side.classList.remove('open');scrim.classList.remove('open');}
+  var ROUTES=['chat','build','bot','projects','github','settings','conn','vault','skills','terms','privacy'];
+  function currentRoute(){var h=(location.hash||'#/chat').replace(/^#\/?/,'').split('?')[0];if(h==='ask')h='chat';if(ROUTES.indexOf(h)<0)h='chat';return h;}
+  function go(route){if(ROUTES.indexOf(route)<0)route='chat';if(location.hash!=='#/'+route)location.hash='#/'+route;else applyRoute();}
+  function applyRoute(){
+    var r=currentRoute();
+    document.querySelectorAll('.nav a[data-route]').forEach(function(a){var dr=a.getAttribute('data-route');a.classList.toggle('on', dr===r || (r==='build'&&dr==='chat'));});
+    if(r==='build'){mode='build';botOn=false;document.getElementById('modeChip').textContent='Build · Fast';input.placeholder='Describe the full app to build…';document.getElementById('topTitle').textContent='Build';}
