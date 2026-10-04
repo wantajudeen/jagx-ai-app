@@ -3,6 +3,12 @@ name: Build Flutter Android APK
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "index.html"
+      - "app.js"
+      - "features.js"
   workflow_dispatch:
 
 permissions:
@@ -12,6 +18,7 @@ jobs:
   build:
     name: Flutter APK
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -26,84 +33,164 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Prepare project + inject secrets into .env
+      - name: Inject .env from secrets
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           JAGX_API_KEY: ${{ secrets.JAGX_API_KEY }}
         run: |
-          set -e
-          printf '%s\n' \
-            "SUPABASE_URL=${SUPABASE_URL}" \
-            "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}" \
-            "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}" \
-            "JAGX_API_KEY=${JAGX_API_KEY:-jagx-984199d487c01240f4515157a11cd6b4}" \
-            "JAGX_API_BASE=https://jagx-ai-v2.onrender.com" > .env
-          echo "env lines: $(wc -l < .env)"
+          set -euo pipefail
+          URL="${SUPABASE_URL:-}"
+          KEY="${SUPABASE_ANON_KEY:-}"
+          # Guard known typo in older secrets
+          case "$URL" in *xxxyquzw*) URL="https://xxxyqzuwvavqsccnlkxa.supabase.co" ;; esac
+          {
+            echo "SUPABASE_URL=${URL}"
+            echo "SUPABASE_ANON_KEY=${KEY}"
+            echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}"
+            echo "JAGX_API_KEY=${JAGX_API_KEY:-jagx-984199d487c01240f4515157a11cd6b4}"
+            echo "JAGX_API_BASE=https://jagx-ai-v2.onrender.com"
+          } > .env
+          echo "Wrote .env ($(wc -l < .env) lines)"
+          test -s .env
+
+      - name: Ensure assets
+        run: |
+          set -euo pipefail
           mkdir -p assets/icons
           if [ -f tooling/make_icon.py ]; then
             pip install pillow -q || true
             python3 tooling/make_icon.py || true
           fi
-          if [ ! -f assets/icons/app_icon.png ]; then
-            python3 -c "from struct import pack; open('assets/icons/app_icon.png','wb').write(b'')" 2>/dev/null || true
-            # minimal 1x1 png
-            printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82' > assets/icons/app_icon.png
+          if [ ! -s assets/icons/app_icon.png ]; then
+            python3 - <<'PY'
+          # minimal valid 48x48 blue PNG via pure struct (no pillow required)
+          import struct, zlib
+          w=h=48
+          def chunk(tag, data):
+              return struct.pack('>I', len(data)) + tag + data + struct.pack('>I', zlib.crc32(tag+data) & 0xffffffff)
+          raw=b''
+          for y in range(h):
+              raw += b'\x00' + bytes([30,40,80])*w
+          open('assets/icons/app_icon.png','wb').write(
+              b'\x89PNG\r\n\x1a\n' +
+              chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)) +
+              chunk(b'IDAT', zlib.compress(raw, 9)) +
+              chunk(b'IEND', b'')
+          )
+          print('icon ok')
+          PY
           fi
+
+      - name: Generate android/ if missing
+        run: |
+          set -euo pipefail
+          if [ ! -d android ]; then
+            echo "android/ missing — generating with flutter create"
+            flutter create . --project-name jagx_ai --org com.jagx --platforms=android
+          else
+            echo "android/ present"
+          fi
+          test -f android/app/build.gradle || test -f android/app/build.gradle.kts
 
       - name: Pub get
         run: flutter pub get
 
-      - name: Patch compileSdk, label
+      - name: Patch Android SDK, app id, label
         run: |
           python3 << 'PY'
           from pathlib import Path
           import re
-          for p in list(Path('.').rglob('build.gradle')) + list(Path('.').rglob('build.gradle.kts')):
-              t = p.read_text()
-              n = re.sub(r'compileSdk\s*=?\s*\d+', 'compileSdk = 35', t)
+
+          for p in list(Path('android').rglob('build.gradle')) + list(Path('android').rglob('build.gradle.kts')):
+              t = p.read_text(encoding='utf-8')
+              n = t
+              n = re.sub(r'compileSdk\s*=?\s*\d+', 'compileSdk = 35', n)
               n = re.sub(r'compileSdkVersion\s+\d+', 'compileSdkVersion 35', n)
+              n = re.sub(r'targetSdk\s*=?\s*\d+', 'targetSdk = 35', n)
+              n = re.sub(r'targetSdkVersion\s+\d+', 'targetSdkVersion 35', n)
+              n = re.sub(r'minSdk\s*=?\s*\d+', 'minSdk = 24', n)
+              n = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 24', n)
+              # applicationId
+              n = re.sub(r'applicationId\s*=?\s*"[^"]+"', 'applicationId = "com.jagx.jagxai"', n)
+              n = re.sub(r'applicationId\s+"[^"]+"', 'applicationId "com.jagx.jagxai"', n)
+              n = re.sub(r'namespace\s*=?\s*"[^"]+"', 'namespace = "com.jagx.jagxai"', n)
               if n != t:
-                  p.write_text(n)
+                  p.write_text(n, encoding='utf-8')
                   print('patched', p)
+
           man = Path('android/app/src/main/AndroidManifest.xml')
           if man.exists():
-              t = man.read_text()
+              t = man.read_text(encoding='utf-8')
               t = re.sub(r'android:label="[^"]*"', 'android:label="JagX AI"', t)
-              man.write_text(t)
-              print('label set')
+              # internet permission if missing
+              if 'android.permission.INTERNET' not in t:
+                  t = t.replace(
+                      '<manifest',
+                      '<manifest',
+                      1,
+                  )
+                  t = t.replace(
+                      '>',
+                      '>\n    <uses-permission android:name="android.permission.INTERNET"/>',
+                      1,
+                  )
+              man.write_text(t, encoding='utf-8')
+              print('manifest ok')
+
+          # enable cleartext for debug if needed — skip for release
+          print('android patches done')
           PY
 
       - name: Launcher icons
         run: dart run flutter_launcher_icons || true
 
+      - name: Analyze (non-fatal)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings || true
+
       - name: Build release APK
-        run: flutter build apk --release
+        run: |
+          set -euo pipefail
+          flutter build apk --release --no-tree-shake-icons
+          ls -la build/app/outputs/flutter-apk/
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/JagX-AI.apk
 
-      - name: Upload log on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: flutter-build-log
-          path: "**/flutter_*.log"
-          if-no-files-found: ignore
-
-      - name: Upload APK
+      - name: Upload APK artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: JagX-AI-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/JagX-AI.apk
+          if-no-files-found: error
 
-      - name: Publish release
+      - name: Publish GitHub Release
         if: success()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
           name: JagX AI APK
-          files: build/app/outputs/flutter-apk/app-release.apk
-          body: Latest JagX AI Android build
+          files: |
+            build/app/outputs/flutter-apk/JagX-AI.apk
+            build/app/outputs/flutter-apk/app-release.apk
+          body: |
+            Latest JagX AI Android build (by JRILICENSE).
+            - Server bot jobs (keeps working after close)
+            - Connectors + sandbox client
+            - GitHub vault connect
+            Install: download **JagX-AI.apk**, allow unknown sources if asked.
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-build-failure-logs
+          path: |
+            **/*.log
+            android/**/*.gradle*
+          if-no-files-found: ignore
