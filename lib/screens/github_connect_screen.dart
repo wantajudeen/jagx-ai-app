@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/sandbox_api.dart';
 import '../core/theme.dart';
 
-/// Users paste a classic PAT so Rex (GitHub agent) can act on their repos.
+/// Users paste a classic PAT so Bot can import/export their repos on the server.
 class GithubConnectScreen extends StatefulWidget {
   const GithubConnectScreen({super.key});
 
@@ -17,6 +18,7 @@ class _GithubConnectScreenState extends State<GithubConnectScreen> {
   final _repo = TextEditingController();
   bool _saved = false;
   bool _obscure = true;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -35,19 +37,30 @@ class _GithubConnectScreenState extends State<GithubConnectScreen> {
   }
 
   Future<void> _save() async {
+    final token = _token.text.trim();
+    if (token.isEmpty) return;
+    setState(() => _busy = true);
     final p = await SharedPreferences.getInstance();
-    await p.setString('jx_gh_token', _token.text.trim());
+    await p.setString('jx_gh_token', token);
     await p.setString('jx_gh_owner', _owner.text.trim());
     await p.setString('jx_gh_repo', _repo.text.trim());
-    setState(() => _saved = _token.text.trim().isNotEmpty);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('GitHub connection saved on this device'),
-          backgroundColor: Jx.card,
-        ),
-      );
-    }
+
+    // Also vault on server so sandbox/bot can import & export without retyping
+    final vaultOk = await SandboxApi.saveGithubToken(token);
+
+    if (!mounted) return;
+    setState(() {
+      _saved = true;
+      _busy = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(vaultOk
+            ? 'GitHub saved on device + server vault (token never returned)'
+            : 'Saved on device. Server vault unavailable — redeploy backend if needed.'),
+        backgroundColor: Jx.card,
+      ),
+    );
   }
 
   Future<void> _clear() async {
@@ -83,7 +96,7 @@ class _GithubConnectScreenState extends State<GithubConnectScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
-            'So Rex (GitHub agent) can work with your repos, create a Personal Access Token and paste it here. Token stays on this phone only.',
+            'Paste a Personal Access Token so JagX Bot can import files from your repos, run them in the sandbox, and export changes back. Token is stored on this phone and in the server vault (never shown again).',
             style: TextStyle(color: Jx.muted, height: 1.4),
           ),
           const SizedBox(height: 16),
@@ -124,12 +137,12 @@ class _GithubConnectScreenState extends State<GithubConnectScreen> {
           ),
           const SizedBox(height: 20),
           FilledButton(
-            onPressed: _save,
+            onPressed: _busy ? null : _save,
             style: FilledButton.styleFrom(
               backgroundColor: Jx.accent,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Save on this device'),
+            child: Text(_busy ? 'Saving…' : 'Save device + server vault'),
           ),
           if (_saved) ...[
             const SizedBox(height: 8),
