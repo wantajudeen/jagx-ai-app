@@ -1,33 +1,42 @@
-# JagX AI (Flutter only)
+# JagX AI
 
-**Nigeria-first multipurpose AI** by **JagX & JRILICENSE**.
+**by JRILICENSE**
 
-This repo is **Flutter/Dart only**. All Kotlin/Gradle native modules were removed.
+Free AI chat + multi-agent Bot + connectors. Mobile app (Flutter) and website.
 
-## Build APK (GitHub Actions)
+## Links
 
-1. Repo → **Settings → Secrets and variables → Actions**
-   - `JAGX_API_KEY` = your permanent key from Render
-   - `JAGX_API_BASE` = `https://jagx-ai-v2.onrender.com` (optional)
-   - `OPENROUTER_API_KEY` = optional fallback
-2. **Actions → Build Flutter Android APK → Run workflow**
-3. Download artifact **JagX-AI-Flutter-APK**
+| | |
+|--|--|
+| Website | https://jagxai.name.ng |
+| Backend | https://jagx-ai-v2.onrender.com |
+| Health | https://jagx-ai-v2.onrender.com/health |
+| Ready | https://jagx-ai-v2.onrender.com/ready |
+| APK | [Releases → apk-latest](https://github.com/wantajudeen/jagx-ai-app/releases/tag/apk-latest) |
 
-## Local
+## App (Flutter)
 
-```bash
-flutter pub get
-dart run flutter_launcher_icons
-flutter build apk --release
-```
+- Chat with JagX backend + OpenRouter fallback
+- **Bot** goals run on the **server** (`POST /jobs`) — keep working after you close the app
+- Connectors catalog + GitHub PAT → server vault
+- Sandbox client: run code, import/export GitHub files
 
-## Features
-- Dark violet UI (Grok-style)
-- Chat with suggestion chips
-- Works **without login** if Supabase is not configured
-- Talks to **JagX Render backend** first, then OpenRouter
-- Multilingual
-- Bot / settings / premium screens
+### Build APK
 
-## Icon
-Launcher **J** badge generated in CI (`assets/icons/app_icon.png`).
+GitHub → **Actions** → **Build Flutter Android APK** → Run workflow  
+Or push to `main` (workflow auto-runs). Download **JagX-AI.apk** from the release.
+
+Secrets used: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, optional `OPENROUTER_API_KEY`, `JAGX_API_KEY`.
+
+## Website
+
+Static site (`index.html` + `app.js`). Deploy: **Actions → Deploy website**.  
+Branding: **JagX by JRILICENSE** · Terms · Privacy.
+
+## Backend features
+
+`/chat` · `/news` · `/geo` · `/weather` · `/mcp/*` · `/jobs` · `/vault` · `/code/*` · `/memory` · `/sandbox/*` · `/ready`
+
+## Supabase
+
+See `SUPABASE_SETUP.md` and `supabase_schema.sql` (auth + future jobs/memory tables).
