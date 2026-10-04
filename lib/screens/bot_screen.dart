@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/agents.dart';
 import '../core/ai.dart';
 import '../core/bot_tasks.dart';
-import '../core/browser_tool.dart';
 import '../core/theme.dart';
 
 class BotScreen extends StatefulWidget {
@@ -18,15 +19,23 @@ class _BotScreenState extends State<BotScreen> {
   final _goal = TextEditingController();
   final List<String> _liveLog = [];
   bool _running = false;
-  bool _multi = true; // multi-agent like Grok Bot by default
+  bool _multi = true;
   List<BotTask> _tasks = [];
   String? _result;
   Agent _agent = Agents.list.first;
+  Timer? _poll;
 
   @override
   void initState() {
     super.initState();
     _reloadTasks();
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    _goal.dispose();
+    super.dispose();
   }
 
   Future<void> _reloadTasks() async {
@@ -43,78 +52,76 @@ class _BotScreenState extends State<BotScreen> {
     final goal = _goal.text.trim();
     if (goal.isEmpty || _running) return;
     _goal.clear();
-    final task = await BotTaskStore.enqueue(goal);
-    await _reloadTasks();
-    await _run(goal, existing: task);
-  }
-
-  Future<void> _run(String goal, {BotTask? existing}) async {
     setState(() {
       _running = true;
       _liveLog.clear();
       _result = null;
     });
 
-    final task = existing ??
-        BotTask(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          goal: goal,
-          status: 'running',
-          logs: [],
-          createdAt: DateTime.now(),
-        );
-    task.status = 'running';
-    await BotTaskStore.update(task);
+    _log('Sending goal to JagX server…');
+    final task = await BotTaskStore.enqueue(goal);
+    await _reloadTasks();
 
+    if (task.serverSide) {
+      _log('Server job ${task.id.substring(0, 8)}…');
+      _log('Safe to close the app — work continues on server');
+      _poll?.cancel();
+      _poll = Timer.periodic(const Duration(seconds: 4), (_) => _pollJob(task.id));
+      await _pollJob(task.id);
+      return;
+    }
+
+    // Local fallback if /jobs is down
+    _log('Server offline — running on device');
     try {
-      String research = '';
-      try {
-        _log('Pulse · web context…');
-        research = await BrowserTool.search(goal);
-        if (research.isNotEmpty) _log('Web context ready');
-      } catch (_) {
-        _log('Web skipped');
-      }
-
-      String reply;
-      if (_multi || _agent.id == 'nimbus') {
-        reply = await Ai.multiAgentRun(
-          goal: goal,
-          webContext: research,
-          onLog: _log,
-        );
-      } else {
-        _log('${_agent.emoji} ${_agent.name} · ${_agent.role}');
-        final prompt = research.isEmpty
-            ? goal
-            : '$goal\n\nWEB CONTEXT:\n$research';
-        reply = await Ai.agentChat(
-          agentId: _agent.id,
-          messages: [
-            {'role': 'user', 'content': prompt}
-          ],
-        );
-        _log('Done');
-      }
-
+      final reply = await Ai.multiAgentRun(goal: goal, onLog: _log);
       task.status = 'done';
+      task.result = reply;
       task.logs
         ..clear()
         ..addAll(_liveLog);
       await BotTaskStore.update(task);
-
       if (mounted) {
         setState(() {
           _result = reply;
           _running = false;
         });
       }
-      await _reloadTasks();
     } catch (e) {
-      task.status = 'failed';
-      await BotTaskStore.update(task);
       _log('Failed: $e');
       if (mounted) setState(() => _running = false);
+    }
+    await _reloadTasks();
+  }
+
+  Future<void> _pollJob(String id) async {
+    final t = await BotTaskStore.refreshFromServer(id);
+    if (t == null || !mounted) return;
+    setState(() {
+      _liveLog
+        ..clear()
+        ..addAll(t.logs);
+      if (t.result != null && t.result!.isNotEmpty) _result = t.result;
+    });
+    await _reloadTasks();
+    if (t.status == 'done' || t.status == 'failed') {
+      _poll?.cancel();
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  void _openTask(BotTask t) async {
+    setState(() {
+      _liveLog
+        ..clear()
+        ..addAll(t.logs);
+      _result = t.result;
+    });
+    if (t.serverSide && (t.status == 'queued' || t.status == 'running')) {
+      setState(() => _running = true);
+      _poll?.cancel();
+      _poll = Timer.periodic(const Duration(seconds: 4), (_) => _pollJob(t.id));
+      await _pollJob(t.id);
     }
   }
 
@@ -128,30 +135,33 @@ class _BotScreenState extends State<BotScreen> {
       ),
       builder: (_) => DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.7,
-        maxChildSize: 0.92,
+        initialChildSize: 0.55,
+        maxChildSize: 0.9,
         builder: (ctx, scroll) => ListView(
           controller: scroll,
           children: [
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text('JagX Bot agents',
+              child: Text('JagX Bot',
                   style: TextStyle(
                       color: Jx.text,
                       fontWeight: FontWeight.w700,
                       fontSize: 17)),
             ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Goals run on the server. Close the app anytime; reopen Bot to see progress. Uses tools, plan steps, optional GitHub, and self-learn.',
+                style: TextStyle(color: Jx.dim, fontSize: 12, height: 1.4),
+              ),
+            ),
             SwitchListTile(
-              title: const Text('Multi-agent team',
+              title: const Text('Multi-agent style',
                   style: TextStyle(color: Jx.text)),
-              subtitle: const Text(
-                  'Nimbus → Atlas → Nova → Mira → final answer',
-                  style: TextStyle(color: Jx.dim, fontSize: 12)),
               value: _multi,
               activeColor: Jx.text,
               onChanged: (v) => setState(() => _multi = v),
             ),
-            const Divider(color: Jx.border),
             ...Agents.list.map((a) {
               final sel = a.id == _agent.id && !_multi;
               return ListTile(
@@ -159,11 +169,8 @@ class _BotScreenState extends State<BotScreen> {
                 title: Text('${a.name} · ${a.role}',
                     style: const TextStyle(
                         color: Jx.text, fontWeight: FontWeight.w600)),
-                subtitle: Text(a.description,
-                    style: const TextStyle(color: Jx.dim, fontSize: 12)),
-                trailing: sel
-                    ? const Icon(Icons.check, color: Jx.text)
-                    : null,
+                trailing:
+                    sel ? const Icon(Icons.check, color: Jx.text) : null,
                 onTap: () {
                   setState(() {
                     _agent = a;
@@ -181,12 +188,6 @@ class _BotScreenState extends State<BotScreen> {
   }
 
   @override
-  void dispose() {
-    _goal.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Jx.bg,
@@ -197,12 +198,15 @@ class _BotScreenState extends State<BotScreen> {
           onPressed: () => context.pop(),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Refresh jobs',
+            onPressed: _reloadTasks,
+            icon: const Icon(Icons.refresh),
+          ),
           TextButton(
             onPressed: _pickAgent,
             child: Text(
-              _multi
-                  ? '🧠 Multi-agent'
-                  : '${_agent.emoji} ${_agent.name}',
+              _multi ? '🧠 Server bot' : '${_agent.emoji} ${_agent.name}',
               style: const TextStyle(color: Jx.text),
             ),
           ),
@@ -221,24 +225,18 @@ class _BotScreenState extends State<BotScreen> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Jx.border),
                   ),
-                  child: Column(
+                  child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text('Like Grok Bot',
+                          style: TextStyle(
+                              color: Jx.text,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16)),
+                      SizedBox(height: 6),
                       Text(
-                        _multi
-                            ? '🧠 Multi-agent team'
-                            : '${_agent.emoji} ${_agent.name} · ${_agent.role}',
-                        style: const TextStyle(
-                            color: Jx.text,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _multi
-                            ? 'Like Grok Bot: Nimbus leads Atlas (plan), Nova (code), Mira (research), then merges one answer. Uses OpenRouter when configured.'
-                            : _agent.description,
-                        style: const TextStyle(
+                        'Work runs on the JagX server. You can close the app. Reopen to see results. Sandbox can import GitHub files, run code, and export back when a token is in Vault.',
+                        style: TextStyle(
                             color: Jx.muted, fontSize: 13, height: 1.4),
                       ),
                     ],
@@ -273,21 +271,33 @@ class _BotScreenState extends State<BotScreen> {
                   const SizedBox(height: 16),
                 ],
                 if (_tasks.isNotEmpty) ...[
-                  const Text('Recent tasks',
+                  const Text('Your jobs',
                       style: TextStyle(
                           color: Jx.text, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
-                  ..._tasks.take(8).map(
+                  ..._tasks.take(12).map(
                         (t) => ListTile(
                           contentPadding: EdgeInsets.zero,
+                          onTap: () => _openTask(t),
                           title: Text(t.goal,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                   color: Jx.text, fontSize: 13)),
-                          subtitle: Text(t.status,
-                              style: const TextStyle(
-                                  color: Jx.dim, fontSize: 11)),
+                          subtitle: Text(
+                            '${t.status}${t.serverSide ? ' · server' : ' · device'}',
+                            style: const TextStyle(
+                                color: Jx.dim, fontSize: 11),
+                          ),
+                          trailing: Icon(
+                            t.status == 'done'
+                                ? Icons.check_circle_outline
+                                : t.status == 'running'
+                                    ? Icons.hourglass_top
+                                    : Icons.schedule,
+                            color: Jx.dim,
+                            size: 18,
+                          ),
                         ),
                       ),
                 ],
@@ -310,7 +320,7 @@ class _BotScreenState extends State<BotScreen> {
                         controller: _goal,
                         style: const TextStyle(color: Jx.text),
                         decoration: const InputDecoration(
-                          hintText: 'Bot goal…',
+                          hintText: 'Bot goal (runs on server)…',
                           border: InputBorder.none,
                           filled: false,
                           contentPadding: EdgeInsets.symmetric(
