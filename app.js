@@ -29,6 +29,6 @@ fetch('https://cdn.jsdelivr.net/gh/wantajudeen/jagx-ai-app@420dee549ffb7ebfa6efd
 if(!document.getElementById('jxbotfix')){
   var s=document.createElement('script');
   s.id='jxbotfix';
-  s.src='./botfix.js?v=39';
+  s.src='./botfix.js?v=40';
   document.body.appendChild(s);
 }
