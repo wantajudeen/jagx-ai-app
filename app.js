@@ -5,13 +5,11 @@ fetch('https://cdn.jsdelivr.net/gh/wantajudeen/jagx-ai-app@420dee549ffb7ebfa6efd
       "var ROUTES=['chat','build','bot','projects','github','settings','conn','vault','skills'];",
       "var ROUTES=['chat','build','bot','projects','github','settings','conn','vault','skills','terms','privacy'];"
     );
-    // ensure page titles
     code = code.replace(
       "settings:'Settings'",
       "settings:'Settings',terms:'Terms',privacy:'Privacy'"
     );
     (0, eval)(code);
-    // after core loads, re-show legal if hash is terms/privacy
     setTimeout(function(){
       var h=(location.hash||'').replace(/^#\/?/,'').split('?')[0];
       if(h==='terms'||h==='privacy'){
@@ -27,3 +25,10 @@ fetch('https://cdn.jsdelivr.net/gh/wantajudeen/jagx-ai-app@420dee549ffb7ebfa6efd
     }, 200);
   })
   .catch(function(e){ console.error('JagX failed to load core app.js', e); });
+
+if(!document.getElementById('jxbotfix')){
+  var s=document.createElement('script');
+  s.id='jxbotfix';
+  s.src='./botfix.js?v=39';
+  document.body.appendChild(s);
+}
