@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'agents.dart';
+import 'connectors_store.dart';
 import 'env.dart';
 
 class Ai {
@@ -17,6 +18,7 @@ Do NOT use markdown bold with asterisks (**like this**).
 For math: plain numbered steps, no ** stars.
 Never name other AI brands. You are only JagX AI.
 Reply in the user's language.
+When TOOL RESULT is provided, use it as ground truth and answer from it.
 ''';
 
   static const _orModels = [
@@ -26,6 +28,13 @@ Reply in the user's language.
     'mistralai/mistral-small-3.1-24b-instruct:free',
     'openrouter/auto',
   ];
+
+  static String get _base {
+    final b = Env.jagxApiBase.isEmpty
+        ? 'https://jagx-ai-v2.onrender.com'
+        : Env.jagxApiBase.replaceAll(RegExp(r'/+\$'), '');
+    return b;
+  }
 
   static String cleanOutput(String text) {
     var t = text;
@@ -37,19 +46,128 @@ Reply in the user's language.
     return t.trim();
   }
 
+  /// Run connected connectors / free tools, return context string or null.
+  static Future<String?> runTools(String userText) async {
+    final connectors = await ConnectorsStore.enabled();
+    final headers = <String, dynamic>{'Content-Type': 'application/json'};
+    final key = Env.jagxApiKey.trim();
+    if (key.isNotEmpty) headers['x-api-key'] = key;
+
+    // Prefer backend MCP proxy when deployed
+    try {
+      final res = await _dio.post(
+        '$_base/mcp/run',
+        options: Options(
+          headers: headers,
+          validateStatus: (s) => s != null && s < 500,
+          receiveTimeout: const Duration(seconds: 40),
+        ),
+        data: {
+          'message': userText,
+          'connectors': connectors,
+        },
+      );
+      if (res.statusCode == 200 && res.data is Map) {
+        final data = res.data as Map;
+        if (data['ok'] == true && (data['text']?.toString().isNotEmpty ?? false)) {
+          return data['text'].toString();
+        }
+      }
+    } catch (_) {}
+
+    // Fallback: existing free endpoints on live backend
+    final lower = userText.toLowerCase();
+    final ids = connectors.map((c) => c['id']?.toString() ?? '').toSet();
+    final any = ids.isEmpty; // if none connected, still allow built-ins lightly
+
+    try {
+      if ((any || ids.contains('jagx_news')) &&
+          RegExp(r'\b(news|headline|breaking)\b').hasMatch(lower)) {
+        final topic = ['nigeria', 'africa', 'world', 'tech']
+            .firstWhere((w) => lower.contains(w), orElse: () => '');
+        final r = await _dio.get(
+          '$_base/news',
+          queryParameters: {if (topic.isNotEmpty) 'topic': topic},
+          options: Options(headers: headers, validateStatus: (s) => s != null && s < 500),
+        );
+        if (r.statusCode == 200 && r.data is Map && r.data['news'] != null) {
+          return r.data['news'].toString();
+        }
+      }
+      if ((any || ids.contains('jagx_weather') || ids.contains('jagx_maps')) &&
+          RegExp(r'\b(weather|temperature|forecast)\b').hasMatch(lower)) {
+        final place = userText
+            .replaceAll(RegExp(r'.*\b(in|for|at)\s+', caseSensitive: false), '')
+            .trim();
+        final r = await _dio.get(
+          '$_base/weather',
+          queryParameters: {'place': place.isEmpty ? 'Lagos' : place},
+          options: Options(headers: headers, validateStatus: (s) => s != null && s < 500),
+        );
+        if (r.statusCode == 200 && r.data is Map && r.data['result'] != null) {
+          return r.data['result'].toString();
+        }
+      }
+      if ((any || ids.contains('jagx_maps')) &&
+          RegExp(r'\b(where is|map of|locate|geocode)\b').hasMatch(lower)) {
+        final q = userText
+            .replaceAll(
+                RegExp(r'.*\b(where is|map of|locate|geocode)\s+',
+                    caseSensitive: false),
+                '')
+            .trim();
+        final r = await _dio.get(
+          '$_base/geo',
+          queryParameters: {'q': q.isEmpty ? userText : q},
+          options: Options(headers: headers, validateStatus: (s) => s != null && s < 500),
+        );
+        if (r.statusCode == 200 && r.data is Map && r.data['result'] != null) {
+          return r.data['result'].toString();
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   static Future<String> chat({
     required String modelId,
     required List<Map<String, String>> messages,
     String? agentId,
   }) async {
-    // Bot agents: prefer OpenRouter (secret key) then JagX backend
+    final lastUser = messages.reversed.firstWhere(
+      (m) => m['role'] == 'user',
+      orElse: () => <String, String>{},
+    );
+    final userText = (lastUser['content'] ?? '').toString().trim();
+
+    // Tool pass (connectors + free JagX tools)
+    String? toolCtx;
+    if (userText.isNotEmpty) {
+      toolCtx = await runTools(userText);
+    }
+
+    final enriched = List<Map<String, String>>.from(messages);
+    if (toolCtx != null && toolCtx.isNotEmpty && enriched.isNotEmpty) {
+      final last = Map<String, String>.from(enriched.last);
+      if (last['role'] == 'user') {
+        last['content'] =
+            '${last['content']}\n\n[TOOL RESULT — use this data]\n$toolCtx';
+        enriched[enriched.length - 1] = last;
+      }
+    }
+
     if (agentId != null) {
-      final orFirst = await _agentOpenRouter(agentId, messages);
+      final orFirst = await _agentOpenRouter(agentId, enriched);
       if (orFirst != null) return cleanOutput(orFirst);
     }
 
-    final jagx = await _jagxChat(messages: messages);
+    final jagx = await _jagxChat(messages: enriched);
     if (jagx != null && jagx.trim().isNotEmpty) return cleanOutput(jagx);
+
+    // If tools returned data but model failed, still show tool result
+    if (toolCtx != null && toolCtx.trim().isNotEmpty) {
+      return cleanOutput(toolCtx);
+    }
 
     final key = Env.openRouterKey.trim();
     if (key.isNotEmpty) {
@@ -62,7 +180,7 @@ Reply in the user's language.
       final or = await _openRouter(
         key: key,
         system: system,
-        messages: messages,
+        messages: enriched,
         preferModel: agentId != null ? Agents.byId(agentId).openRouterModel : null,
       );
       if (or != null) return cleanOutput(or);
@@ -78,15 +196,17 @@ Reply in the user's language.
     return chat(modelId: 'forge', messages: messages, agentId: agentId);
   }
 
-  /// Multi-agent run like Grok Bot: plan → specialists → final merge.
   static Future<String> multiAgentRun({
     required String goal,
     required void Function(String log) onLog,
     String? webContext,
   }) async {
-    final ctx = (webContext == null || webContext.isEmpty)
-        ? goal
-        : '$goal\n\nWEB CONTEXT:\n$webContext';
+    final tool = await runTools(goal);
+    final ctx = [
+      goal,
+      if (webContext != null && webContext.isNotEmpty) 'WEB CONTEXT:\n$webContext',
+      if (tool != null && tool.isNotEmpty) 'TOOL RESULT:\n$tool',
+    ].join('\n\n');
 
     onLog('Nimbus engaged · multi-agent');
     onLog('Atlas planning…');
@@ -142,7 +262,8 @@ Reply in the user's language.
     final key = Env.openRouterKey.trim();
     if (key.isEmpty) return null;
     final a = Agents.byId(agentId);
-    final system = '$_baseSystem\n\nYou are ${a.name} (${a.role}) of JagX Bot.\n${a.systemHint}';
+    final system =
+        '$_baseSystem\n\nYou are ${a.name} (${a.role}) of JagX Bot.\n${a.systemHint}';
     return _openRouter(
       key: key,
       system: system,
@@ -154,9 +275,6 @@ Reply in the user's language.
   static Future<String?> _jagxChat({
     required List<Map<String, String>> messages,
   }) async {
-    final base = Env.jagxApiBase.isEmpty
-        ? 'https://jagx-ai-v2.onrender.com'
-        : Env.jagxApiBase.replaceAll(RegExp(r'/+\$'), '');
     final key = Env.jagxApiKey.trim();
 
     final lastUser = messages.reversed.firstWhere(
@@ -184,7 +302,7 @@ Reply in the user's language.
     for (var attempt = 0; attempt < 3; attempt++) {
       try {
         final res = await _dio.post(
-          '$base/chat',
+          '$_base/chat',
           options: Options(
             headers: headers,
             validateStatus: (s) => s != null && s < 500,
