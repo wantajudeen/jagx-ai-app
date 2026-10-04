@@ -5,16 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <title>JagX AI</title>
 <meta name="theme-color" content="#0a0a0a"/>
-<meta name="description" content="JagX AI — chat, build, and bot team. Nigeria & Africa focused assistant."/>
+<meta name="description" content="JagX AI — by JRILICENSE. Chat, build, and bot team."/>
 <link rel="icon" href="./logo.svg" type="image/svg+xml"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-:root{--bg:#0a0a0a;--panel:#111113;--card:#18181b;--line:#27272a;--text:#fafafa;--muted:#a1a1aa;--dim:#71717a;--user:#1c1c1f;--green:#22c55e}
+:root{--bg:#0a0a0a;--panel:#111113;--card:#18181b;--line:#27272a;--text:#fafafa;--muted:#a1a1aa;--dim:#71717a;--user:#1c1c1f;--green:#22c55e;--gold:#D4AF37}
 *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
 body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;overflow:hidden}
 button,input,textarea,select{font:inherit;color:inherit;border:none;background:none}button{cursor:pointer}a{color:inherit;text-decoration:none}
 .side{width:260px;min-width:260px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100%}
 .side-top{padding:14px 12px;display:flex;align-items:center;gap:10px}.side-top img{width:28px;height:28px;border-radius:8px}.side-top b{font-size:15px;font-weight:600}
+.side-top .by{font-size:10px;color:var(--gold);font-weight:600;letter-spacing:.04em}
 .nav{padding:6px 8px;flex:1;overflow-y:auto}
 .nav a{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);margin-bottom:2px}
 .nav a:hover{background:#1a1a1d;color:var(--text)}.nav a.on{background:#1f1f23;color:var(--text)}
@@ -82,7 +83,7 @@ label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
 </head>
 <body>
 <aside class="side" id="side">
-  <div class="side-top"><img src="./logo.svg" alt=""/><b>JagX AI</b></div>
+  <div class="side-top"><img src="./logo.svg" alt=""/><div><b>JagX AI</b><div class="by">by JRILICENSE</div></div></div>
   <nav class="nav">
     <a href="#/chat" data-route="chat" class="on">Chat</a>
     <a href="#/build" data-route="build">Build</a>
@@ -119,6 +120,7 @@ label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
         <img src="./logo.svg" width="48" height="48" style="border-radius:12px;opacity:.9"/>
         <h1>How can I help?</h1>
         <p>Ask anything, or switch to Build / Bot in the sidebar.</p>
+        <p style="font-size:12px;color:var(--gold);margin-top:4px;font-weight:600">by JRILICENSE</p>
       </div></div>
       <div class="composer-wrap"><div class="composer">
         <div id="attachPrev" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
@@ -128,22 +130,41 @@ label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
           <span class="chip" id="modeChip">Chat · Fast</span>
           <button class="send" type="button" id="send">↑</button>
         </div>
-      </div><div class="foot">JRILICENSE · JagX</div></div>
+      </div><div class="foot">JagX is by <span style="color:var(--gold);font-weight:600">JRILICENSE</span> · <a href="#/terms" style="color:var(--dim)">Terms</a> · <a href="#/privacy" style="color:var(--dim)">Privacy</a></div></div>
     </div>
     <div class="page" id="page-bot"><div class="ph">Bot</div><div class="box"><div style="display:flex;justify-content:space-between;align-items:center"><div><b>Live session</b></div><button class="tog" id="botLive" type="button">Start</button></div></div><div id="botRoster"></div><div class="box"><b>Add bot</b><label>Name</label><input id="botName"/><label>Instructions</label><textarea id="botJob" rows="3"></textarea><button class="full solid" type="button" id="botAdd">Add</button></div></div>
     <div class="page" id="page-projects"><div class="ph">Projects</div><div class="box"><label>Name</label><input id="projName"/><label>Goal</label><input id="projGoal"/><button class="full solid" type="button" id="projCreate">Create</button></div><div id="projList"></div></div>
     <div class="page" id="page-github"><div class="ph">GitHub</div><div class="box"><label>Owner / repo</label><input id="ghRepo"/><label>File path</label><input id="ghPath"/><label>Commit message</label><input id="ghMsg"/><label>File content</label><textarea id="ghBody" rows="8"></textarea><button class="full solid" type="button" id="ghPush">Commit & push</button><div class="tiny" id="ghStatus"></div></div></div>
-    <div class="page" id="page-settings"><div class="ph">Settings</div><button class="srow" type="button" id="btnSignOut"><div class="grow"><b>Sign out</b></div></button><button class="srow" type="button" id="goConn"><div class="grow"><b>Connectors</b></div></button><button class="srow" type="button" id="goVault"><div class="grow"><b>Vault</b></div></button><button class="srow" type="button" id="goSkills"><div class="grow"><b>Skills</b></div></button><button class="srow" type="button" id="clearHist"><div class="grow"><b>Clear chat history</b></div></button><button class="srow" type="button" id="dDl"><div class="grow"><b>Download APK</b></div></button></div>
+    <div class="page" id="page-settings"><div class="ph">Settings</div><button class="srow" type="button" id="btnSignOut"><div class="grow"><b>Sign out</b></div></button><button class="srow" type="button" id="goConn"><div class="grow"><b>Connectors</b></div></button><button class="srow" type="button" id="goVault"><div class="grow"><b>Vault</b></div></button><button class="srow" type="button" id="goSkills"><div class="grow"><b>Skills</b></div></button><button class="srow" type="button" id="clearHist"><div class="grow"><b>Clear chat history</b></div></button><button class="srow" type="button" id="dDl"><div class="grow"><b>Download APK</b></div></button><a class="srow" href="#/terms"><div class="grow"><b>Terms of Service</b></div></a><a class="srow" href="#/privacy"><div class="grow"><b>Privacy Policy</b></div></a></div>
     <div class="page" id="page-conn"><div class="ph">Connectors</div><div id="connList"></div><div class="box"><label>Name</label><input id="cName"/><label>Type</label><select id="cType"><option value="x">X</option><option value="github">GitHub</option><option value="custom">Custom</option></select><label>Note</label><input id="cEnd"/><button class="full solid" type="button" id="cAdd">Connect</button></div></div>
     <div class="page" id="page-vault"><div class="ph">Vault</div><div id="vaultList"></div><div class="box"><label>Label</label><input id="vLabel" placeholder="GitHub"/><label>Token</label><input id="vSecret" type="password"/><button class="full solid" type="button" id="vAdd">Save</button></div></div>
     <div class="page" id="page-skills"><div class="ph">Skills</div><div id="skillList"></div><div class="box"><label>Name</label><input id="skName"/><label>What it does</label><textarea id="skBody" rows="4"></textarea><button class="full solid" type="button" id="skAdd">Save</button></div></div>
+    <div class="page" id="page-terms"><div class="ph">Terms of Service</div>
+    <div class="box" style="line-height:1.55;color:var(--muted);font-size:14px">
+    <p style="color:var(--gold);font-weight:600;margin-bottom:8px">JagX is by JRILICENSE</p>
+    <p>Last updated: 4 October 2026</p>
+    <p style="margin-top:12px">These Terms govern JagX AI (app, website, APIs) operated by JagX and JRILICENSE. By using the Service you agree to them.</p>
+    <p style="margin-top:10px"><b style="color:var(--text)">1. Service</b> — AI assistant for chat, coding, and learning. Outputs can be wrong; review before relying on them.</p>
+    <p style="margin-top:8px"><b style="color:var(--text)">2. Acceptable use</b> — No illegal activity, scams, harassment, or abuse of the system.</p>
+    <p style="margin-top:8px"><b style="color:var(--text)">3. Finance</b> — Trading or money content is educational only, not advice.</p>
+    <p style="margin-top:8px"><b style="color:var(--text)">4. IP</b> — JagX name, crest, and design belong to JagX & JRILICENSE.</p>
+    <p style="margin-top:8px"><b style="color:var(--text)">5. Liability</b> — Service provided as-is. We are not liable for losses from reliance on AI output.</p>
+    <p style="margin-top:12px">© JagX · JRILICENSE</p>
+    </div></div>
+    <div class="page" id="page-privacy"><div class="ph">Privacy Policy</div>
+    <div class="box" style="line-height:1.55;color:var(--muted);font-size:14px">
+    <p style="color:var(--gold);font-weight:600;margin-bottom:8px">JagX is by JRILICENSE</p>
+    <p>Last updated: 4 October 2026</p>
+    <p style="margin-top:12px">We may process account data (if you sign in), messages you send, local history on device, and technical logs. We do not sell personal data. Do not paste secrets. Contact support or GitHub issues for deletion requests.</p>
+    <p style="margin-top:12px">© JagX · JRILICENSE</p>
+    </div></div>
   </div>
 </div>
 <input type="file" id="filePick" accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css" multiple hidden/>
 <div class="modal" id="authModal"><div class="card">
   <div style="display:flex;justify-content:flex-end"><button type="button" id="authClose" class="icon-btn">×</button></div>
   <h2 id="authTitle" style="text-align:center">Welcome to JagX AI</h2>
-  <p class="sub" style="text-align:center">Optional — chat works as guest.</p>
+  <p class="sub" style="text-align:center">by JRILICENSE · optional account</p>
   <button class="full solid" type="button" id="btnGoogle">Sign in with Google</button>
   <div class="or">or email OTP</div>
   <label>Email</label><input id="authEmail" type="email"/>
