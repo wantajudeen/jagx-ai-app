@@ -5,6 +5,25 @@ fetch('https://cdn.jsdelivr.net/gh/wantajudeen/jagx-ai-app@420dee549ffb7ebfa6efd
       "var ROUTES=['chat','build','bot','projects','github','settings','conn','vault','skills'];",
       "var ROUTES=['chat','build','bot','projects','github','settings','conn','vault','skills','terms','privacy'];"
     );
+    // ensure page titles
+    code = code.replace(
+      "settings:'Settings'",
+      "settings:'Settings',terms:'Terms',privacy:'Privacy'"
+    );
     (0, eval)(code);
+    // after core loads, re-show legal if hash is terms/privacy
+    setTimeout(function(){
+      var h=(location.hash||'').replace(/^#\/?/,'').split('?')[0];
+      if(h==='terms'||h==='privacy'){
+        document.querySelectorAll('.page').forEach(function(p){
+          p.classList.remove('on');
+          p.style.display='none';
+        });
+        var page=document.getElementById('page-'+h);
+        if(page){ page.classList.add('on'); page.style.display='flex'; }
+        var tt=document.getElementById('topTitle');
+        if(tt) tt.textContent=h==='terms'?'Terms':'Privacy';
+      }
+    }, 200);
   })
   .catch(function(e){ console.error('JagX failed to load core app.js', e); });
