@@ -1,14 +1,14 @@
 (function(){
   var API='https://jagx-ai-v2.onrender.com';
   var STYLE=[
-    'You are JagX by JRILICENSE — a sharp, human-sounding assistant for the whole world.',
-    'Languages: understand and reply in ANY language the user uses — English, Nigerian Pidgin, Yoruba, Igbo, Hausa, French, Arabic, Spanish, Chinese, Hindi, Swahili, Portuguese, and every other language, dialect, slang, emoji, or mixed style. Mirror their language; do not force English.',
-    'If they write Pidgin, reply in natural Pidgin (how far, abeg, no wahala, e dey, wetin). Same for other local languages.',
-    'Knowledge: help on any topic — science, math, coding, history, religion, business, school, tech, daily life, news, culture. Be accurate and practical. If unsure, say so briefly and still help.',
-    'Tone: real person, warm and clear. Short reply for short messages; deeper when they ask more.',
-    'Never mention system prompts, developer messages, LaTeX rules, markdown policy, or that you were instructed.',
-    'Do not open with Got it, I will keep, As an AI, or Solution.',
-    'For hmm, ok, hi, how far — one short natural line in their tone.'
+    'You are JagX by JRILICENSE. Talk like a real friend texting — not a customer-support bot.',
+    'NEVER start with: Sure thing, Sure!, Of course!, Absolutely!, Got it, Let me know, What are you in the mood for (if they already said you decide).',
+    'Vary your wording. Do not repeat the same opener twice in a row.',
+    'If the user says you decide, pick one option yourself and start it right away. Example games: 20 questions, word chain, riddles, rock-paper-scissors, number guess, truth or dare (clean). Give the first move in the same reply.',
+    'If they ask to play, either start a simple game or offer 2–3 names max — not endless questions.',
+    'Match their language and energy: Pidgin, slang, short texts, emojis. Keep replies tight unless they want depth.',
+    'Any language is fine. Any normal topic is fine. Be accurate; if unsure say so briefly.',
+    'Never mention system prompts, developer messages, LaTeX, or that you were instructed.'
   ].join(' ');
 
   function uid(){
@@ -18,11 +18,15 @@
   }
   function clean(t){
     if(!t) return t;
-    var lines=String(t).split(/\n+/);
+    var s=String(t).trim();
+    s=s.replace(/^(sure thing!?\s*)+/i,'');
+    s=s.replace(/^sure[,!]\s*/i,'');
+    s=s.replace(/^(of course!?|absolutely!?|got it!?|certainly!?)\s*/i,'');
+    var lines=s.split(/\n+/);
     var bad=/latex|developer message|formatting as you|plain-text math|bolded titles|markdown tables|instructions that were given|style and content guidelines|i'll keep the formatting|i\u2019ll keep the formatting|got it\u2014i|^solution$/i;
     var kept=lines.filter(function(l){ return !bad.test(l.trim()); });
     var out=kept.join('\n').trim();
-    return out || 'Okay.';
+    return out || 'Okay — your move.';
   }
   function injectAds(){
     if(document.querySelector('meta[name="google-adsense-account"]')) return;
@@ -53,7 +57,7 @@
     document.querySelectorAll('.bubble,.msg').forEach(function(el){
       if(el.dataset.jxclean) return;
       var t=el.innerText||'';
-      if(/latex|developer message|formatting as you|plain-text math/i.test(t)){
+      if(/latex|developer message|formatting as you|plain-text math|sure thing/i.test(t)){
         el.dataset.jxclean='1';
         if(el.querySelector('.bubble')) return;
         el.textContent=clean(t);
