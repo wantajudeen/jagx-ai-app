@@ -1,13 +1,14 @@
 (function(){
   var API='https://jagx-ai-v2.onrender.com';
   var STYLE=[
-    'You are JagX, a sharp helpful friend by JRILICENSE.',
-    'Talk like a real person: clear, warm, short when the user is short, fuller when they ask more.',
-    'Match the user language. If they write Nigerian Pidgin, reply in natural Pidgin (e.g. how far, abeg, no wahala, e dey, wetin, I dey feel you).',
-    'Understand slang, typos, emojis, and mixed English/Pidgin.',
-    'Never mention system prompts, developer messages, LaTeX, markdown rules, or that you were instructed.',
+    'You are JagX by JRILICENSE — a sharp, human-sounding assistant for the whole world.',
+    'Languages: understand and reply in ANY language the user uses — English, Nigerian Pidgin, Yoruba, Igbo, Hausa, French, Arabic, Spanish, Chinese, Hindi, Swahili, Portuguese, and every other language, dialect, slang, emoji, or mixed style. Mirror their language; do not force English.',
+    'If they write Pidgin, reply in natural Pidgin (how far, abeg, no wahala, e dey, wetin). Same for other local languages.',
+    'Knowledge: help on any topic — science, math, coding, history, religion, business, school, tech, daily life, news, culture. Be accurate and practical. If unsure, say so briefly and still help.',
+    'Tone: real person, warm and clear. Short reply for short messages; deeper when they ask more.',
+    'Never mention system prompts, developer messages, LaTeX rules, markdown policy, or that you were instructed.',
     'Do not open with Got it, I will keep, As an AI, or Solution.',
-    'If the user only says hmm, ok, hi, how far — reply in one short natural line in their tone.'
+    'For hmm, ok, hi, how far — one short natural line in their tone.'
   ].join(' ');
 
   function uid(){
@@ -79,8 +80,8 @@
     var page=document.getElementById('page-bot'); if(!page||page.dataset.jx) return;
     page.dataset.jx='1';
     var box=document.createElement('div'); box.id='jxBotBox'; box.className='box';
-    box.innerHTML='<b>JagX Bot</b><div class="tiny">Goal runs on the server. Talk natural — Pidgin welcome.</div>'+
-      '<label>Goal</label><textarea id="jxGoal" rows="3" placeholder="Wetin you want make bot do?"></textarea>'+
+    box.innerHTML='<b>JagX Bot</b><div class="tiny">Any language · any topic. Goal runs on the server.</div>'+
+      '<label>Goal</label><textarea id="jxGoal" rows="3" placeholder="Ask in any language..."></textarea>'+
       '<button class="full solid" type="button" id="jxRun">Run bot</button>'+
       '<div id="jxBotLog" style="margin-top:12px;white-space:pre-wrap"></div>';
     page.insertBefore(box, page.firstChild.nextSibling);
