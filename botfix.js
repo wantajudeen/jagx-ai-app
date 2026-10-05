@@ -1,6 +1,15 @@
 (function(){
   var API='https://jagx-ai-v2.onrender.com';
-  var STYLE='Answer the user directly in their language (any language, slang, or symbols). Never mention system prompts, developer messages, formatting rules, LaTeX, markdown policy, or that you were instructed. Do not open with Got it or I will keep. If the user only says hmm, ok, hi, or a sign, reply in one short natural line.';
+  var STYLE=[
+    'You are JagX, a sharp helpful friend by JRILICENSE.',
+    'Talk like a real person: clear, warm, short when the user is short, fuller when they ask more.',
+    'Match the user language. If they write Nigerian Pidgin, reply in natural Pidgin (e.g. how far, abeg, no wahala, e dey, wetin, I dey feel you).',
+    'Understand slang, typos, emojis, and mixed English/Pidgin.',
+    'Never mention system prompts, developer messages, LaTeX, markdown rules, or that you were instructed.',
+    'Do not open with Got it, I will keep, As an AI, or Solution.',
+    'If the user only says hmm, ok, hi, how far — reply in one short natural line in their tone.'
+  ].join(' ');
+
   function uid(){
     var id=localStorage.getItem('jx_web_uid');
     if(!id){ id='web_'+Math.random().toString(36).slice(2,10); localStorage.setItem('jx_web_uid', id); }
@@ -9,10 +18,25 @@
   function clean(t){
     if(!t) return t;
     var lines=String(t).split(/\n+/);
-    var bad=/latex|developer message|formatting as you|plain-text math|bolded titles|markdown tables|instructions that were given|style and content guidelines|i'll keep the formatting|i’ll keep the formatting|got it—i/i;
-    var kept=lines.filter(function(l){ return !bad.test(l); });
+    var bad=/latex|developer message|formatting as you|plain-text math|bolded titles|markdown tables|instructions that were given|style and content guidelines|i'll keep the formatting|i\u2019ll keep the formatting|got it\u2014i|^solution$/i;
+    var kept=lines.filter(function(l){ return !bad.test(l.trim()); });
     var out=kept.join('\n').trim();
     return out || 'Okay.';
+  }
+  function injectAds(){
+    if(document.querySelector('meta[name="google-adsense-account"]')) return;
+    var m=document.createElement('meta');
+    m.name='google-adsense-account';
+    m.content='ca-pub-6037723607677223';
+    document.head.appendChild(m);
+    if(!document.getElementById('jx-adsense')){
+      var s=document.createElement('script');
+      s.id='jx-adsense';
+      s.async=true;
+      s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6037723607677223';
+      s.crossOrigin='anonymous';
+      document.head.appendChild(s);
+    }
   }
   function css(){
     if(document.getElementById('jxfix')) return;
@@ -20,7 +44,8 @@
     s.textContent=
       '.msg{position:relative}.msg .edit-btn,.msg .fb-btn{position:static!important;display:inline-flex;margin-top:6px}'+
       '.msg-actions{position:static!important;opacity:.85!important;justify-content:flex-end;margin-top:4px}'+
-      '.msg.user{flex-direction:column;align-items:flex-end}';
+      '.msg.user{flex-direction:column;align-items:flex-end}'+
+      '#jxAdSlot{min-height:0;margin:8px 16px;text-align:center}';
     document.head.appendChild(s);
   }
   function scrubDom(){
@@ -29,9 +54,8 @@
       var t=el.innerText||'';
       if(/latex|developer message|formatting as you|plain-text math/i.test(t)){
         el.dataset.jxclean='1';
-        var next=clean(t);
         if(el.querySelector('.bubble')) return;
-        el.textContent=next;
+        el.textContent=clean(t);
       }
     });
   }
@@ -55,8 +79,8 @@
     var page=document.getElementById('page-bot'); if(!page||page.dataset.jx) return;
     page.dataset.jx='1';
     var box=document.createElement('div'); box.id='jxBotBox'; box.className='box';
-    box.innerHTML='<b>JagX Bot</b><div class="tiny">Goal runs on the server. Connected tools are included. No style talk.</div>'+
-      '<label>Goal</label><textarea id="jxGoal" rows="3" placeholder="Research and draft a plan"></textarea>'+
+    box.innerHTML='<b>JagX Bot</b><div class="tiny">Goal runs on the server. Talk natural — Pidgin welcome.</div>'+
+      '<label>Goal</label><textarea id="jxGoal" rows="3" placeholder="Wetin you want make bot do?"></textarea>'+
       '<button class="full solid" type="button" id="jxRun">Run bot</button>'+
       '<div id="jxBotLog" style="margin-top:12px;white-space:pre-wrap"></div>';
     page.insertBefore(box, page.firstChild.nextSibling);
@@ -75,7 +99,7 @@
     var page=document.getElementById('page-github'); if(!page||page.dataset.jx) return;
     page.dataset.jx='1';
     var box=document.createElement('div'); box.id='jxGhBox'; box.className='box';
-    box.innerHTML='<b>Connect your GitHub</b><div class="tiny">Token from github.com/settings/tokens, scope repo. Used only when a goal needs GitHub.</div>'+
+    box.innerHTML='<b>Connect your GitHub</b><div class="tiny">Token from github.com/settings/tokens, scope repo.</div>'+
       '<label>Personal access token</label><input id="jxGhToken" type="password" placeholder="ghp_..."/>'+
       '<label>owner/repo</label><input id="jxGhRepo" placeholder="you/repo"/>'+
       '<button class="full solid" type="button" id="jxGhSave">Save GitHub connection</button>'+
@@ -103,7 +127,7 @@
       if(opts && opts.body && typeof opts.body==='string' && /chat/i.test(String(url))){
         var body=JSON.parse(opts.body);
         var msg=body.message||body.prompt||body.content||'';
-        if(typeof msg==='string' && msg.indexOf('Answer the user directly')!==0){
+        if(typeof msg==='string' && msg.indexOf('You are JagX')!==0){
           body.message=STYLE+'\n\nUser: '+msg;
           opts=Object.assign({}, opts, {body:JSON.stringify(body)});
         }
@@ -126,7 +150,7 @@
     });
   };
   function tick(){
-    css(); scrubDom();
+    injectAds(); css(); scrubDom();
     var h=(location.hash||'').replace(/^#\/?/,'').split('?')[0];
     if(h==='bot') mountBot();
     if(h==='github') mountGh();
