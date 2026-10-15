@@ -146,7 +146,7 @@
         var body=JSON.parse(opts.body);
         var msg=body.message||body.prompt||body.content||'';
         if(typeof msg==='string' && msg.indexOf('You are JagX')!==0){
-          body.message=STYLE+'\n\nUser: '+msg;
+          body.message=STYLE+'\n\n'+JAGX_KNOWLEDGE+'\n\nFor questions that need current information, use available Web Search/Browser tools when supported; cite real source URLs only when actually retrieved. Never claim a live search occurred if it did not.\n\nUser: '+msg;
           opts=Object.assign({}, opts, {body:JSON.stringify(body)});
         }
       }
