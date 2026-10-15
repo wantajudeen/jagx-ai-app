@@ -125,6 +125,12 @@ label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
       </div></div>
       <div class="composer-wrap"><div class="composer">
         <div id="attachPrev" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
+        <div id="jxQuickPrompts" aria-label="Quick prompts" style="display:flex;gap:7px;flex-wrap:wrap;margin:2px 0 4px">
+          <button type="button" class="chip jx-quick" data-prompt="Search the web for the latest information about: " style="cursor:pointer">⌕ Search web</button>
+          <button type="button" class="chip jx-quick" data-prompt="Create an image of: " style="cursor:pointer">✦ Create image</button>
+          <button type="button" class="chip jx-quick" data-prompt="Help me create a video about: If video generation is available, use it; otherwise explain the supported workflow without pretending a video was generated." style="cursor:pointer">▶ Create video</button>
+          <button type="button" class="chip jx-quick" data-prompt="Who created JagX and JRILICENSE, and where did the name JagX come from?" style="cursor:pointer">✧ About JagX</button>
+        </div>
         <textarea id="input" rows="1" placeholder="Ask anything…"></textarea>
         <div class="bar">
           <button class="plus" type="button" id="btnPlus">+</button>
