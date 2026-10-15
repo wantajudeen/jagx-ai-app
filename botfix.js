@@ -167,8 +167,24 @@
       return res;
     });
   };
+  function mountQuickPrompts(){
+    var wrap=document.getElementById('jxQuickPrompts');
+    var input=document.getElementById('input');
+    if(!wrap||!input||wrap.dataset.jxBound) return;
+    wrap.dataset.jxBound='1';
+    wrap.addEventListener('click',function(e){
+      var btn=e.target.closest('button[data-prompt]');
+      if(!btn) return;
+      var prompt=btn.getAttribute('data-prompt')||'';
+      input.value=prompt;
+      input.focus();
+      input.style.height='auto';
+      input.style.height=Math.min(input.scrollHeight,160)+'px';
+      input.setSelectionRange(input.value.length,input.value.length);
+    });
+  }
   function tick(){
-    injectAds(); css(); scrubDom();
+    injectAds(); css(); scrubDom(); mountQuickPrompts();
     var h=(location.hash||'').replace(/^#\/?/,'').split('?')[0];
     if(h==='bot') mountBot();
     if(h==='github') mountGh();
