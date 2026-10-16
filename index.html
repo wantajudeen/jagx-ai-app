@@ -80,6 +80,36 @@ label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
 .bubble code.inline{background:#1a1a1d;padding:1px 6px;border-radius:6px;font-size:13px}
 .msg.bot .bubble{color:var(--muted)}.msg.bot .bubble b,.msg.bot .bubble .md-h{color:var(--text)}
 .auth-simple label{margin-top:12px}.auth-simple .full{margin-top:10px}
+
+/* Chat layout refinement: reclaim vertical space so more of the screen stays visible. */
+.main{max-width:1040px}
+.page{max-width:1040px}
+.thread{padding:18px clamp(12px,3vw,28px);scrollbar-gutter:stable}
+.composer-wrap{padding:6px clamp(10px,2vw,20px) max(8px,env(safe-area-inset-bottom))}
+.composer{padding:9px 13px 8px;gap:5px;border-radius:22px}
+#jxQuickPrompts{flex-wrap:nowrap!important;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none;max-width:100%;padding:1px 0 4px;gap:5px!important}
+#jxQuickPrompts::-webkit-scrollbar{display:none}
+#jxQuickPrompts .chip{flex:0 0 auto;font-size:11px;padding:5px 8px;border:1px solid #2a2a2e;border-radius:999px;background:#131315}
+.composer textarea,#input{min-height:28px!important;max-height:112px!important;padding:3px 2px!important}
+.bar{min-height:32px;gap:6px}
+.plus,.send{width:32px;height:32px}
+.foot{margin-top:5px;font-size:10px}
+@media(max-width:800px){
+  .main,.page{max-width:none;width:100%}
+  .thread{padding:14px 12px}
+  .composer-wrap{padding:5px 9px max(6px,env(safe-area-inset-bottom))}
+  .composer{padding:8px 10px 7px;gap:4px;border-radius:19px}
+  #jxQuickPrompts .chip{font-size:10px;padding:5px 7px}
+  .foot{margin-top:4px}
+}
+@media(max-height:700px){
+  .top{height:44px;min-height:44px}
+  .composer-wrap{padding-top:4px;padding-bottom:5px}
+  .composer{padding-top:6px;padding-bottom:6px}
+  .foot{display:none}
+  .composer textarea,#input{max-height:84px!important}
+}
+
 </style>
 </head>
 <body>
