@@ -181,8 +181,8 @@
         '<ol style="margin:10px 0 0 18px;color:#a1a1aa;font-size:13px;line-height:1.55">'+
         '<li><b style="color:#fafafa">No key needed</b> (Search, News, Weather, Sandbox…) → tap <b>Connect</b> once. Bot can use it immediately.</li>'+
         '<li><b style="color:#fafafa">Needs token</b> (GitHub, Supabase, OpenRouter…) → tap <b>Connect</b> → a form opens → follow the steps → paste token → <b>Save & connect</b>.</li>'+
-        '<li>Connected tools show under <b>Active</b> at the top. Tell the bot in chat, e.g. “use GitHub to list my repos”.</li>'+
-        '<li>Tokens stay on this phone/browser and in JagX vault. Do not paste them in the chat box.</li>'+
+        '<li>Configured tools show under <b>Configured</b>. A saved setting does not prove the server integration is authenticated or usable; test it before relying on it.</li>'+
+        '<li>Tokens are sensitive. Settings may remain in this browser if Vault is unavailable. Avoid shared devices; a saved token does not prove the integration works.</li>'+
         '</ol>';
       var page=document.getElementById('page-conn');
       if(page){
@@ -208,13 +208,13 @@
       groups[c].forEach(function(m){
         var on=isOn(m.id);
         var d=document.createElement('div'); d.className='srow';
-        var need=m.auth?' · needs token':' · free';
+        var need=m.auth?' · credentials required':' · setup required';
         d.innerHTML='<div class="grow"><b></b><div class="sub"></div></div><button class="tog" type="button"></button>';
         d.querySelector('b').textContent=m.name;
         d.querySelector('.sub').textContent=(m.desc||'')+need;
         var btn=d.querySelector('.tog');
         if(on){
-          btn.textContent='Connected';
+          btn.textContent='Configured';
           btn.classList.add('on');
         } else {
           btn.textContent='Connect';
@@ -239,7 +239,7 @@
     if(mine){
       mine.innerHTML='';
       if(!connected.length){
-        mine.innerHTML='<div class="box"><div class="tiny">Nothing connected yet. Use the list below — free tools need one tap; token tools open a form.</div></div>';
+        mine.innerHTML='<div class="box"><div class="tiny">No tools configured yet. Choose a tool below to review its setup requirements.</div></div>';
       } else {
         connected.forEach(function(id){
           var m=MCPS.find(function(x){ return x.id===id; })||{name:id,desc:''};
@@ -247,7 +247,7 @@
           var d=document.createElement('div'); d.className='srow';
           d.innerHTML='<div class="grow"><b></b><div class="sub"></div></div><button class="tog" type="button">Disconnect</button>';
           d.querySelector('b').textContent=m.name;
-          d.querySelector('.sub').textContent=has?'Active · token saved':'Active'+(m.auth?' · no token yet':'');
+          d.querySelector('.sub').textContent=has?'Configured · token saved locally; not verified':'Enabled in this browser · server access not verified';
           d.querySelector('.tog').onclick=function(){
             connected=connected.filter(function(x){ return x!==id; });
             saveConn(); renderMcps();
