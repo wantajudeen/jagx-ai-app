@@ -121,29 +121,11 @@
     }
   }
 
-  async function finishConnect(m, token, note){
+  function finishConnect(m, token, note){
     var err=document.getElementById('jxConnErr');
     if(err){err.style.display='none';err.textContent='';}
-    if(token){
-      try{
-        var response=await fetch(API+'/vault',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({user_id:uid(), key:m.id, value:token})
-        });
-        if(!response.ok){
-          var detail='';
-          try{var payload=await response.json();detail=payload.error||payload.message||'';}catch(_){}
-          throw new Error(detail||('Vault returned HTTP '+response.status));
-        }
-      }catch(e){
-        if(err){
-          err.textContent='JagX could not confirm that this credential was saved. Nothing was marked as connected. Please try again.';
-          err.style.display='block';
-        }
-        return false;
-      }
-    }
+    // This backend version has no server-side /vault endpoint. Keep the
+    // credential in this browser only and never imply it was server-verified.
     if(connected.indexOf(m.id)<0) connected.push(m.id);
     if(token) secrets[m.id]=token;
     if(note) localStorage.setItem('jx_note_'+m.id, note);
@@ -154,7 +136,6 @@
     }
     document.getElementById('jxConnModal').style.display='none';
     renderMcps();
-    return true;
   }
 
   function bindModalButtons(){
