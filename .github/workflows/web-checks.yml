@@ -1,0 +1,37 @@
+name: JagX AI web checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check JavaScript syntax
+        run: |
+          node --check app.js
+          node --check core.js
+          node --check features.js
+          node --check botfix.js
+      - name: Ensure browser code has no bundled permanent JagX key
+        run: |
+          if grep -E 'API_KEY[[:space:]]*=[[:space:]]*["\x27]jagx-' index.html app.js core.js features.js botfix.js; then
+            echo "A permanent JagX key appears in browser source."
+            exit 1
+          fi
+      - name: Confirm web chat uses the public endpoint
+        run: |
+          grep -q "/public-chat" core.js
+          grep -q "/public-chat" botfix.js
