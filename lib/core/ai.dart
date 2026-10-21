@@ -32,7 +32,7 @@ When TOOL RESULT is provided, treat it as evidence and explain limitations if it
   static String get _base {
     final b = Env.jagxApiBase.isEmpty
         ? 'https://jagx-ai-v2.onrender.com'
-        : Env.jagxApiBase.replaceAll(RegExp(r'/+;
+        : Env.jagxApiBase.replaceAll(RegExp(r'/+$'), '');
     return b;
   }
 
