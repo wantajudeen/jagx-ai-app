@@ -122,20 +122,17 @@
   }
 
   function finishConnect(m, token, note){
+    var err=document.getElementById('jxConnErr');
+    if(err){err.style.display='none';err.textContent='';}
+    // This backend version has no server-side /vault endpoint. Keep the
+    // credential in this browser only and never imply it was server-verified.
     if(connected.indexOf(m.id)<0) connected.push(m.id);
     if(token) secrets[m.id]=token;
     if(note) localStorage.setItem('jx_note_'+m.id, note);
     saveConn();
-    if(token){
-      fetch(API+'/vault',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({user_id:uid(), key:m.id, value:token})
-      }).catch(function(){});
-      if(m.id==='github'){
-        localStorage.setItem('jx_gh_token', token);
-        if(note) localStorage.setItem('jx_gh_repo', note);
-      }
+    if(token && m.id==='github'){
+      localStorage.setItem('jx_gh_token', token);
+      if(note) localStorage.setItem('jx_gh_repo', note);
     }
     document.getElementById('jxConnModal').style.display='none';
     renderMcps();

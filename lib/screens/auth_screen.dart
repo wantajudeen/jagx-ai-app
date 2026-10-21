@@ -235,11 +235,11 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: Colors.redAccent)),
+              Text(_error!, style: const TextStyle(color: Jx.danger)),
             ],
             if (_info != null) ...[
               const SizedBox(height: 12),
-              Text(_info!, style: const TextStyle(color: Color(0xFF86EFAC))),
+              Text(_info!, style: const TextStyle(color: Jx.success)),
             ],
             const SizedBox(height: 20),
             SizedBox(
@@ -247,14 +247,14 @@ class _AuthScreenState extends State<AuthScreen> {
               child: FilledButton(
                 onPressed: _busy || !Env.hasSupabase ? null : _submit,
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
+                  backgroundColor: Jx.accent,
+                  foregroundColor: Colors.white,
                 ),
                 child: _busy
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : Text(_signUp ? 'Create account' : 'Sign in'),
               ),

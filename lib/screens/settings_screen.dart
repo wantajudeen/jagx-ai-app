@@ -117,20 +117,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 22),
           _section('Preferences'),
           _card([
-            _row(Icons.contrast, 'Appearance', 'Dark', () {}),
+            _infoRow(Icons.light_mode_outlined, 'Appearance', 'Light workspace'),
             SwitchListTile(
               secondary: const Icon(Icons.vibration, color: Jx.muted),
               title: const Text('Haptics', style: TextStyle(color: Jx.text)),
               value: _haptics,
-              activeColor: Jx.accent,
+              activeColor: Jx.accentSoft,
               onChanged: (v) async {
                 setState(() => _haptics = v);
                 final p = await SharedPreferences.getInstance();
                 await p.setBool('jx_haptics', v);
               },
             ),
-            _row(Icons.language, 'App language', 'Follows chat language', () {}),
-            _row(Icons.tune, 'Advanced', null, () {}),
+            _infoRow(Icons.language, 'Response language', 'Follows the language you use'),
           ]),
           const SizedBox(height: 18),
           _section('JagX'),
@@ -182,10 +181,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _card(List<Widget> children) => Container(
         decoration: BoxDecoration(
           color: Jx.card,
-          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Jx.border),
+          borderRadius: BorderRadius.circular(12),
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(children: children),
       );
+
+  Widget _infoRow(IconData icon, String title, String subtitle) {
+    return ListTile(
+      leading: Icon(icon, color: Jx.muted, size: 22),
+      title: Text(title, style: const TextStyle(color: Jx.text)),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: Jx.dim, fontSize: 12),
+      ),
+      trailing: const Icon(Icons.info_outline, color: Jx.dim, size: 18),
+    );
+  }
 
   Widget _row(IconData icon, String title, String? subtitle, VoidCallback onTap) {
     return ListTile(

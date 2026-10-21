@@ -26,6 +26,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen>
     with SingleTickerProviderStateMixin {
   final _controller = TextEditingController();
+  final _inputFocus = FocusNode();
   final _scroll = ScrollController();
   late TabController _tabs;
   final _model = Models.fast;
@@ -87,6 +88,7 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void dispose() {
     _controller.dispose();
+    _inputFocus.dispose();
     _scroll.dispose();
     _tabs.dispose();
     super.dispose();
@@ -338,7 +340,7 @@ class _ChatScreenState extends State<ChatScreen>
         titleSpacing: 0,
         title: TabBar(
           controller: _tabs,
-          indicatorColor: Jx.text,
+          indicatorColor: Jx.accentSoft,
           indicatorSize: TabBarIndicatorSize.label,
           labelColor: Jx.text,
           unselectedLabelColor: Jx.dim,
@@ -357,7 +359,19 @@ class _ChatScreenState extends State<ChatScreen>
         children: [
           Expanded(
             child: _messages.isEmpty && _streaming == null
-                ? EmptyChat(mode: isBuild ? 2 : 0, hello: _hello)
+                ? EmptyChat(
+                    mode: isBuild ? 2 : 0,
+                    hello: _hello,
+                    onPrompt: (prompt) {
+                      setState(() {
+                        _controller.text = prompt;
+                        _controller.selection = TextSelection.collapsed(
+                          offset: prompt.length,
+                        );
+                      });
+                      _inputFocus.requestFocus();
+                    },
+                  )
                 : ListView(
                     controller: _scroll,
                     padding: const EdgeInsets.symmetric(
@@ -430,7 +444,8 @@ class _ChatScreenState extends State<ChatScreen>
               child: Container(
                 decoration: BoxDecoration(
                   color: Jx.card,
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Jx.border),
                 ),
                 padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
                 child: Column(
@@ -438,6 +453,7 @@ class _ChatScreenState extends State<ChatScreen>
                   children: [
                     TextField(
                       controller: _controller,
+                      focusNode: _inputFocus,
                       style: const TextStyle(color: Jx.text, fontSize: 15),
                       minLines: 1,
                       maxLines: 5,
@@ -445,8 +461,8 @@ class _ChatScreenState extends State<ChatScreen>
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
                         hintText: isBuild
-                            ? 'Describe what to build…'
-                            : 'Ask anything',
+                            ? 'Describe the outcome you want to build…'
+                            : 'Tell JagX what you’re working on…',
                         hintStyle: const TextStyle(color: Jx.dim),
                         border: InputBorder.none,
                         filled: false,
@@ -483,17 +499,17 @@ class _ChatScreenState extends State<ChatScreen>
                         ),
                         const Spacer(),
                         Material(
-                          color: Jx.text,
-                          shape: const CircleBorder(),
+                          color: Jx.accent,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
                           child: InkWell(
-                            customBorder: const CircleBorder(),
+                            customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
                             onTap: _loading ? null : () => _send(),
                             child: SizedBox(
                               width: 34,
                               height: 34,
                               child: Icon(
                                 Icons.arrow_upward_rounded,
-                                color: _loading ? Jx.dim : Colors.black,
+                                color: Colors.white,
                                 size: 18,
                               ),
                             ),

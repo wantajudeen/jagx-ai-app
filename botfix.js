@@ -84,14 +84,14 @@
     var tools=connected().join(', ');
     var prompt=STYLE+'\n\n'+JAGX_KNOWLEDGE+'\n\nUser: '+text;
     if(tools) prompt+='\nConnected tools: '+tools;
-    var res=await fetch(API+'/chat',{
+    var res=await fetch(API+'/public-chat',{
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({message:prompt, user_id:uid(), mode:'bot'})
     });
     var data={};
     try{ data=await res.json(); }catch(e){}
     if(!res.ok) throw new Error((data&&data.detail)||('HTTP '+res.status));
-    return clean(data.reply||data.text||data.answer||'');
+    return clean(data.response||data.reply||data.text||data.answer||'');
   }
   function mountBot(){
     var page=document.getElementById('page-bot'); if(!page||page.dataset.jx) return;
@@ -192,9 +192,71 @@
     var cp=document.createElement('section');cp.className='page';cp.id='page-connectors';cp.innerHTML='<div class="ph">Connector directory</div><p class="lead">A selected connector is not necessarily authenticated or live.</p><div class="jx-studio-card" id="jxConnectorStatus"></div><button class="jx-studio-btn" id="jxOpenConnectors" type="button">Open connector settings</button>';main.appendChild(cp);
     var ap=document.createElement('section');ap.className='page';ap.id='page-agents';ap.innerHTML='<div class="ph">JagX Bot & agents</div><p class="lead">Run tasks through the existing service and review local activity.</p><div class="jx-studio-card"><h3>New task</h3><textarea id="jx-agent-goal" placeholder="Describe the task…"></textarea><button class="jx-studio-btn" id="jx-agent-run" type="button">Run task</button><div class="jx-status" id="jx-agent-status">Idle</div><div class="jx-studio-output" id="jx-agent-result">No task result yet.</div></div><div class="jx-studio-card"><h3>Recent activity</h3><div id="jx-agent-activity"></div><button class="ghost" id="jx-agent-clear" type="button">Clear local activity</button></div>';main.appendChild(ap);
     function items(){try{return JSON.parse(localStorage.getItem('jx_agent_activity')||'[]')}catch(e){return []}}function render(){var h=document.getElementById('jx-agent-activity');if(!h)return;h.innerHTML='';var a=items();if(!a.length){h.textContent='No task activity yet.';return}a.slice(0,12).forEach(function(x){var d=document.createElement('div');d.className='jx-activity';d.textContent=x.time+' · '+x.goal+' — '+x.status;h.appendChild(d)})}function record(g,s){var a=items();a.unshift({time:new Date().toLocaleString(),goal:g.slice(0,100),status:s});try{localStorage.setItem('jx_agent_activity',JSON.stringify(a.slice(0,30)))}catch(e){}render()}
-    async function runMedia(kind){var p=document.getElementById('jx-'+kind+'Prompt'),status=document.getElementById('jx-'+kind+'Status'),out=document.getElementById('jx-'+kind+'Output'),btn=document.getElementById('jx-'+kind+'Run'),goal=(p.value||'').trim();if(!goal){status.textContent='Add a description first.';p.focus();return}btn.disabled=true;status.textContent='Checking the current integration…';out.textContent='';var note=document.createElement('p');note.textContent='This screen currently has no confirmed image/video generation endpoint wired to the existing JagX service. Sending a prompt to /chat only produces a text reply; it cannot create a real media file. No '+kind+' has been generated.';out.appendChild(note);var detail=document.createElement('p');detail.className='jx-status';detail.textContent='To make this work, the existing backend must expose its actual generation route and return a job/result or media URL. This frontend will not invent an endpoint or show a fake preview.';out.appendChild(detail);status.textContent='Not connected · generation route not confirmed';btn.disabled=false}
+    async function runMedia(kind){
+      var p=document.getElementById('jx-'+kind+'Prompt');
+      var status=document.getElementById('jx-'+kind+'Status');
+      var out=document.getElementById('jx-'+kind+'Output');
+      var btn=document.getElementById('jx-'+kind+'Run');
+      var goal=(p.value||'').trim();
+      var style=document.getElementById('jx-'+kind+'Style');
+      if(!goal){status.textContent='Add a description first.';p.focus();return}
+      out.textContent='';
+      if(kind==='video'){
+        status.textContent='Video generation is not available in the current backend.';
+        var videoNote=document.createElement('p');
+        videoNote.textContent='JagX AI does not yet expose a video-generation tool or video job endpoint. No video was generated. You can use Image Studio for still images while video support is being built.';
+        out.appendChild(videoNote);
+        return;
+      }
+      btn.disabled=true;
+      status.textContent='Creating image with JagX AI…';
+      try{
+        var requestMessage='Create an image using the available generate_image tool. Style: '+(style?style.value:'Cinematic')+'. Prompt: '+goal+'. Return the actual image result; do not claim success if no image attachment is returned.';
+        var response=await fetch(API+'/public-chat',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({message:requestMessage,history:[]})
+        });
+        var data={};
+        try{data=await response.json()}catch(_){}
+        if(!response.ok)throw new Error((data&&data.detail)||('HTTP '+response.status));
+        var attachment=data.attachment;
+        if(attachment&&attachment.type==='image'&&typeof attachment.url==='string'){
+          var parsed;
+          try{parsed=new URL(attachment.url)}catch(_){throw new Error('The backend returned an invalid image URL.')}
+          if(parsed.protocol!=='https:'&&parsed.protocol!=='http:')throw new Error('The backend returned an unsupported image URL.');
+          var image=document.createElement('img');
+          image.src=parsed.href;
+          image.alt=goal;
+          image.loading='lazy';
+          image.referrerPolicy='no-referrer';
+          image.style.cssText='display:block;width:100%;height:auto;max-height:560px;object-fit:contain;border-radius:10px;border:1px solid var(--line)';
+          out.appendChild(image);
+          var link=document.createElement('a');
+          link.href=parsed.href;
+          link.target='_blank';
+          link.rel='noopener noreferrer';
+          link.textContent='Open full-size image';
+          link.style.cssText='display:inline-block;margin-top:10px;color:var(--gold);font-size:12px;font-weight:600';
+          out.appendChild(link);
+          status.textContent='Image returned by the generation service.';
+        }else{
+          var note=document.createElement('p');
+          note.textContent=data.response||'The backend did not return an image attachment. Try a more specific prompt.';
+          out.appendChild(note);
+          status.textContent='No image attachment returned';
+        }
+      }catch(error){
+        var note=document.createElement('p');
+        note.textContent='Image generation failed: '+(error&&error.message?error.message:'Unknown error');
+        out.appendChild(note);
+        status.textContent='Generation failed';
+      }finally{
+        btn.disabled=false;
+      }
+    }
     document.getElementById('jx-imageRun').onclick=function(){runMedia('image')};document.getElementById('jx-videoRun').onclick=function(){runMedia('video')};document.getElementById('jxOpenConnectors').onclick=function(){location.hash='#/conn'};
-    document.getElementById('jx-agent-run').onclick=async function(){var p=document.getElementById('jx-agent-goal'),g=(p.value||'').trim(),st=document.getElementById('jx-agent-status'),out=document.getElementById('jx-agent-result'),btn=this;if(!g){st.textContent='Enter a task first.';return}btn.disabled=true;st.textContent='Running through existing service…';out.textContent='In progress…';record(g,'started');try{var r=await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'Act as JagX Bot. Complete this task within your current capabilities. Be honest about unsupported actions; report steps, blockers and result. Task: '+g,user_id:uid(),mode:'bot'})});var d=await r.json();if(!r.ok)throw new Error(d.detail||('HTTP '+r.status));out.textContent=clean(d.reply||d.text||d.answer||'No result returned.');st.textContent='Result received';record(g,'finished')}catch(e){out.textContent='Task failed: '+e.message;st.textContent='Failed';record(g,'failed')}finally{btn.disabled=false}};document.getElementById('jx-agent-clear').onclick=function(){localStorage.removeItem('jx_agent_activity');render()};render()
+    document.getElementById('jx-agent-run').onclick=async function(){var p=document.getElementById('jx-agent-goal'),g=(p.value||'').trim(),st=document.getElementById('jx-agent-status'),out=document.getElementById('jx-agent-result'),btn=this;if(!g){st.textContent='Enter a task first.';return}btn.disabled=true;st.textContent='Running through existing service…';out.textContent='In progress…';record(g,'started');try{var r=await fetch(API+'/public-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'Act as JagX Bot. Complete this task within your current capabilities. Be honest about unsupported actions; report steps, blockers and result. Task: '+g,history:[]})});var d=await r.json();if(!r.ok)throw new Error(d.detail||('HTTP '+r.status));out.textContent=clean(d.reply||d.text||d.answer||'No result returned.');st.textContent='Result received';record(g,'finished')}catch(e){out.textContent='Task failed: '+e.message;st.textContent='Failed';record(g,'failed')}finally{btn.disabled=false}};document.getElementById('jx-agent-clear').onclick=function(){localStorage.removeItem('jx_agent_activity');render()};render()
   }
   function routeStudio(){var r=(location.hash||'').replace(/^#\/?/,'').split('?')[0],names={'image-studio':'Image Studio','video-studio':'Video Studio','connectors':'Connector status','agents':'Agents & activity'};if(!names[r])return;document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');p.style.display='none'});var pg=document.getElementById('page-'+r);if(pg){pg.classList.add('on');pg.style.display='flex'}document.querySelectorAll('[data-route]').forEach(function(a){a.classList.toggle('on',a.dataset.route===r)});var t=document.getElementById('topTitle');if(t)t.textContent=names[r];var side=document.getElementById('side'),scrim=document.getElementById('scrim');if(side)side.classList.remove('open');if(scrim)scrim.classList.remove('open');if(r==='connectors'){var h=document.getElementById('jxConnectorStatus');if(h){h.innerHTML='';var a=[];try{a=JSON.parse(localStorage.getItem((window.__jagxUserId||'guest')+'_mcp')||'[]')}catch(e){}var p=document.createElement('p');p.textContent=a.length+' connector(s) selected locally; this does not confirm authentication or server availability.';h.appendChild(p);a.forEach(function(x){var d=document.createElement('div');d.className='jx-activity';d.textContent='Selected · '+x;h.appendChild(d)});if(!a.length)h.appendChild(document.createTextNode('No connectors selected. Browse connector settings for the available directory.'))}}}
 \n  function tick(){
