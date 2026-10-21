@@ -200,7 +200,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.black),
+                              strokeWidth: 2, color: Colors.white),
                         )
                       : const Text('Continue',
                           style: TextStyle(fontWeight: FontWeight.w600)),
