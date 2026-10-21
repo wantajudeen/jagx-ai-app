@@ -190,7 +190,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   onPressed: _loading ? null : _save,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Jx.accent,
-                    foregroundColor: Colors.black,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
