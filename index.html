@@ -44,7 +44,7 @@ label{display:block;font-size:11px;color:#686d61;margin:14px 0 6px;font-weight:6
 .page input,.page select,.page textarea:not(#input),.box input,.box select,.box textarea,.card input{background:#fffefa;border:1px solid #d9d9d0;border-radius:8px;padding:12px 13px;color:#20231f;width:100%}.page input:focus,.page select:focus,.page textarea:focus,.box input:focus,.box select:focus,.box textarea:focus,.card input:focus{border-color:#9bb77b;outline:none;box-shadow:0 0 0 3px rgba(169,207,104,.15)}
 .full{min-height:43px;border-radius:8px;font-size:12px;font-weight:700;padding:10px 14px;letter-spacing:.01em}.solid{background:#242a20;color:#f5f5eb}.solid:hover{background:#39462d}.ghost{border:1px solid #d9d9d0;color:#3e433a;background:transparent}.ghost:hover{background:#eeeee7}.tog{border:1px solid #d9d9d0;border-radius:8px;padding:8px 12px;color:#60665b}.tog.on{background:#e9f0dd;border-color:#c5d7ad;color:#385126}
 .srow{background:transparent;border:0;border-bottom:1px solid #deded5;border-radius:0;padding:17px 5px;margin:0;text-align:left;display:flex;align-items:center;gap:12px;color:#30342d}.srow:hover{background:#eeeee7}.grow{flex:1}.sub{font-size:12px;color:#7c8076;margin-top:5px;line-height:1.5}
-.card{background:#fbfaf6;border:1px solid #dcdcd3;border-radius:13px;box-shadow:0 24px 70px rgba(26,30,22,.16);padding:22px;color:#20231f}.modal{position:fixed;inset:0;z-index:100;background:rgba(22,25,21,.46);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:16px}.modal .card{width:min(100%,460px);max-height:90vh;overflow:auto}
+.card{background:#fbfaf6;border:1px solid #dcdcd3;border-radius:13px;box-shadow:0 24px 70px rgba(26,30,22,.16);padding:22px;color:#20231f}.modal{position:fixed;inset:0;z-index:100;background:rgba(22,25,21,.46);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:16px}.modal.open{display:flex}.modal .card{width:min(100%,460px);max-height:90vh;overflow:auto}
 .md-table{background:#fffefa}.md-table th{background:#eeeee7}.md-table th,.md-table td{border-color:#deded5}.md-table td{color:#33372f}.md-math{background:#f0f0e9;border-color:#deded5}.scrim{display:none}
 @media(min-width:1200px){.side{width:258px;min-width:258px}.main{max-width:1160px}.thread{padding-left:clamp(45px,6vw,95px);padding-right:clamp(45px,6vw,95px)}}
 @media(max-width:800px){.side{position:fixed;left:0;top:0;z-index:50;transform:translateX(-100%);transition:transform .22s ease;width:min(82vw,290px);min-width:0;box-shadow:18px 0 60px rgba(0,0,0,.16)}.side.open{transform:translateX(0)}.scrim.show{display:block;position:fixed;inset:0;z-index:40;background:rgba(24,27,22,.35)}.side-top{padding-top:max(22px,env(safe-area-inset-top))}.top{height:58px;min-height:58px;padding:0 13px}.top-title{font-size:10px}.thread{padding:22px 16px}.empty{padding:18px 0 30px;justify-content:flex-start}.empty h1{font-size:clamp(36px,10vw,48px)}.empty p{font-size:13px}#jxQuickPrompts{grid-template-columns:1fr;gap:7px!important;margin-top:23px!important}#jxQuickPrompts .chip{min-height:52px;padding:12px}.composer-wrap{padding:8px 10px max(12px,env(safe-area-inset-bottom))}.composer{padding:10px;border-radius:12px}.page{padding:24px 17px}.ph{font-size:30px}.box{padding:16px 0}.card{border-radius:13px}}
@@ -199,7 +199,8 @@ label{display:block;font-size:11px;color:#686d61;margin:14px 0 6px;font-weight:6
   <a class="full solid" style="display:grid;place-items:center" href="https://github.com/wantajudeen/jagx-ai-app/releases/download/apk-latest/JagX-AI.apk">Download APK</a>
   <button class="full ghost" type="button" id="dlClose" style="margin-top:8px">Close</button>
 </div></div>
-<script src="./app.js?v=43"></script>
-<script src="./features.js?v=40"></script>
+<script src="./core.js?v=1"></script>
+<script src="./features.js?v=41"></script>
+<script src="./botfix.js?v=45"></script>
 </body>
 </html>
