@@ -2,37 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class Jx {
-  static const bg = Color(0xFF0B0B0C);
-  static const surface = Color(0xFF101011);
-  static const card = Color(0xFF151514);
-  static const cardHover = Color(0xFF22211E);
-  static const border = Color(0xFF302E29);
-  static const text = Color(0xFFF5F2EB);
-  static const muted = Color(0xFFAAA69E);
-  static const dim = Color(0xFF77736B);
-  static const accent = Color(0xFFE5C47D);
-  static const accentSoft = Color(0xFFD9B66C);
-  static const blue = Color(0xFF9E8B68);
-  static const violet = Color(0xFFB8A078);
-  static const userBubble = Color(0xFF1B1A18);
-  static const success = Color(0xFF8DB79A);
-  static const danger = Color(0xFFE58C82);
+  static const bg = Color(0xFFF4F3EE);
+  static const surface = Color(0xFFF9F8F3);
+  static const card = Color(0xFFFFFEFA);
+  static const cardHover = Color(0xFFEEEEE7);
+  static const border = Color(0xFFDFDED6);
+  static const text = Color(0xFF20231F);
+  static const muted = Color(0xFF686C64);
+  static const dim = Color(0xFF898C83);
+  static const accent = Color(0xFF242A20);
+  static const accentSoft = Color(0xFFA9CF68);
+  static const blue = Color(0xFF486B9B);
+  static const violet = Color(0xFF687D5A);
+  static const userBubble = Color(0xFFE8E9E1);
+  static const success = Color(0xFF46734A);
+  static const danger = Color(0xFFB5483F);
 }
 
 class JagxTheme {
   static ThemeData get dark {
-    final base = ThemeData.dark(useMaterial3: true);
+    final base = ThemeData.light(useMaterial3: true);
     final inter = GoogleFonts.interTextTheme(base.textTheme).apply(
       bodyColor: Jx.text,
       displayColor: Jx.text,
     );
     return base.copyWith(
       scaffoldBackgroundColor: Jx.bg,
-      colorScheme: const ColorScheme.dark(
+      colorScheme: const ColorScheme.light(
         primary: Jx.accent,
         secondary: Jx.accentSoft,
         surface: Jx.surface,
-        onPrimary: Colors.black,
+        onPrimary: Colors.white,
         onSurface: Jx.text,
         outline: Jx.border,
       ),
@@ -54,7 +54,7 @@ class JagxTheme {
         fillColor: Jx.card,
         hintStyle: const TextStyle(color: Jx.dim),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
@@ -62,15 +62,15 @@ class JagxTheme {
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Jx.accentSoft),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: Jx.card,
-        contentTextStyle: const TextStyle(color: Jx.text),
+        backgroundColor: Jx.text,
+        contentTextStyle: const TextStyle(color: Colors.white),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
