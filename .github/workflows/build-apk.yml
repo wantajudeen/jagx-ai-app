@@ -37,8 +37,6 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          JAGX_API_KEY: ${{ secrets.JAGX_API_KEY }}
         run: |
           set -euo pipefail
           URL="${SUPABASE_URL:-}"
@@ -48,8 +46,7 @@ jobs:
           {
             echo "SUPABASE_URL=${URL}"
             echo "SUPABASE_ANON_KEY=${KEY}"
-            echo "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}"
-            echo "JAGX_API_KEY=${JAGX_API_KEY:-jagx-984199d487c01240f4515157a11cd6b4}"
+            # Provider/API keys stay on the server; never embed them in a mobile binary.
             echo "JAGX_API_BASE=https://jagx-ai-v2.onrender.com"
           } > .env
           echo "Wrote .env ($(wc -l < .env) lines)"
