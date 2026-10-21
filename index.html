@@ -139,14 +139,14 @@ label{display:block;font-size:11px;color:#686d61;margin:14px 0 6px;font-weight:6
       </div>
     </div>
 
-    <div class="page" id="page-vault"><div class="ph">Secure vault</div><div id="vaultList"></div><div class="box"><label>Label</label><input id="vLabel" placeholder="GitHub"/><label>Token</label><input id="vSecret" type="password"/><button class="full solid" type="button" id="vAdd">Save</button></div></div>
+    <div class="page" id="page-vault"><div class="ph">Browser vault</div><p class="lead">Secrets are stored in this browser only in this version. They are not protected by a server-side encrypted vault; avoid saving sensitive credentials on shared devices.</p><div id="vaultList"></div><div class="box"><label>Label</label><input id="vLabel" placeholder="GitHub"/><label>Token</label><input id="vSecret" type="password"/><button class="full solid" type="button" id="vAdd">Save</button></div></div>
     <div class="page" id="page-skills"><div class="ph">Reusable skills</div><div id="skillList"></div><div class="box"><label>Name</label><input id="skName"/><label>What it does</label><textarea id="skBody" rows="4"></textarea><button class="full solid" type="button" id="skAdd">Save</button></div></div>
 
     <div class="page" id="page-terms">
       <div class="ph">Terms of Service</div>
       <div class="box" style="line-height:1.55;color:var(--muted);font-size:14px">
         <p style="color:var(--gold);font-weight:600;margin-bottom:8px">JagX is by JRILICENSE</p>
-        <p>Last updated: 4 October 2026</p>
+        <p>Last updated: 21 October 2026</p>
         <p style="margin-top:12px">These Terms govern JagX AI (app, website, APIs) operated by JagX and JRILICENSE. By using the Service you agree to them.</p>
         <p style="margin-top:10px"><b style="color:var(--text)">1. Service</b> — AI assistant for chat, coding, and learning. Outputs can be wrong; review before relying on them.</p>
         <p style="margin-top:8px"><b style="color:var(--text)">2. Acceptable use</b> — No illegal activity, scams, harassment, or abuse of the system.</p>
@@ -160,10 +160,10 @@ label{display:block;font-size:11px;color:#686d61;margin:14px 0 6px;font-weight:6
       <div class="ph">Privacy Policy</div>
       <div class="box" style="line-height:1.55;color:var(--muted);font-size:14px">
         <p style="color:var(--gold);font-weight:600;margin-bottom:8px">JagX is by JRILICENSE</p>
-        <p>Last updated: 4 October 2026</p>
-        <p style="margin-top:12px">We may process account data (if you sign in), messages you send, local history on device, and technical logs. We do not sell personal data. Do not paste secrets into chat. Contact support or open a GitHub issue for deletion requests.</p>
-        <p style="margin-top:10px"><b style="color:var(--text)">What we store</b> — email/profile if you sign in; optional vault tokens on our server for tools you connect; bot job logs.</p>
-        <p style="margin-top:8px"><b style="color:var(--text)">What stays on device</b> — chat history in browser storage until you clear it.</p>
+        <p>Last updated: 21 October 2026</p>
+        <p style="margin-top:12px">JagX AI processes messages you submit to provide responses, account/profile data when you sign in, and technical data needed to operate and protect the service. Chat history and connector credentials may be stored in this browser. Do not save credentials on shared devices or paste secrets into chat. We do not sell personal data. Contact support or open a GitHub issue for deletion requests.</p>
+        <p style="margin-top:10px"><b style="color:var(--text)">What we store</b> — email/profile if you sign in; chat history and connector credentials in browser storage; limited operational logs for service reliability and abuse prevention. Chat messages are not written to the training-data file by default.</p>
+        <p style="margin-top:8px"><b style="color:var(--text)">Browser storage</b> — chat history, settings and any connector tokens you save remain in browser storage until you clear them. A future server-side encrypted vault and account-level deletion controls still need implementation.</p>
         <p style="margin-top:12px">© JagX · JRILICENSE</p>
       </div>
     </div>
