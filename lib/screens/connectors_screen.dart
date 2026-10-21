@@ -165,8 +165,8 @@ class _ConnectorsScreenState extends State<ConnectorsScreen> {
               FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
+                  backgroundColor: Jx.accent,
+                  foregroundColor: Colors.white,
                 ),
                 child: const Text('Add Connector'),
               ),
@@ -290,9 +290,9 @@ class _ConnectorsScreenState extends State<ConnectorsScreen> {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
-        label: Text(c, style: TextStyle(fontSize: 12, color: on ? Colors.black : Jx.muted)),
+        label: Text(c, style: TextStyle(fontSize: 12, color: on ? Jx.text : Jx.muted)),
         selected: on,
-        selectedColor: Colors.white,
+        selectedColor: Jx.userBubble,
         backgroundColor: Jx.card,
         onSelected: (_) => setState(() => _cat = c),
       ),
@@ -309,7 +309,7 @@ class _ConnectorsScreenState extends State<ConnectorsScreen> {
         color: Jx.card,
         borderRadius: BorderRadius.circular(14),
         border: e.priority
-            ? Border.all(color: const Color(0xFFD4AF37).withOpacity(0.35))
+            ? Border.all(color: Jx.accentSoft.withOpacity(0.65))
             : null,
       ),
       child: ListTile(
