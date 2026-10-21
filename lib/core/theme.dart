@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class Jx {
-  static const bg = Color(0xFF000000);
-  static const surface = Color(0xFF0A0A0A);
-  static const card = Color(0xFF141414);
-  static const cardHover = Color(0xFF1C1C1C);
-  static const border = Color(0xFF2A2A2A);
-  static const text = Color(0xFFF2F2F2);
-  static const muted = Color(0xFF9A9A9A);
-  static const dim = Color(0xFF6A6A6A);
-  static const accent = Color(0xFFE8E8E8);
-  static const accentSoft = Color(0xFFCFCFCF);
-  static const blue = Color(0xFF3B9EFF);
-  static const violet = Color(0xFF9B5CFF);
-  static const userBubble = Color(0xFF1A1A1A);
-  static const success = Color(0xFF4ADE80);
-  static const danger = Color(0xFFF87171);
+  static const bg = Color(0xFF0B0B0C);
+  static const surface = Color(0xFF101011);
+  static const card = Color(0xFF151514);
+  static const cardHover = Color(0xFF22211E);
+  static const border = Color(0xFF302E29);
+  static const text = Color(0xFFF5F2EB);
+  static const muted = Color(0xFFAAA69E);
+  static const dim = Color(0xFF77736B);
+  static const accent = Color(0xFFE5C47D);
+  static const accentSoft = Color(0xFFD9B66C);
+  static const blue = Color(0xFF9E8B68);
+  static const violet = Color(0xFFB8A078);
+  static const userBubble = Color(0xFF1B1A18);
+  static const success = Color(0xFF8DB79A);
+  static const danger = Color(0xFFE58C82);
 }
 
 class JagxTheme {
@@ -54,7 +54,7 @@ class JagxTheme {
         fillColor: Jx.card,
         hintStyle: const TextStyle(color: Jx.dim),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
@@ -62,8 +62,8 @@ class JagxTheme {
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Jx.border),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Jx.accentSoft),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
