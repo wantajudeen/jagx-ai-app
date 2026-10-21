@@ -84,14 +84,14 @@
     var tools=connected().join(', ');
     var prompt=STYLE+'\n\n'+JAGX_KNOWLEDGE+'\n\nUser: '+text;
     if(tools) prompt+='\nConnected tools: '+tools;
-    var res=await fetch(API+'/chat',{
+    var res=await fetch(API+'/public-chat',{
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({message:prompt, user_id:uid(), mode:'bot'})
     });
     var data={};
     try{ data=await res.json(); }catch(e){}
     if(!res.ok) throw new Error((data&&data.detail)||('HTTP '+res.status));
-    return clean(data.reply||data.text||data.answer||'');
+    return clean(data.response||data.reply||data.text||data.answer||'');
   }
   function mountBot(){
     var page=document.getElementById('page-bot'); if(!page||page.dataset.jx) return;
