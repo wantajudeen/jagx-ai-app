@@ -115,7 +115,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
             onPressed: _activate,
             style: ElevatedButton.styleFrom(
               backgroundColor: Jx.accent,
-              foregroundColor: Colors.black,
+              foregroundColor: Colors.white,
             ),
             child: const Text('Activate'),
           ),
