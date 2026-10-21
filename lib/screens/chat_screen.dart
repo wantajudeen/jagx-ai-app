@@ -26,6 +26,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen>
     with SingleTickerProviderStateMixin {
   final _controller = TextEditingController();
+  final _inputFocus = FocusNode();
   final _scroll = ScrollController();
   late TabController _tabs;
   final _model = Models.fast;
@@ -87,6 +88,7 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void dispose() {
     _controller.dispose();
+    _inputFocus.dispose();
     _scroll.dispose();
     _tabs.dispose();
     super.dispose();
@@ -357,7 +359,19 @@ class _ChatScreenState extends State<ChatScreen>
         children: [
           Expanded(
             child: _messages.isEmpty && _streaming == null
-                ? EmptyChat(mode: isBuild ? 2 : 0, hello: _hello)
+                ? EmptyChat(
+                    mode: isBuild ? 2 : 0,
+                    hello: _hello,
+                    onPrompt: (prompt) {
+                      setState(() {
+                        _controller.text = prompt;
+                        _controller.selection = TextSelection.collapsed(
+                          offset: prompt.length,
+                        );
+                      });
+                      _inputFocus.requestFocus();
+                    },
+                  )
                 : ListView(
                     controller: _scroll,
                     padding: const EdgeInsets.symmetric(
@@ -439,6 +453,7 @@ class _ChatScreenState extends State<ChatScreen>
                   children: [
                     TextField(
                       controller: _controller,
+                      focusNode: _inputFocus,
                       style: const TextStyle(color: Jx.text, fontSize: 15),
                       minLines: 1,
                       maxLines: 5,
