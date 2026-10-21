@@ -20,7 +20,7 @@ class Jx {
 }
 
 class JagxTheme {
-  static ThemeData get dark {
+  static ThemeData get light {
     final base = ThemeData.light(useMaterial3: true);
     final inter = GoogleFonts.interTextTheme(base.textTheme).apply(
       bodyColor: Jx.text,
