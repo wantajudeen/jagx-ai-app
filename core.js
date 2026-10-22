@@ -263,14 +263,18 @@
       var div=document.createElement('div');div.className='msg '+(m.role==='user'?'user':'bot');
       var b=document.createElement('div');b.className='bubble';
       var content=String(m.content||'');
-      var imageMatch=content.match(/!\[image\]\((https:\/\/[^\s)]+)\)/i);
-      var displayText=content.replace(/!\[image\]\(https:\/\/[^\s)]+\)/ig,'').replace(/\\n\\n/g,'\n\n').trim();
+      var imageMatch=content.match(/!\\[image\\]\\((https:\\/\\/[^\\s)]+)\\)/i);
+      var videoMatch=content.match(/!\\[video\\]\\((https:\\/\\/[^\\s)]+)\\)/i);
+      var displayText=content.replace(/!\\[(?:image|video)\\]\\(https:\\/\\/[^\\s)]+\\)/ig,'').replace(/\\\\n\\\\n/g,'\\n\\n').trim();
       b.textContent=displayText;
       if(displayText)div.appendChild(b);
       if(imageMatch){
         var imageButton=document.createElement('button');imageButton.type='button';imageButton.className='generated-image-open';imageButton.title='Tap to view image';imageButton.setAttribute('aria-label','View generated image');
         var image=document.createElement('img');image.src=imageMatch[1];image.alt='Generated image';image.loading='lazy';imageButton.appendChild(image);
         imageButton.onclick=function(){if(window.JagXOpenImage)window.JagXOpenImage(imageMatch[1],'Generated image');else window.open(imageMatch[1],'_blank','noopener');};div.appendChild(imageButton);
+      }
+      if(videoMatch){
+        var video=document.createElement('video');video.src=videoMatch[1];video.controls=true;video.playsInline=true;video.preload='metadata';video.className='generated-video';video.setAttribute('aria-label','Generated video');div.appendChild(video);
       }
       if(m.role==='assistant'){
         var act=document.createElement('div');act.className='msg-actions';
@@ -325,13 +329,22 @@
     pendingAtts=[];renderAttach();
     renderAll();saveLocal();sendBtn.disabled=true;startThinking();
     try{
-      var r=await fetch(API+'/public-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:prompt,history:history.slice(0,-1).slice(-12)})});
+      var mediaImage=text.match(/^(?:create|generate|draw)\\s+(?:an?\\s+)?image\\s+(?:of|for|showing)\\s*:?\\s*(.+)$/i);
+      var mediaVideo=text.match(/^(?:create|generate|make)\\s+(?:a\\s+)?video\\s+(?:of|about|showing|for)\\s*:?\\s*(.+)$/i);
+      var endpoint=mediaImage?'/generate/image':(mediaVideo?'/generate/video':'/public-chat');
+      var payload=(mediaImage||mediaVideo)?{prompt:(mediaImage||mediaVideo)[1],style:'Cinematic'}:{message:prompt,history:history.slice(0,-1).slice(-12)};
+      var r=await fetch(API+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       var data=await r.json().catch(function(){return {};});
       stopThinking();
       if(!r.ok){var why=data.detail||('HTTP '+r.status);if(r.status===404)why='JagX backend route not found (404). The live Render service is not serving /public-chat yet. Redeploy wantajudeen/jagx-backend from main, then verify /health reports version 7.0.0 before retrying.';else if(r.status===502||r.status===503)why='JagX AI provider is temporarily unavailable ('+r.status+'). Check the backend provider keys, model name and quota. Details: '+why;history.push({role:'assistant',content:why});}
       else{
         var ans=data.response||data.message||'';
-        if(data.attachment&&data.attachment.url)ans+='\\n\\n![image]('+data.attachment.url+')';
+        if(data.status==='processing')ans=(data.detail||'Your media job is processing. Automatic status updates are not available yet.')+(data.prediction_url?'\\n\\nJob status: '+data.prediction_url:'');
+        if(data.attachment&&data.attachment.url){
+          var mediaType=data.attachment.type==='video'?'video':'image';
+          ans+=(ans?'\\n\\n':'')+'!['+mediaType+']('+data.attachment.url+')';
+          if(data.provider)ans+='\\n\\n'+(mediaType==='image'?'Image':'Video')+' provider: '+data.provider;
+        }
         history.push({role:'assistant',content:ans});
         speakReply(ans);
       }
