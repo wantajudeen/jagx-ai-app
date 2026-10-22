@@ -71,6 +71,8 @@ class _ChatScreenState extends State<ChatScreen>
           ..addAll(list.map((e) => _Msg(
                 e['text'] as String? ?? '',
                 e['user'] as bool? ?? false,
+                imagePath: e['imagePath'] as String?,
+                fileName: e['fileName'] as String?,
               )));
       });
     } catch (_) {}
@@ -81,7 +83,12 @@ class _ChatScreenState extends State<ChatScreen>
     await p.setString(
       'jx_chat_history',
       jsonEncode(
-          _messages.map((m) => {'text': m.text, 'user': m.user}).toList()),
+        _messages.map((m) => {
+          'text': m.text,
+          'user': m.user,
+          'imagePath': m.imagePath,
+          'fileName': m.fileName,
+        }).toList(),
     );
   }
 
@@ -183,7 +190,7 @@ class _ChatScreenState extends State<ChatScreen>
       if (textExtensions.contains(extension) && file.path != null) {
         try {
           final contents = await File(file.path!).readAsString();
-          promptText += '\\n\\n[Attached text file: ${file.name}]\\n${contents.substring(0, contents.length.clamp(0, 12000))}\\n[End attached file]';
+          promptText += '\\n\\n[Attached text file: ${file.name}]\\n${contents.substring(0, contents.length > 12000 ? 12000 : contents.length)}\\n[End attached file]';
         } catch (_) {
           promptText += '\\n\\n[File attached: ${file.name}; the app could not read its text content.]';
         }
