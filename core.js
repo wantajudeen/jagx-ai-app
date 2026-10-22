@@ -263,9 +263,9 @@
       var div=document.createElement('div');div.className='msg '+(m.role==='user'?'user':'bot');
       var b=document.createElement('div');b.className='bubble';
       var content=String(m.content||'');
-      var imageMatch=content.match(/!\\[image\\]\\((https:\\/\\/[^\\s)]+)\\)/i);
-      var videoMatch=content.match(/!\\[video\\]\\((https:\\/\\/[^\\s)]+)\\)/i);
-      var displayText=content.replace(/!\\[(?:image|video)\\]\\(https:\\/\\/[^\\s)]+\\)/ig,'').replace(/\\\\n\\\\n/g,'\\n\\n').trim();
+      var imageMatch=content.match(/!\[image\]\((https:\/\/[^\s)]+)\)/i);
+      var videoMatch=content.match(/!\[video\]\((https:\/\/[^\s)]+)\)/i);
+      var displayText=content.replace(/!\[(?:image|video)\]\(https:\/\/[^\s)]+\)/ig,'').replace(/\\n\\n/g,'\n\n').trim();
       b.textContent=displayText;
       if(displayText)div.appendChild(b);
       if(imageMatch){
@@ -329,8 +329,8 @@
     pendingAtts=[];renderAttach();
     renderAll();saveLocal();sendBtn.disabled=true;startThinking();
     try{
-      var mediaImage=text.match(/^(?:create|generate|draw)\\s+(?:an?\\s+)?image\\s+(?:of|for|showing)\\s*:?\\s*(.+)$/i);
-      var mediaVideo=text.match(/^(?:create|generate|make)\\s+(?:a\\s+)?video\\s+(?:of|about|showing|for)\\s*:?\\s*(.+)$/i);
+      var mediaImage=text.match(/^(?:create|generate|draw)\s+(?:an?\s+)?image\s+(?:of|for|showing)\s*:?\s*(.+)$/i);
+      var mediaVideo=text.match(/^(?:create|generate|make)\s+(?:a\s+)?video\s+(?:of|about|showing|for)\s*:?\s*(.+)$/i);
       var endpoint=mediaImage?'/generate/image':(mediaVideo?'/generate/video':'/public-chat');
       var payload=(mediaImage||mediaVideo)?{prompt:(mediaImage||mediaVideo)[1],style:'Cinematic'}:{message:prompt,history:history.slice(0,-1).slice(-12)};
       var r=await fetch(API+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
