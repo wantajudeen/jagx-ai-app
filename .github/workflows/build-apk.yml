@@ -9,7 +9,13 @@ on:
       - "index.html"
       - "app.js"
       - "features.js"
+      - "core.js"
+      - "botfix.js"
   workflow_dispatch:
+
+concurrency:
+  group: jagx-ai-apk-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
