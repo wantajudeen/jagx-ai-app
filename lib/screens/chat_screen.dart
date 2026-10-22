@@ -182,7 +182,7 @@ class _ChatScreenState extends State<ChatScreen>
 
     var promptText = userLine;
     if (_pendingImage != null) {
-      promptText += '\\n\\n[Image attachment: ${_pendingImage!.name}. The current chat API accepts text only and has not received image pixels. Do not claim to see the image; explain this limitation and ask for a supported image upload if visual analysis is required.]';
+      promptText += '\n\n[Image attachment: ${_pendingImage!.name}. The current chat API accepts text only and has not received image pixels. Do not claim to see the image; explain this limitation and ask for a supported image upload if visual analysis is required.]';
     }
     if (_pendingFile != null) {
       final file = _pendingFile!;
@@ -191,12 +191,12 @@ class _ChatScreenState extends State<ChatScreen>
       if (textExtensions.contains(extension) && file.path != null) {
         try {
           final contents = await File(file.path!).readAsString();
-          promptText += '\\n\\n[Attached text file: ${file.name}]\\n${contents.substring(0, contents.length > 12000 ? 12000 : contents.length)}\\n[End attached file]';
+          promptText += '\n\n[Attached text file: ${file.name}]\n${contents.substring(0, contents.length > 12000 ? 12000 : contents.length)}\n[End attached file]';
         } catch (_) {
-          promptText += '\\n\\n[File attached: ${file.name}; the app could not read its text content.]';
+          promptText += '\n\n[File attached: ${file.name}; the app could not read its text content.]';
         }
       } else {
-        promptText += '\\n\\n[File attached: ${file.name}. The current chat API does not receive binary file bytes, so do not claim to have read its contents.]';
+        promptText += '\n\n[File attached: ${file.name}. The current chat API does not receive binary file bytes, so do not claim to have read its contents.]';
       }
     }
     if (_wantsBook(text)) {
