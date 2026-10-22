@@ -227,19 +227,17 @@
     history.forEach(function(m){
       var div=document.createElement('div');div.className='msg '+(m.role==='user'?'user':'bot');
       var b=document.createElement('div');b.className='bubble';
-      if(m.role==='assistant'){b.innerHTML=formatBot(m.content);b.querySelectorAll('.copy-btn').forEach(function(btn){btn.onclick=function(){var code=btn.parentNode.querySelector('code');if(code)navigator.clipboard.writeText(code.textContent||'');};});}
-      else b.textContent=m.content;
-      div.appendChild(b);
       if(m.role==='assistant'){
         var act=document.createElement('div');act.className='msg-actions';
-        var up=document.createElement('button');up.type='button';up.className='fb-btn';up.textContent='Good';up.onclick=function(){up.classList.add('on');};
-        var dn=document.createElement('button');dn.type='button';dn.className='fb-btn bad';dn.textContent='Bad';dn.onclick=function(){dn.classList.add('on');};
-        act.appendChild(up);act.appendChild(dn);div.appendChild(act);
+        function smallAction(symbol,label,fn,extraClass){var btn=document.createElement('button');btn.type='button';btn.className='msg-icon '+(extraClass||'');btn.textContent=symbol;btn.title=label;btn.setAttribute('aria-label',label);btn.onclick=fn;act.appendChild(btn);return btn;}
+        smallAction('⧉','Copy response',async function(btn){try{await navigator.clipboard.writeText(m.content||'');}catch(e){var ta=document.createElement('textarea');ta.value=m.content||'';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}this.textContent='✓';var self=this;setTimeout(function(){self.textContent='⧉'},1100);});
+        smallAction('＋','Good response',function(){this.classList.toggle('on');this.title=this.classList.contains('on')?'Marked helpful':'Good response';},'good');
+        smallAction('−','Bad response',function(){this.classList.toggle('on');this.title=this.classList.contains('on')?'Marked not helpful':'Bad response';},'bad');
       }
       if(m.role==='user'){
-        var act2=document.createElement('div');act2.className='msg-actions';act2.style.opacity='1';
-        var ed=document.createElement('button');ed.type='button';ed.className='edit-btn';ed.textContent='Edit';
-        ed.onclick=function(){input.value=m.content;input.focus();};
+        var act2=document.createElement('div');act2.className='msg-actions user-msg-actions';
+        var ed=document.createElement('button');ed.type='button';ed.className='msg-icon edit-btn';ed.textContent='✎';ed.title='Edit message';ed.setAttribute('aria-label','Edit message');
+        ed.onclick=function(){input.value=m.content;input.focus();input.style.height='auto';input.style.height=Math.min(input.scrollHeight,160)+'px';input.setSelectionRange(input.value.length,input.value.length);};
         act2.appendChild(ed);div.appendChild(act2);
       }
       thread.appendChild(div);
@@ -257,6 +255,10 @@
     if(attachments.length){extra+='[ATTACHMENTS]\n';attachments.forEach(function(a){if((a.type||'').indexOf('image/')===0){extra+='Image attached in the interface: '+a.name+' ('+a.type+'). The current public-chat API does not receive image bytes, so do not claim to have visually inspected this image. Explain the limitation and ask for a supported image upload if visual analysis is needed.\n';}else if(a.data){extra+='Text file '+a.name+':\n'+String(a.data).slice(0,4000)+'\n';}else{extra+='Binary attachment '+a.name+' ('+a.type+', '+a.size+' bytes). The current public-chat API does not receive binary file bytes, so do not claim to have read it.\n';}});}
     return extra+text;
   }
+  var voiceMode=false,recognition=null;
+  function speakReply(text){if(!voiceMode||!('speechSynthesis' in window))return;try{window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(String(text||'').slice(0,7000));u.rate=1;u.pitch=1;window.speechSynthesis.speak(u);}catch(e){}}
+  function startVoice(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Voice input is not supported in this browser. Try Chrome and allow microphone access.');return;}try{if(recognition){recognition.stop();recognition=null;}recognition=new SR();recognition.lang='en-NG';recognition.interimResults=true;recognition.continuous=false;var v=document.getElementById('voice');v.classList.add('listening');v.title='Listening… tap to stop';recognition.onresult=function(e){var finalText='';for(var i=e.resultIndex;i<e.results.length;i++)finalText+=e.results[i][0].transcript;if(finalText){input.value=finalText;input.style.height='auto';input.style.height=Math.min(input.scrollHeight,160)+'px';}};recognition.onerror=function(){v.classList.remove('listening');v.title='Start voice input';};recognition.onend=function(){v.classList.remove('listening');v.title='Start voice input';recognition=null;};recognition.start();}catch(e){var v=document.getElementById('voice');if(v)v.classList.remove('listening');}}
+  var voiceBtn=document.getElementById('voice');if(voiceBtn)voiceBtn.onclick=function(){if(recognition){recognition.stop();return;}voiceMode=!voiceMode;voiceBtn.classList.toggle('voice-on',voiceMode);voiceBtn.title=voiceMode?'Voice chat on · tap mic to speak':'Start voice input';startVoice();};
   async function send(){
     var text=(input.value||'').trim();
     if((!text&&!pendingAtts.length&&!pendingFile)||sendBtn.disabled)return;
@@ -273,11 +275,12 @@
       var r=await fetch(API+'/public-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:prompt,history:history.slice(0,-1).slice(-12)})});
       var data=await r.json().catch(function(){return {};});
       stopThinking();
-      if(!r.ok){history.push({role:'assistant',content:data.detail||('Error '+r.status)});}
+      if(!r.ok){var why=data.detail||('HTTP '+r.status);if(r.status===404)why='JagX backend route not found (404). The deployed Render service may be outdated or using a different URL. Please retry after the backend redeploy.';else if(r.status===502||r.status===503)why='JagX AI provider is temporarily unavailable ('+r.status+'). Check the backend provider keys, model name and quota. Details: '+why;history.push({role:'assistant',content:why});}
       else{
         var ans=data.response||data.message||'';
         if(data.attachment&&data.attachment.url)ans+='\\n\\n![image]('+data.attachment.url+')';
         history.push({role:'assistant',content:ans});
+        speakReply(ans);
       }
       renderAll();saveLocal();
     }catch(e){stopThinking();history.push({role:'assistant',content:'Network issue — try again.'});renderAll();}
