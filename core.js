@@ -3,7 +3,7 @@
   var SUPABASE_URL='https://xxxyqzuwvavqsccnlkxa.supabase.co';
   var SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4eHlxenV3dmF2cXNjY25sa3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjY4MDcsImV4cCI6MjEwNTE0MjgwN30.pd3D3ULeR90gM7HB8xAlERr8swUyc_aJaIxDqc-vH2Y';
   var supabase=null,session=null,modeSignUp=false,mode='chat',botOn=false,pendingFile=null;var pendingAtts=[];
-  var chats=[],chatId=null,history=[],vault=[],conns=[],projects=[],bots=[],activeProject=null;
+  var chats=[],chatId=null,history=[],vault=[],conns=[],projects=[],bots=[],activeProject=null,editingIndex=null,cloudTimer=null,cloudLoading=false;
   var thinkEl=null,thinkTimer=null,thinkStart=0;
   var thread=document.getElementById('thread'),empty=document.getElementById('empty');
   var input=document.getElementById('input'),sendBtn=document.getElementById('send'),main=document.getElementById('main');
@@ -47,6 +47,41 @@
     if(cur){cur.msgs=history;cur.updated=Date.now();if((!cur.title||cur.title==='New conversation')&&history.length){var first=history.find(function(m){return m.role==='user';});if(first)cur.title=String(first.content).slice(0,48);}}
     try{localStorage.setItem(sk('chats'),JSON.stringify(chats));localStorage.setItem(sk('vault'),JSON.stringify(vault));localStorage.setItem(sk('conns'),JSON.stringify(conns));localStorage.setItem(sk('projects'),JSON.stringify(projects));localStorage.setItem(sk('bots'),JSON.stringify(bots));}catch(e){}
     renderHist();
+    scheduleCloudSave();
+  }
+  function scheduleCloudSave(){
+    if(!supabase||!session||!session.user||!session.user.id||cloudLoading)return;
+    if(cloudTimer)clearTimeout(cloudTimer);
+    cloudTimer=setTimeout(function(){saveChatsCloud();},900);
+  }
+  async function saveChatsCloud(){
+    if(!supabase||!session||!session.user||!session.user.id)return;
+    var uid=session.user.id;
+    try{
+      for(var i=0;i<chats.length;i++){
+        var item=chats[i];if(!item||!item.id)continue;
+        var row={user_id:uid,chat_id:String(item.id),payload:{title:item.title||'Conversation',msgs:item.msgs||[],updated:item.updated||Date.now()},updated_at:new Date(item.updated||Date.now()).toISOString()};
+        var result=await supabase.from('messages').upsert(row,{onConflict:'user_id,chat_id'});
+        if(result.error){console.warn('JagX cloud chat sync:',result.error.message);return;}
+      }
+    }catch(e){console.warn('JagX cloud chat sync unavailable:',e&&e.message?e.message:'unknown error');}
+  }
+  async function loadChatsCloud(){
+    if(!supabase||!session||!session.user||!session.user.id||cloudLoading)return;
+    cloudLoading=true;
+    try{
+      var result=await supabase.from('messages').select('chat_id,payload,updated_at').eq('user_id',session.user.id).order('updated_at',{ascending:false}).limit(100);
+      if(result.error){console.warn('JagX cloud chat load:',result.error.message);return;}
+      var cloud=(result.data||[]).map(function(row){var p=row.payload||{};return {id:String(row.chat_id),title:p.title||'Conversation',msgs:Array.isArray(p.msgs)?p.msgs:(Array.isArray(p)?p:[]),updated:p.updated||Date.parse(row.updated_at)||Date.now()};});
+      var map={};chats.forEach(function(x){map[x.id]=x;});
+      cloud.forEach(function(x){if(!map[x.id]||(x.updated||0)>(map[x.id].updated||0))map[x.id]=x;});
+      chats=Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return (b.updated||0)-(a.updated||0);});
+      if(!chats.length){newChat();return;}
+      if(!chats.some(function(x){return x.id===chatId;}))chatId=chats[0].id;
+      var current=chats.find(function(x){return x.id===chatId;});history=current?(current.msgs||[]):[];
+      renderHist();renderAll();scheduleCloudSave();
+    }catch(e){console.warn('JagX cloud chat load unavailable:',e&&e.message?e.message:'unknown error');}
+    finally{cloudLoading=false;}
   }
   function renderHist(){
     var el=document.getElementById('histList');if(!el)return;el.innerHTML='';
@@ -69,7 +104,7 @@
       document.getElementById('userChip').textContent=label;document.getElementById('av').textContent=(label[0]||'J').toUpperCase();
       if(topBtn)topBtn.style.display='none';
       if(input&&!input.value)input.placeholder=(mode==='build'?'Describe the outcome you want to build…':(botOn?'Give the bot one clear task…':'Tell JagX what you’re working on…'));
-      loadLocal();renderHist();renderAll();renderConns();renderVault();renderProjects();renderBots();applyRoute();
+      loadLocal();renderHist();renderAll();renderConns();renderVault();renderProjects();renderBots();applyRoute();loadChatsCloud();
     }else{
       main.classList.remove('locked');authModal.classList.remove('open');
       window.__jagxUserId='guest';
@@ -241,14 +276,15 @@
         var act=document.createElement('div');act.className='msg-actions';
         function smallAction(symbol,label,fn,extra){var btn=document.createElement('button');btn.type='button';btn.className='msg-icon '+(extra||'');btn.textContent=symbol;btn.title=label;btn.setAttribute('aria-label',label);btn.onclick=fn;act.appendChild(btn);return btn;}
         smallAction('⧉','Copy response',async function(){var self=this;try{await navigator.clipboard.writeText(content);}catch(e){var ta=document.createElement('textarea');ta.value=content;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}self.textContent='✓';setTimeout(function(){self.textContent='⧉';},1000);});
-        smallAction('👍','Good response',function(){this.classList.toggle('on');this.title=this.classList.contains('on')?'Marked helpful':'Good response';},'good');
-        smallAction('👎','Bad response',function(){this.classList.toggle('on');this.title=this.classList.contains('on')?'Marked not helpful':'Bad response';},'bad');
+        smallAction('👍','Good response',function(){m.feedback=m.feedback==='good'?'':'good';this.classList.toggle('on',m.feedback==='good');this.title=m.feedback==='good'?'Marked helpful':'Good response';saveLocal();},'good');
+        smallAction('👎','Bad response',function(){m.feedback=m.feedback==='bad'?'':'bad';this.classList.toggle('on',m.feedback==='bad');this.title=m.feedback==='bad'?'Marked not helpful':'Bad response';saveLocal();},'bad');
+        act.querySelector('.good').classList.toggle('on',m.feedback==='good');act.querySelector('.bad').classList.toggle('on',m.feedback==='bad');
         div.appendChild(act);
       }
       if(m.role==='user'){
         var act2=document.createElement('div');act2.className='msg-actions user-msg-actions';
         var ed=document.createElement('button');ed.type='button';ed.className='msg-icon edit-btn';ed.textContent='✎';ed.title='Edit message';ed.setAttribute('aria-label','Edit message');
-        ed.onclick=function(){input.value=content;input.focus();input.style.height='auto';input.style.height=Math.min(input.scrollHeight,160)+'px';input.setSelectionRange(input.value.length,input.value.length);};
+        ed.onclick=function(){editingIndex=history.indexOf(m);input.value=content;input.focus();input.style.height='auto';input.style.height=Math.min(input.scrollHeight,160)+'px';input.setSelectionRange(input.value.length,input.value.length);};
         act2.appendChild(ed);div.appendChild(act2);
       }
       thread.appendChild(div);
@@ -284,6 +320,7 @@
     input.value='';
     var show=text||(names.length?'Attached: '+names.join(', '):'(attachment)');
     if(names.length&&text)show+='\\n\\nAttached: '+names.join(', ');
+    if(editingIndex!==null){history=history.slice(0,editingIndex);editingIndex=null;}
     history.push({role:'user',content:show});
     pendingAtts=[];renderAttach();
     renderAll();saveLocal();sendBtn.disabled=true;startThinking();
