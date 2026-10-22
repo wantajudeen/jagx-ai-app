@@ -35,3 +35,10 @@ jobs:
         run: |
           grep -q "/public-chat" core.js
           grep -q "/public-chat" botfix.js
+      - name: Guard dark theme, image zoom and safe GitHub edits
+        run: |
+          grep -q -- "--bg:#101211;--panel:#141715;--card:#1b1f1c" index.html
+          grep -q "jxZoomIn" index.html
+          grep -q "pinchZoom\*distance" core.js
+          grep -q "changed on GitHub after you loaded it" core.js
+          grep -q "id=\"ghAsk\"" index.html
