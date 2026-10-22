@@ -227,18 +227,28 @@
     history.forEach(function(m){
       var div=document.createElement('div');div.className='msg '+(m.role==='user'?'user':'bot');
       var b=document.createElement('div');b.className='bubble';
+      var content=String(m.content||'');
+      var imageMatch=content.match(/!\[image\]\((https:\/\/[^\s)]+)\)/i);
+      var displayText=content.replace(/!\[image\]\(https:\/\/[^\s)]+\)/ig,'').replace(/\\n\\n/g,'\n\n').trim();
+      b.textContent=displayText;
+      if(displayText)div.appendChild(b);
+      if(imageMatch){
+        var imageButton=document.createElement('button');imageButton.type='button';imageButton.className='generated-image-open';imageButton.title='Tap to view image';imageButton.setAttribute('aria-label','View generated image');
+        var image=document.createElement('img');image.src=imageMatch[1];image.alt='Generated image';image.loading='lazy';imageButton.appendChild(image);
+        imageButton.onclick=function(){if(window.JagXOpenImage)window.JagXOpenImage(imageMatch[1],'Generated image');else window.open(imageMatch[1],'_blank','noopener');};div.appendChild(imageButton);
+      }
       if(m.role==='assistant'){
         var act=document.createElement('div');act.className='msg-actions';
         function smallAction(symbol,label,fn,extra){var btn=document.createElement('button');btn.type='button';btn.className='msg-icon '+(extra||'');btn.textContent=symbol;btn.title=label;btn.setAttribute('aria-label',label);btn.onclick=fn;act.appendChild(btn);return btn;}
-        smallAction('⧉','Copy response',async function(){var self=this;try{await navigator.clipboard.writeText(m.content||'');}catch(e){var ta=document.createElement('textarea');ta.value=m.content||'';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}self.textContent='✓';setTimeout(function(){self.textContent='⧉';},1000);});
-        smallAction('＋','Good response',function(){this.classList.toggle('on');},'good');
-        smallAction('−','Bad response',function(){this.classList.toggle('on');},'bad');
+        smallAction('⧉','Copy response',async function(){var self=this;try{await navigator.clipboard.writeText(content);}catch(e){var ta=document.createElement('textarea');ta.value=content;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}self.textContent='✓';setTimeout(function(){self.textContent='⧉';},1000);});
+        smallAction('👍','Good response',function(){this.classList.toggle('on');this.title=this.classList.contains('on')?'Marked helpful':'Good response';},'good');
+        smallAction('👎','Bad response',function(){this.classList.toggle('on');this.title=this.classList.contains('on')?'Marked not helpful':'Bad response';},'bad');
         div.appendChild(act);
       }
       if(m.role==='user'){
         var act2=document.createElement('div');act2.className='msg-actions user-msg-actions';
         var ed=document.createElement('button');ed.type='button';ed.className='msg-icon edit-btn';ed.textContent='✎';ed.title='Edit message';ed.setAttribute('aria-label','Edit message');
-        ed.onclick=function(){input.value=m.content;input.focus();input.style.height='auto';input.style.height=Math.min(input.scrollHeight,160)+'px';input.setSelectionRange(input.value.length,input.value.length);};
+        ed.onclick=function(){input.value=content;input.focus();input.style.height='auto';input.style.height=Math.min(input.scrollHeight,160)+'px';input.setSelectionRange(input.value.length,input.value.length);};
         act2.appendChild(ed);div.appendChild(act2);
       }
       thread.appendChild(div);
@@ -281,12 +291,11 @@
       var r=await fetch(API+'/public-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:prompt,history:history.slice(0,-1).slice(-12)})});
       var data=await r.json().catch(function(){return {};});
       stopThinking();
-      if(!r.ok){var why=data.detail||('HTTP '+r.status);if(r.status===404)why='JagX backend route not found (404). The deployed Render service may be outdated or using a different URL. Please retry after the backend redeploy.';else if(r.status===502||r.status===503)why='JagX AI provider is temporarily unavailable ('+r.status+'). Check the backend provider keys, model name and quota. Details: '+why;history.push({role:'assistant',content:why});}
+      if(!r.ok){var why=data.detail||('HTTP '+r.status);if(r.status===404)why='JagX backend route not found (404). The live Render service is not serving /public-chat yet. Redeploy wantajudeen/jagx-backend from main, then verify /health reports version 7.0.0 before retrying.';else if(r.status===502||r.status===503)why='JagX AI provider is temporarily unavailable ('+r.status+'). Check the backend provider keys, model name and quota. Details: '+why;history.push({role:'assistant',content:why});}
       else{
         var ans=data.response||data.message||'';
         if(data.attachment&&data.attachment.url)ans+='\\n\\n![image]('+data.attachment.url+')';
         history.push({role:'assistant',content:ans});
-        speakReply(ans);
         speakReply(ans);
       }
       renderAll();saveLocal();
