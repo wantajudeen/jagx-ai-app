@@ -201,59 +201,33 @@
       var style=document.getElementById('jx-'+kind+'Style');
       if(!goal){status.textContent='Add a description first.';p.focus();return}
       out.textContent='';
-      if(kind==='video'){
-        status.textContent='Video generation is not available in the current backend.';
-        var videoNote=document.createElement('p');
-        videoNote.textContent='JagX AI does not yet expose a video-generation tool or video job endpoint. No video was generated. You can use Image Studio for still images while video support is being built.';
-        out.appendChild(videoNote);
-        return;
-      }
       btn.disabled=true;
-      status.textContent='Creating image with JagX AI…';
+      status.textContent=kind==='video'?'Submitting video request…':'Creating image…';
       try{
-        var requestMessage='Create an image using the available generate_image tool. Style: '+(style?style.value:'Cinematic')+'. Prompt: '+goal+'. Return the actual image result; do not claim success if no image attachment is returned.';
-        var response=await fetch(API+'/public-chat',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({message:requestMessage,history:[]})
+        var response=await fetch(API+(kind==='video'?'/generate/video':'/generate/image'),{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({prompt:goal,style:style?style.value:'Cinematic'})
         });
-        var data={};
-        try{data=await response.json()}catch(_){}
+        var data={};try{data=await response.json()}catch(_){}
         if(!response.ok)throw new Error((data&&data.detail)||('HTTP '+response.status));
         var attachment=data.attachment;
-        if(attachment&&attachment.type==='image'&&typeof attachment.url==='string'){
-          var parsed;
-          try{parsed=new URL(attachment.url)}catch(_){throw new Error('The backend returned an invalid image URL.')}
-          if(parsed.protocol!=='https:'&&parsed.protocol!=='http:')throw new Error('The backend returned an unsupported image URL.');
-          var image=document.createElement('img');
-          image.src=parsed.href;
-          image.alt=goal;
-          image.loading='lazy';
-          image.referrerPolicy='no-referrer';
-          image.style.cssText='display:block;width:100%;height:auto;max-height:560px;object-fit:contain;border-radius:10px;border:1px solid var(--line)';
-          out.appendChild(image);
-          var link=document.createElement('a');
-          link.href=parsed.href;
-          link.target='_blank';
-          link.rel='noopener noreferrer';
-          link.textContent='Open full-size image';
-          link.style.cssText='display:inline-block;margin-top:10px;color:var(--gold);font-size:12px;font-weight:600';
-          out.appendChild(link);
-          status.textContent='Image returned by the generation service.';
-        }else{
-          var note=document.createElement('p');
-          note.textContent=data.response||'The backend did not return an image attachment. Try a more specific prompt.';
-          out.appendChild(note);
-          status.textContent='No image attachment returned';
-        }
-      }catch(error){
-        var note=document.createElement('p');
-        note.textContent='Image generation failed: '+(error&&error.message?error.message:'Unknown error');
-        out.appendChild(note);
-        status.textContent='Generation failed';
-      }finally{
-        btn.disabled=false;
-      }
+        if(attachment&&typeof attachment.url==='string'){
+          var parsed;try{parsed=new URL(attachment.url,API)}catch(_){throw new Error('The backend returned an invalid media URL.')}
+          if(parsed.protocol!=='https:'&&parsed.protocol!=='http:')throw new Error('The backend returned an unsupported media URL.');
+          var media=document.createElement(attachment.type==='video'?'video':'img');
+          media.src=parsed.href;media.alt=goal;media.loading='lazy';media.referrerPolicy='no-referrer';
+          if(attachment.type==='video'){media.controls=true;media.playsInline=true;}
+          media.style.cssText='display:block;width:100%;height:auto;max-height:560px;object-fit:contain;border-radius:10px;border:1px solid var(--line)';
+          out.appendChild(media);
+          var link=document.createElement('a');link.href=parsed.href;link.target='_blank';link.rel='noopener noreferrer';
+          link.textContent='Open full-size '+kind;link.style.cssText='display:inline-block;margin-top:10px;color:var(--gold);font-size:12px;font-weight:600';out.appendChild(link);
+          status.textContent=(kind==='video'?'Video':'Image')+' URL returned by '+(data.provider||'the backend')+'. If it fails to load, the media provider may be temporarily unavailable.';
+        }else if(data.status==='processing'&&data.prediction_url){
+          out.textContent='Your '+kind+' job is processing. Status URL: '+data.prediction_url;
+          status.textContent='Processing · result polling is not yet automatic.';
+        }else{throw new Error(data.detail||'The backend did not return a usable media attachment.')}
+      }catch(e){out.textContent=e.message||kind+' generation failed.';status.textContent='Generation failed.';}
+      finally{btn.disabled=false;}
     }
     document.getElementById('jx-imageRun').onclick=function(){runMedia('image')};document.getElementById('jx-videoRun').onclick=function(){runMedia('video')};document.getElementById('jxOpenConnectors').onclick=function(){location.hash='#/conn'};
     document.getElementById('jx-agent-run').onclick=async function(){var p=document.getElementById('jx-agent-goal'),g=(p.value||'').trim(),st=document.getElementById('jx-agent-status'),out=document.getElementById('jx-agent-result'),btn=this;if(!g){st.textContent='Enter a task first.';return}btn.disabled=true;st.textContent='Running through existing service…';out.textContent='In progress…';record(g,'started');try{var r=await fetch(API+'/public-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'Act as JagX Bot. Complete this task within your current capabilities. Be honest about unsupported actions; report steps, blockers and result. Task: '+g,history:[]})});var d=await r.json();if(!r.ok)throw new Error(d.detail||('HTTP '+r.status));out.textContent=clean(d.reply||d.text||d.answer||'No result returned.');st.textContent='Result received';record(g,'finished')}catch(e){out.textContent='Task failed: '+e.message;st.textContent='Failed';record(g,'failed')}finally{btn.disabled=false}};document.getElementById('jx-agent-clear').onclick=function(){localStorage.removeItem('jx_agent_activity');render()};render()
