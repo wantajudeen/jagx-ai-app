@@ -2,37 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class Jx {
-  static const bg = Color(0xFFF4F3EE);
-  static const surface = Color(0xFFF9F8F3);
-  static const card = Color(0xFFFFFEFA);
-  static const cardHover = Color(0xFFEEEEE7);
-  static const border = Color(0xFFDFDED6);
-  static const text = Color(0xFF20231F);
-  static const muted = Color(0xFF686C64);
-  static const dim = Color(0xFF898C83);
-  static const accent = Color(0xFF242A20);
-  static const accentSoft = Color(0xFFA9CF68);
-  static const blue = Color(0xFF486B9B);
-  static const violet = Color(0xFF687D5A);
-  static const userBubble = Color(0xFFE8E9E1);
-  static const success = Color(0xFF46734A);
-  static const danger = Color(0xFFB5483F);
+  static const bg = Color(0xFF101211);
+  static const surface = Color(0xFF171A18);
+  static const card = Color(0xFF1B1F1C);
+  static const cardHover = Color(0xFF252D26);
+  static const border = Color(0xFF303631);
+  static const text = Color(0xFFECEFE9);
+  static const muted = Color(0xFFA0A89E);
+  static const dim = Color(0xFF747D73);
+  static const accent = Color(0xFFB5D77A);
+  static const accentSoft = Color(0xFFB5D77A);
+  static const blue = Color(0xFF91B9E8);
+  static const violet = Color(0xFFB1A0E2);
+  static const userBubble = Color(0xFF252D25);
+  static const success = Color(0xFF8ACB91);
+  static const danger = Color(0xFFFF8278);
 }
 
 class JagxTheme {
-  static ThemeData get light {
-    final base = ThemeData.light(useMaterial3: true);
+  static ThemeData get dark {
+    final base = ThemeData.dark(useMaterial3: true);
     final inter = GoogleFonts.interTextTheme(base.textTheme).apply(
       bodyColor: Jx.text,
       displayColor: Jx.text,
     );
     return base.copyWith(
       scaffoldBackgroundColor: Jx.bg,
-      colorScheme: const ColorScheme.light(
+      colorScheme: const ColorScheme.dark(
         primary: Jx.accent,
         secondary: Jx.accentSoft,
         surface: Jx.surface,
-        onPrimary: Colors.white,
+        onPrimary: Color(0xFF17200E),
         onSurface: Jx.text,
         outline: Jx.border,
       ),
@@ -58,7 +58,7 @@ class JagxTheme {
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
