@@ -12,7 +12,7 @@ class JagxApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'JagX AI',
       debugShowCheckedModeBanner: false,
-      theme: JagxTheme.light,
+      theme: JagxTheme.dark,
       routerConfig: ref.watch(routerProvider),
     );
   }
