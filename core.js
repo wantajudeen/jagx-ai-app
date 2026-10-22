@@ -229,10 +229,11 @@
       var b=document.createElement('div');b.className='bubble';
       if(m.role==='assistant'){
         var act=document.createElement('div');act.className='msg-actions';
-        function smallAction(symbol,label,fn,extraClass){var btn=document.createElement('button');btn.type='button';btn.className='msg-icon '+(extraClass||'');btn.textContent=symbol;btn.title=label;btn.setAttribute('aria-label',label);btn.onclick=fn;act.appendChild(btn);return btn;}
-        smallAction('⧉','Copy response',async function(btn){try{await navigator.clipboard.writeText(m.content||'');}catch(e){var ta=document.createElement('textarea');ta.value=m.content||'';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}this.textContent='✓';var self=this;setTimeout(function(){self.textContent='⧉'},1100);});
-        smallAction('＋','Good response',function(){this.classList.toggle('on');this.title=this.classList.contains('on')?'Marked helpful':'Good response';},'good');
-        smallAction('−','Bad response',function(){this.classList.toggle('on');this.title=this.classList.contains('on')?'Marked not helpful':'Bad response';},'bad');
+        function smallAction(symbol,label,fn,extra){var btn=document.createElement('button');btn.type='button';btn.className='msg-icon '+(extra||'');btn.textContent=symbol;btn.title=label;btn.setAttribute('aria-label',label);btn.onclick=fn;act.appendChild(btn);return btn;}
+        smallAction('⧉','Copy response',async function(){var self=this;try{await navigator.clipboard.writeText(m.content||'');}catch(e){var ta=document.createElement('textarea');ta.value=m.content||'';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}self.textContent='✓';setTimeout(function(){self.textContent='⧉';},1000);});
+        smallAction('＋','Good response',function(){this.classList.toggle('on');},'good');
+        smallAction('−','Bad response',function(){this.classList.toggle('on');},'bad');
+        div.appendChild(act);
       }
       if(m.role==='user'){
         var act2=document.createElement('div');act2.className='msg-actions user-msg-actions';
@@ -259,6 +260,10 @@
   function speakReply(text){if(!voiceMode||!('speechSynthesis' in window))return;try{window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(String(text||'').slice(0,7000));u.rate=1;u.pitch=1;window.speechSynthesis.speak(u);}catch(e){}}
   function startVoice(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Voice input is not supported in this browser. Try Chrome and allow microphone access.');return;}try{if(recognition){recognition.stop();recognition=null;}recognition=new SR();recognition.lang='en-NG';recognition.interimResults=true;recognition.continuous=false;var v=document.getElementById('voice');v.classList.add('listening');v.title='Listening… tap to stop';recognition.onresult=function(e){var finalText='';for(var i=e.resultIndex;i<e.results.length;i++)finalText+=e.results[i][0].transcript;if(finalText){input.value=finalText;input.style.height='auto';input.style.height=Math.min(input.scrollHeight,160)+'px';}};recognition.onerror=function(){v.classList.remove('listening');v.title='Start voice input';};recognition.onend=function(){v.classList.remove('listening');v.title='Start voice input';recognition=null;};recognition.start();}catch(e){var v=document.getElementById('voice');if(v)v.classList.remove('listening');}}
   var voiceBtn=document.getElementById('voice');if(voiceBtn)voiceBtn.onclick=function(){if(recognition){recognition.stop();return;}voiceMode=!voiceMode;voiceBtn.classList.toggle('voice-on',voiceMode);voiceBtn.title=voiceMode?'Voice chat on · tap mic to speak':'Start voice input';startVoice();};
+  var voiceMode=false,recognition=null;
+  function speakReply(text){if(!voiceMode||!('speechSynthesis' in window))return;try{window.speechSynthesis.cancel();var utterance=new SpeechSynthesisUtterance(String(text||'').slice(0,7000));utterance.rate=1;window.speechSynthesis.speak(utterance);}catch(e){}}
+  function startVoice(){var Speech=window.SpeechRecognition||window.webkitSpeechRecognition;if(!Speech){alert('Voice input is not supported here. Try Chrome and allow microphone access.');return;}try{recognition=new Speech();recognition.lang='en-NG';recognition.interimResults=true;recognition.continuous=false;var button=document.getElementById('voice');button.classList.add('listening');recognition.onresult=function(e){var transcript='';for(var i=e.resultIndex;i<e.results.length;i++)transcript+=e.results[i][0].transcript;if(transcript){input.value=transcript;input.style.height='auto';input.style.height=Math.min(input.scrollHeight,160)+'px';}};recognition.onerror=function(){button.classList.remove('listening');};recognition.onend=function(){button.classList.remove('listening');recognition=null;};recognition.start();}catch(e){recognition=null;}}
+  var voiceButton=document.getElementById('voice');if(voiceButton)voiceButton.onclick=function(){voiceMode=!voiceMode;voiceButton.classList.toggle('voice-on',voiceMode);voiceButton.title=voiceMode?'Voice replies on · tap to dictate':'Start voice chat';if(recognition){recognition.stop();recognition=null;}else startVoice();};
   async function send(){
     var text=(input.value||'').trim();
     if((!text&&!pendingAtts.length&&!pendingFile)||sendBtn.disabled)return;
@@ -280,6 +285,7 @@
         var ans=data.response||data.message||'';
         if(data.attachment&&data.attachment.url)ans+='\\n\\n![image]('+data.attachment.url+')';
         history.push({role:'assistant',content:ans});
+        speakReply(ans);
         speakReply(ans);
       }
       renderAll();saveLocal();
