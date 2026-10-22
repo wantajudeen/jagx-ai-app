@@ -89,6 +89,7 @@ class _ChatScreenState extends State<ChatScreen>
           'imagePath': m.imagePath,
           'fileName': m.fileName,
         }).toList(),
+      ),
     );
   }
 
