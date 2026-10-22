@@ -58,6 +58,27 @@ html,body{background:#101211;color:#ecefe9;scrollbar-color:#3a4239 transparent}b
 #jxImageViewer{position:fixed;inset:0;z-index:99999;background:rgba(4,6,5,.94);overflow:hidden;display:none;align-items:center;justify-content:center;padding:64px 18px 24px;touch-action:pan-y}#jxImageViewer.open{display:flex}#jxImageViewer .jx-view-image{touch-action:none;max-width:100%;max-height:100%;object-fit:contain;transform:scale(var(--jx-zoom,1));transform-origin:center;transition:transform .12s ease;user-select:none;-webkit-user-drag:none;cursor:zoom-in}#jxImageViewer .jx-view-image.zoomed{cursor:grab}#jxImageViewer .jx-view-top{position:absolute;top:12px;left:14px;right:14px;display:flex;justify-content:flex-end;align-items:center;gap:8px;z-index:2}#jxImageViewer button,#jxImageViewer a{min-width:40px;height:40px;border:1px solid #454d46;border-radius:9px;background:#1b211c;color:#edf2e9;display:grid;place-items:center;padding:0 12px;font-size:15px}#jxImageViewer .jx-view-name{margin-right:auto;color:#c5cec1;font-size:12px;max-width:45vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#jxImageViewer .jx-view-help{position:absolute;bottom:12px;left:12px;right:12px;text-align:center;color:#a3ada1;font-size:11px;pointer-events:none}
 @media(max-width:800px){.empty h1{font-size:clamp(34px,9vw,49px)}.empty:before{font-size:9px}.gh-actions{align-items:stretch}.gh-actions button{flex:1}.att-chip{max-width:180px}.msg img,.bubble img,.msg video,.bubble video{max-height:280px}#jxImageViewer{padding:62px 8px 28px}#jxImageViewer .jx-view-top{gap:5px}#jxImageViewer button,#jxImageViewer a{min-width:36px;height:38px;padding:0 9px}}
 
+
+/* Compact, ChatGPT-style attachments stay inside the message composer. */
+#attachPrev{align-items:center;max-width:100%;overflow-x:auto;overflow-y:hidden;padding:2px 0 5px;scrollbar-width:thin}
+.att-chip{display:flex;align-items:center;gap:8px;flex:0 0 auto;max-width:min(260px,78vw);min-height:48px;padding:5px 7px;background:#202521;border:1px solid #343c35;border-radius:12px;color:var(--text);font-size:12px}
+.att-chip.att-image{padding:4px;gap:6px;max-width:190px}
+.att-image-open{display:block;width:54px;height:48px;flex:0 0 54px;overflow:hidden;padding:0;border:0;border-radius:8px;background:#101310;cursor:zoom-in}
+.att-image-open img{display:block;width:100%;height:100%;object-fit:cover}
+.att-file-icon{display:grid;place-items:center;width:34px;height:36px;flex:0 0 34px;border-radius:8px;background:#2b322c;color:#c5e39b;font-size:17px}
+.att-name{display:block;min-width:0;max-width:155px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#dfe6dc}
+.att-remove{display:grid;place-items:center;width:26px;height:26px;flex:0 0 26px;border:0;border-radius:50%;background:#303630;color:#c7cec4;font-size:18px;cursor:pointer}
+.att-remove:hover{background:#414a40;color:white}
+#attachPrev:empty{display:none!important}
+#btnGoogle{display:flex;align-items:center;justify-content:center;gap:12px;min-height:46px;background:#fff!important;color:#202124!important;border:1px solid #dadce0!important;border-radius:9px;font-size:14px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12);transition:background .15s,border-color .15s}
+#btnGoogle:hover{background:#f7f8f8!important;border-color:#c6c9cc!important}
+#btnGoogle svg{width:19px;height:19px;flex:0 0 19px}
+.auth-simple{max-width:420px;width:calc(100% - 28px);padding:24px!important;border:1px solid #353b36!important;border-radius:18px!important;background:#171b18!important;box-shadow:0 24px 80px rgba(0,0,0,.5)!important}
+.auth-simple h2{font-family:Inter,sans-serif!important;font-size:25px!important;letter-spacing:-.04em;margin:10px 0 7px}
+.auth-simple label{display:block;margin:13px 0 6px;color:#c3cbc1;font-size:12px;font-weight:600}
+.auth-simple input{width:100%;min-height:43px;padding:11px 12px;border:1px solid #363d37;border-radius:9px;background:#101310;color:#eef2ec}
+.auth-simple input:focus{outline:2px solid rgba(181,215,122,.35);border-color:#9bb77b}
+@media(max-width:520px){.att-chip.att-image{max-width:160px}.att-name{max-width:100px}.composer{padding:10px 11px}.auth-simple{padding:20px!important}}
 </style>
 </head>
 <body>
@@ -182,7 +203,7 @@ html,body{background:#101211;color:#ecefe9;scrollbar-color:#3a4239 transparent}b
   <div style="display:flex;justify-content:flex-end"><button type="button" id="authClose" class="icon-btn">×</button></div>
   <h2 id="authTitle" style="text-align:center">Welcome to JagX AI</h2>
   <p class="sub" style="text-align:center">by JagX &amp; JRILICENSE · optional account</p>
-  <button class="full solid" type="button" id="btnGoogle">Sign in with Google</button>
+  <button class="full" type="button" id="btnGoogle"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 3.56 13.22l7.98 6.19C13.43 13.72 18.2 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.73 7.18l7.62 5.91c4.45-4.1 7.15-10.14 7.15-17.56z"/><path fill="#FBBC05" d="M11.53 28.59A14.4 14.4 0 0 1 10.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 1 24c0 3.87.93 7.52 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.89l-7.62-5.91c-2.12 1.42-4.84 2.27-8.29 2.27-5.8 0-10.57-4.22-12.46-9.91l-7.98 6.19C6.51 43.62 14.62 48 24 48z"/></svg><span>Continue with Google</span></button>
   <div class="or">or</div>
   <label>Email</label>
   <input id="authEmail" type="email" placeholder="you@email.com" autocomplete="email"/>
@@ -206,8 +227,8 @@ html,body{background:#101211;color:#ecefe9;scrollbar-color:#3a4239 transparent}b
   <a class="full solid" style="display:grid;place-items:center" href="https://github.com/wantajudeen/jagx-ai-app/releases/download/apk-latest/JagX-AI.apk">Download APK</a>
   <button class="full ghost" type="button" id="dlClose" style="margin-top:8px">Close</button>
 </div></div>
-<div id="jxImageViewer" role="dialog" aria-modal="true" aria-label="Image viewer"><div class="jx-view-top"><span class="jx-view-name" id="jxViewName"></span><button type="button" id="jxZoomOut" aria-label="Zoom out">−</button><button type="button" id="jxZoomIn" aria-label="Zoom in">+</button><button type="button" id="jxZoomReset" aria-label="Reset zoom">Fit</button><a id="jxViewDownload" download>↓</a><button type="button" id="jxViewClose" aria-label="Close image viewer">×</button></div><img class="jx-view-image" id="jxViewImage" alt="Expanded attachment"/><div class="jx-view-help">Pinch or use + / − to zoom · Double-tap image to zoom · Esc to close</div></div><script src="./core.js?v=7"></script>
+<div id="jxImageViewer" role="dialog" aria-modal="true" aria-label="Image viewer"><div class="jx-view-top"><span class="jx-view-name" id="jxViewName"></span><button type="button" id="jxZoomOut" aria-label="Zoom out">−</button><button type="button" id="jxZoomIn" aria-label="Zoom in">+</button><button type="button" id="jxZoomReset" aria-label="Reset zoom">Fit</button><a id="jxViewDownload" download>↓</a><button type="button" id="jxViewClose" aria-label="Close image viewer">×</button></div><img class="jx-view-image" id="jxViewImage" alt="Expanded attachment"/><div class="jx-view-help">Pinch or use + / − to zoom · Double-tap image to zoom · Esc to close</div></div><script src="./core.js?v=8"></script>
 <script src="./features.js?v=42"></script>
-<script src="./botfix.js?v=46"></script>
+<script src="./botfix.js?v=47"></script>
 </body>
 </html>
