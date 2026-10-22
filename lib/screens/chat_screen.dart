@@ -173,9 +173,26 @@ class _ChatScreenState extends State<ChatScreen>
     }
 
     var promptText = userLine;
+    if (_pendingImage != null) {
+      promptText += '\\n\\n[Image attachment: ${_pendingImage!.name}. The current chat API accepts text only and has not received image pixels. Do not claim to see the image; explain this limitation and ask for a supported image upload if visual analysis is required.]';
+    }
+    if (_pendingFile != null) {
+      final file = _pendingFile!;
+      final extension = (file.extension ?? '').toLowerCase();
+      const textExtensions = {'txt','md','csv','json','yaml','yml','xml','html','css','js','ts','dart','py','java','kt','sql','sh','log','toml','ini','env'};
+      if (textExtensions.contains(extension) && file.path != null) {
+        try {
+          final contents = await File(file.path!).readAsString();
+          promptText += '\\n\\n[Attached text file: ${file.name}]\\n${contents.substring(0, contents.length.clamp(0, 12000))}\\n[End attached file]';
+        } catch (_) {
+          promptText += '\\n\\n[File attached: ${file.name}; the app could not read its text content.]';
+        }
+      } else {
+        promptText += '\\n\\n[File attached: ${file.name}. The current chat API does not receive binary file bytes, so do not claim to have read its contents.]';
+      }
+    }
     if (_wantsBook(text)) {
-      promptText =
-          '$userLine\n\nWrite the full content in plain text. No markdown bold stars.';
+      promptText += '\\n\\nWrite the full content in plain text. No markdown bold stars.';
     }
 
     setState(() {
@@ -559,13 +576,61 @@ class _Bubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (msg.imagePath != null) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.file(
-                  File(msg.imagePath!),
-                  width: 180,
-                  height: 180,
-                  fit: BoxFit.cover,
+              GestureDetector(
+                onTap: () => showDialog<void>(
+                  context: context,
+                  barrierColor: Colors.black.withOpacity(0.94),
+                  builder: (context) => Dialog(
+                    backgroundColor: const Color(0xFF101211),
+                    insetPadding: const EdgeInsets.all(12),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: InteractiveViewer(
+                            minScale: 0.8,
+                            maxScale: 6,
+                            panEnabled: true,
+                            child: Center(
+                              child: Image.file(
+                                File(msg.imagePath!),
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Text(
+                                  'This image is no longer available on this device.',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: IconButton(
+                            tooltip: 'Close image',
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.close, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.file(
+                    File(msg.imagePath!),
+                    width: 180,
+                    height: 180,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 180,
+                      height: 90,
+                      alignment: Alignment.center,
+                      color: Jx.card,
+                      child: const Text('Image unavailable',
+                          style: TextStyle(color: Jx.muted, fontSize: 12)),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
