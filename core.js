@@ -245,30 +245,35 @@
   }
   function startThinking(){stopThinking();thinkStart=Date.now();thinkEl=document.createElement('div');thinkEl.className='thinking';thinkEl.textContent='Thinking…';thread.appendChild(thinkEl);empty.style.display='none';thinkTimer=setInterval(function(){if(!thinkEl)return;var s=Math.floor((Date.now()-thinkStart)/1000);thinkEl.textContent='Thinking · '+s+'s';},400);}
   function stopThinking(){if(thinkTimer){clearInterval(thinkTimer);thinkTimer=null;}if(thinkEl&&thinkEl.parentNode)thinkEl.parentNode.removeChild(thinkEl);thinkEl=null;}
-  function contextPrefix(text){
+  function contextPrefix(text,attachments){
     var extra='';
-    if(mode==='build')extra+='[BUILD MODE] Deliver complete app structure and files.\n';
-    extra+='[FORMAT] Never use LaTeX (no \\ [ \\] \\( \\) $$). For math write plain text steps like: 2x-2=26 then 2x=28 then x=14. Titles bold with **Solution**. Use markdown tables when comparing.\n';
-    if(botOn)extra+='[BOT MODE] Multi-agent: Nimbus, Atlas, Nova, Mira. One clear result.\n';
-    if(pendingAtts.length){extra+='[ATTACHMENTS]\n';pendingAtts.forEach(function(a){if((a.type||'').indexOf('image/')===0)extra+='(image: '+a.name+')\n';else extra+='File '+a.name+':\n'+String(a.data).slice(0,4000)+'\n';});}
+    attachments=attachments||pendingAtts;
+    if(mode==='build')extra+='[BUILD MODE] Work like a senior software engineer: inspect the requested outcome, state assumptions, produce complete practical changes, include tests and verification, and never claim a tool or deployment succeeded unless verified.\\n';
+    extra+='[FORMAT] Never use LaTeX. Be direct, accurate and structured; distinguish verified facts from assumptions.\\n';
+    if(botOn)extra+='[AGENT MODE] Act like a careful senior engineer and project lead. Break complex work into steps, use available tools honestly, explain risks, preserve user data, and ask before irreversible or external actions. Never invent repository access, file contents, tool results, tests or deployments.\\n';
+    if(attachments.length){extra+='[ATTACHMENTS]\\n';attachments.forEach(function(a){if((a.type||'').indexOf('image/')===0){extra+='Image attached in the interface: '+a.name+' ('+a.type+'). The current public-chat API does not receive image bytes, so do not claim to have visually inspected this image. Explain the limitation and ask for a supported image upload if visual analysis is needed.\\n';}else{extra+='Text file '+a.name+':\\n'+String(a.data||'').slice(0,4000)+'\\n';}});}
     return extra+text;
   }
   async function send(){
     var text=(input.value||'').trim();
     if((!text&&!pendingAtts.length&&!pendingFile)||sendBtn.disabled)return;
+    var attachments=pendingAtts.slice();
+    var prompt=contextPrefix(text||'Please help with the attached files.',attachments);
+    var names=attachments.map(function(a){return a.name||'attachment';});
     input.value='';
-    var show=text||'(attachment)';
+    var show=text||(names.length?'Attached: '+names.join(', '):'(attachment)');
+    if(names.length&&text)show+='\\n\\nAttached: '+names.join(', ');
     history.push({role:'user',content:show});
     pendingAtts=[];renderAttach();
     renderAll();saveLocal();sendBtn.disabled=true;startThinking();
     try{
-      var r=await fetch(API+'/public-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:contextPrefix(text||'Describe the attachment'),history:history.slice(0,-1).slice(-12)})});
+      var r=await fetch(API+'/public-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:prompt,history:history.slice(0,-1).slice(-12)})});
       var data=await r.json().catch(function(){return {};});
       stopThinking();
       if(!r.ok){history.push({role:'assistant',content:data.detail||('Error '+r.status)});}
       else{
         var ans=data.response||data.message||'';
-        if(data.attachment&&data.attachment.url)ans+='\n\n![image]('+data.attachment.url+')';
+        if(data.attachment&&data.attachment.url)ans+='\\n\\n![image]('+data.attachment.url+')';
         history.push({role:'assistant',content:ans});
       }
       renderAll();saveLocal();
