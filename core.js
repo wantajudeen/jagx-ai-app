@@ -333,7 +333,7 @@
       var mediaVideo=text.match(/^(?:create|generate|make)\s+(?:a\s+)?video\s+(?:of|about|showing|for)\s*:?\s*(.+)$/i);
       var endpoint=mediaImage?'/images/generate':(mediaVideo?'/video/generate':'/public-chat');
       var payload=mediaImage?{prompt:mediaImage[1],width:768,height:768}:(mediaVideo?{prompt:mediaVideo[1],duration:4,model:'google/veo-3.1-fast',aspect_ratio:'16:9'}:{message:prompt,history:history.slice(0,-1).slice(-8),mode:botOn?'agents':(mode==='build'?'reason':'fast'),reflect:mode==='build'});
-      var r=await fetch(API+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      var requestHeaders={'Content-Type':'application/json'};if(session&&session.access_token)requestHeaders.Authorization='Bearer '+session.access_token;var r=await fetch(API+endpoint,{method:'POST',headers:requestHeaders,body:JSON.stringify(payload)});
       var data=await r.json().catch(function(){return {};});
       stopThinking();
       if(!r.ok){var why=data.detail||('HTTP '+r.status);if(r.status===404)why='JagX AI endpoint was not found (404). Check that the deployed service is Tajudeen001-security/JagX-ai-v2 and that it is running the latest main branch.';else if(r.status===502||r.status===503)why='JagX AI provider is temporarily unavailable ('+r.status+'). Check the backend provider keys, model name and quota. Details: '+why;history.push({role:'assistant',content:why});}
