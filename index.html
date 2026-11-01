@@ -249,6 +249,18 @@ body,.wrap,.main,.page,.thread{background:#101113!important}
 }
 </style>
 
+
+<style id="jagx-layout-finish">
+/* Finish small details so inline legacy styles don't break the neutral theme. */
+#btnTopSignIn{background:#222429!important;border-color:#35373d!important;color:#e8e9ed!important}
+#btnTopSignIn:hover{background:#2c2e34!important}
+#btnNew:hover,#btnMenu:hover{background:#25272c!important}
+#voice:hover{background:#292b31!important}
+.composer .bar{min-height:38px}
+#attachPrev:not(:empty){margin-bottom:5px!important}
+@media(min-width:801px){.empty{height:0!important;min-height:0!important}.thread{padding-bottom:18px}}
+</style>
+
 </head>
 <body>
 <aside class="side" id="side">
@@ -279,7 +291,7 @@ body,.wrap,.main,.page,.thread{background:#101113!important}
     <button class="icon-btn menu-fab" type="button" id="btnMenu">☰</button>
     <div class="top-title" id="topTitle">JagX AI</div>
     <div style="display:flex;align-items:center;gap:8px">
-      <button type="button" id="btnTopSignIn" class="chip" style="cursor:pointer;padding:6px 12px;border-radius:999px;border:1px solid #242a20;background:#242a20;color:#f5f5eb;font-weight:600">Sign in</button>
+      <button type="button" id="btnTopSignIn" class="chip" style="cursor:pointer;padding:6px 12px;border-radius:999px;border:1px solid #35373d;background:#222429;color:#e8e9ed;font-weight:600">Sign in</button>
       <button class="icon-btn" type="button" id="btnNew" title="New chat">✎</button>
     </div>
   </header>
@@ -390,8 +402,8 @@ body,.wrap,.main,.page,.thread{background:#101113!important}
   <a class="full solid" style="display:grid;place-items:center" href="https://github.com/wantajudeen/jagx-ai-app/releases/download/apk-latest/JagX-AI.apk">Download APK</a>
   <button class="full ghost" type="button" id="dlClose" style="margin-top:8px">Close</button>
 </div></div>
-<div id="jxImageViewer" role="dialog" aria-modal="true" aria-label="Image viewer"><div class="jx-view-top"><span class="jx-view-name" id="jxViewName"></span><button type="button" id="jxZoomOut" aria-label="Zoom out">−</button><button type="button" id="jxZoomIn" aria-label="Zoom in">+</button><button type="button" id="jxZoomReset" aria-label="Reset zoom">Fit</button><a id="jxViewDownload" download>↓</a><button type="button" id="jxViewClose" aria-label="Close image viewer">×</button></div><img class="jx-view-image" id="jxViewImage" alt="Expanded attachment"/><div class="jx-view-help">Pinch or use + / − to zoom · Double-tap image to zoom · Esc to close</div></div><script src="./core.js?v=11"></script>
-<script src="./features.js?v=42"></script>
-<script src="./botfix.js?v=48"></script>
+<div id="jxImageViewer" role="dialog" aria-modal="true" aria-label="Image viewer"><div class="jx-view-top"><span class="jx-view-name" id="jxViewName"></span><button type="button" id="jxZoomOut" aria-label="Zoom out">−</button><button type="button" id="jxZoomIn" aria-label="Zoom in">+</button><button type="button" id="jxZoomReset" aria-label="Reset zoom">Fit</button><a id="jxViewDownload" download>↓</a><button type="button" id="jxViewClose" aria-label="Close image viewer">×</button></div><img class="jx-view-image" id="jxViewImage" alt="Expanded attachment"/><div class="jx-view-help">Pinch or use + / − to zoom · Double-tap image to zoom · Esc to close</div></div><script src="./core.js?v=12"></script>
+<script src="./features.js?v=43"></script>
+<script src="./botfix.js?v=49"></script>
 </body>
 </html>
