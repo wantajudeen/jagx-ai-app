@@ -209,6 +209,46 @@ button,.full{transition:background .16s,border-color .16s,transform .16s}
 }
 </style>
 
+
+<style id="jagx-product-polish">
+/* A quiet, conversation-first interface rather than a marketing template. */
+:root{--bg:#101113;--panel:#151619;--line:#2a2c31;--accent:#d6d9df;--accent-ink:#141518;--gold:#aeb4c0}
+body,.wrap,.main,.page,.thread{background:#101113!important}
+.side{background:#151619!important;border-color:#292b30!important}
+.side-top{border-color:#292b30!important}
+.nav a.on{background:#25272c!important;color:#f1f2f5!important}
+.nav a.on:before{background:#d6d9df!important;border-color:#d6d9df!important}
+.top{height:60px!important;min-height:60px!important;background:rgba(16,17,19,.96)!important;border-color:#292b30!important}
+.top-title{text-transform:none!important;letter-spacing:-.025em!important;font-size:15px!important;font-weight:650!important;color:#eceef2!important}
+.top-title:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#cdd2da;margin:0 9px 1px 0}
+#btnTopSignIn{background:#222429!important;border:1px solid #35373d!important;color:#e8e9ed!important}
+.empty:before,.empty h1,.empty p{display:none!important}
+.empty{padding:0!important;margin:0!important;min-height:0!important;height:0!important;flex:0!important}
+.thread:has(.empty){display:flex;flex-direction:column}
+.composer-wrap{padding:8px clamp(14px,4vw,42px) max(12px,env(safe-area-inset-bottom))!important;background:#101113!important}
+.composer{background:#1b1c20!important;border:1px solid #35373d!important;border-radius:22px!important;max-width:790px!important;padding:10px 12px!important;box-shadow:0 5px 20px rgba(0,0,0,.12)!important}
+.composer:focus-within{border-color:#656a75!important;box-shadow:0 0 0 1px rgba(220,224,232,.06)!important}
+#input,.composer textarea{color:#f0f1f4!important;font-size:15px!important;min-height:32px!important;max-height:140px!important}
+#input::placeholder,.composer textarea::placeholder{color:#858994!important}
+.plus{background:#27292f!important;border:0!important;color:#e5e7ec!important}
+.send,.solid{background:#e1e3e8!important;color:#15161a!important;border-color:#e1e3e8!important}
+.send:hover,.solid:hover{background:#fff!important}
+#modeChip{background:#25272d!important;border-radius:999px!important;color:#c5c8d0!important;padding:6px 10px!important}
+#voice{width:36px;height:36px;border:1px solid #373940;border-radius:50%;background:transparent;color:#d5d7de}
+.foot{color:#777b85!important}
+.foot span{color:#aeb4c0!important}
+.msg.user .bubble{background:#25272c!important;border-color:#383a42!important;color:#f0f1f4!important}
+@media(max-width:800px){
+ .top{height:56px!important;min-height:56px!important;padding:0 13px!important}
+ .top-title{font-size:14px!important}
+ .composer-wrap{padding:6px 11px max(10px,env(safe-area-inset-bottom))!important}
+ .composer{padding:8px 10px!important;border-radius:20px!important}
+ .composer textarea,#input{font-size:15px!important}
+ .plus,.send{width:38px!important;height:38px!important}
+ .foot{font-size:10px!important}
+}
+</style>
+
 </head>
 <body>
 <aside class="side" id="side">
@@ -237,7 +277,7 @@ button,.full{transition:background .16s,border-color .16s,transform .16s}
 <div class="wrap">
   <header class="top">
     <button class="icon-btn menu-fab" type="button" id="btnMenu">☰</button>
-    <div class="top-title" id="topTitle">WORKSPACE / CHAT</div>
+    <div class="top-title" id="topTitle">JagX AI</div>
     <div style="display:flex;align-items:center;gap:8px">
       <button type="button" id="btnTopSignIn" class="chip" style="cursor:pointer;padding:6px 12px;border-radius:999px;border:1px solid #242a20;background:#242a20;color:#f5f5eb;font-weight:600">Sign in</button>
       <button class="icon-btn" type="button" id="btnNew" title="New chat">✎</button>
@@ -253,13 +293,7 @@ button,.full{transition:background .16s,border-color .16s,transform .16s}
       </div></div>
       <div class="composer-wrap"><div class="composer">
         <div id="attachPrev" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
-        <div id="jxQuickPrompts" aria-label="Quick prompts" style="display:flex;gap:7px;flex-wrap:wrap;margin:2px 0 4px">
-          <button type="button" class="chip jx-quick" data-prompt="Search the web for the latest information about: " style="cursor:pointer">⌕ Research a question</button>
-          <button type="button" class="chip jx-quick" data-prompt="Create an image of: " style="cursor:pointer">✦ Create a visual</button>
-          <button type="button" class="chip jx-quick" data-prompt="Help me create a video about: If video generation is available, use it; otherwise explain the supported workflow without pretending a video was generated." style="cursor:pointer">▶ Explore video workflows</button>
-          <button type="button" class="chip jx-quick" data-prompt="Who created JagX and JRILICENSE, and where did the name JagX come from?" style="cursor:pointer">✧ Meet JagX</button>
-        </div>
-        <textarea id="input" rows="1" placeholder="Tell JagX what you’re working on…"></textarea>
+        <textarea id="input" rows="1" placeholder="Message JagX…"></textarea>
         <div class="bar">
           <button class="plus" type="button" id="btnPlus" aria-label="Add attachment">+</button>
           <span class="chip" id="modeChip">Chat · Fast</span>
