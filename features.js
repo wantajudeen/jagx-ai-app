@@ -48,7 +48,8 @@
     {id:'stripe',name:'Stripe',cat:'Payments',url:'https://dashboard.stripe.com/apikeys',desc:'Payments (test mode OK). Needs secret key.',auth:'token',how:'1) dashboard.stripe.com/apikeys\n2) Reveal secret key\n3) Paste below'},
     {id:'notion',name:'Notion',cat:'Creative',url:'https://www.notion.so/my-integrations',desc:'Read/write Notion pages. Needs integration token.',auth:'token',how:'1) notion.so/my-integrations\n2) New integration → copy Internal Integration Token\n3) Share your pages with the integration\n4) Paste token below'},
     {id:'x',name:'X (Twitter)',cat:'Social',url:'https://developer.x.com',desc:'Posts and search. Needs Bearer token.',auth:'token',how:'1) developer.x.com → your app\n2) Keys and tokens → Bearer Token\n3) Paste below'},
-    {id:'gmail',name:'Gmail',cat:'Communication',url:'https://myaccount.google.com',desc:'Email (OAuth later). For now store an app password if you use one.',auth:'token',how:'Optional: Google App Password. Full OAuth coming soon.'},
+    {id:'jagx-mail',name:'JagX Mail',cat:'Communication',url:'https://github.com/Tajudeen001-security/JagX-mail',desc:'Native JagX Mail integration is not available yet. The current JagX Mail repository documents a starter UI and readiness endpoint, not live mailbox APIs.',auth:null,unavailable:true,how:'Waiting for authenticated inbox, search, draft, send, and mailbox permission APIs in JagX Mail.'},
+    {id:'gmail',name:'Gmail',cat:'Communication',url:'https://myaccount.google.com',desc:'Gmail OAuth is not implemented. Do not paste your email password or app password here; saved connector secrets remain in this browser and are not verified.',auth:null,unavailable:true,how:'Use a secure OAuth integration when implemented. Do not store email credentials in this connector.'},
     {id:'drive',name:'Google Drive',cat:'Cloud',url:'https://drive.google.com',desc:'Files. Token optional until OAuth is live.',auth:'token',how:'Full Google OAuth coming soon. You can still enable the connector.'},
     {id:'slack',name:'Slack',cat:'Communication',url:'https://api.slack.com/apps',desc:'Team chat. Needs Bot token.',auth:'token',how:'1) api.slack.com/apps → your app\n2) OAuth → Bot User OAuth Token\n3) Paste below'},
     {id:'discord',name:'Discord',cat:'Communication',url:'https://discord.com/developers/applications',desc:'Bot token for a server.',auth:'token',how:'1) discord.com/developers → Bot → Reset Token\n2) Paste below'},
@@ -210,7 +211,12 @@
         d.querySelector('b').textContent=m.name;
         d.querySelector('.sub').textContent=(m.desc||'')+need;
         var btn=d.querySelector('.tog');
-        if(on){
+        if(m.unavailable){
+          btn.textContent='Not ready';
+          btn.disabled=true;
+          btn.title='This connector is not implemented yet.';
+          btn.style.opacity='.65';
+        } else if(on){
           btn.textContent='Configured';
           btn.classList.add('on');
         } else {
