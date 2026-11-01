@@ -99,7 +99,7 @@
       '<div id="jxConnErr" style="color:#f87171;font-size:13px;margin-top:8px;display:none"></div>'+
       '<button type="button" id="jxConnSave" class="full solid" style="width:100%;margin-top:14px;height:42px;border-radius:11px;font-weight:600;background:#fafafa;color:#0a0a0a;border:none;cursor:pointer">Save & connect</button>'+
       '<button type="button" id="jxConnSkip" style="width:100%;margin-top:8px;height:40px;border-radius:11px;border:1px solid #27272a;background:none;color:#a1a1aa;cursor:pointer">Connect without key (limited)</button>'+
-      '<p style="font-size:11px;color:#71717a;margin-top:12px;line-height:1.4">Your token is stored in browser local storage and sent to JagX vault so the bot can use it. Never share tokens in chat.</p>'+
+      '<p style="font-size:11px;color:#71717a;margin-top:12px;line-height:1.4">Credentials entered here are stored in this browser only and are not sent to the server by this form. Never enter email passwords or production secrets until a secure server-side integration is available.</p>'+
       '</div>';
     document.body.appendChild(m);
     document.getElementById('jxConnClose').onclick=function(){ m.style.display='none'; };
