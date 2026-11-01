@@ -180,6 +180,35 @@ button,.full{transition:background .16s,border-color .16s,transform .16s}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
 </style>
+
+<style id="jagx-natural-chat-redesign">
+/* Product-led chat UI: remove template-like hero prompts and prioritize conversation. */
+#jxQuickPrompts{display:none!important}
+.empty:before{display:none!important}
+.empty h1{display:none!important}
+.empty p{display:none!important}
+.empty{min-height:0!important;flex:1!important;justify-content:flex-end!important;padding:18px 0 12px!important;margin:0 auto!important;width:100%!important;max-width:790px!important}
+.thread:has(.empty){display:flex;flex-direction:column}
+.composer-wrap{padding:8px clamp(14px,4vw,42px) max(12px,env(safe-area-inset-bottom))!important;background:var(--bg)!important}
+.composer{max-width:790px!important;width:100%!important;padding:10px 12px 9px!important;gap:5px!important;border-radius:22px!important;background:#1b1f1c!important;border:1px solid #3a423b!important;box-shadow:none!important}
+.composer textarea,#input{min-height:30px!important;max-height:130px!important;font-size:15px!important;line-height:1.5!important;padding:5px 3px!important}
+.bar{gap:9px!important}
+.plus,.send{width:38px!important;height:38px!important;border-radius:50%!important}
+.plus{border:0!important;background:#2a302b!important;color:#dfe6dc!important}
+.send{background:#b5d77a!important;color:#17200e!important}
+.foot{margin-top:8px!important;font-size:10px!important}
+.top{background:#101211!important}
+@media(max-width:800px){
+ .thread{padding:16px 15px!important}
+ .empty{padding:10px 0 8px!important}
+ .composer-wrap{padding:6px 12px max(10px,env(safe-area-inset-bottom))!important}
+ .composer{padding:8px 10px!important;border-radius:20px!important}
+ .composer textarea,#input{font-size:15px!important;min-height:28px!important}
+ .plus,.send{width:38px!important;height:38px!important}
+ .foot{margin-top:7px!important}
+}
+</style>
+
 </head>
 <body>
 <aside class="side" id="side">
