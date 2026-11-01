@@ -255,8 +255,20 @@
     html=html.replace(/%%TABLE(\d+)%%/g,function(_,n){return tables[+n]||'';});
     return html;
   }
+  function refreshEmptyGreeting(){
+    if(!empty)return;
+    var h=empty.querySelector('h1'),p=empty.querySelector('p');
+    if(!h||!p)return;
+    var hour=new Date().getHours(),greeting,subtitle;
+    if(hour>=5&&hour<12){greeting='Morning. What are we figuring out today?';subtitle='Bring a question, a half-formed idea, or a task you want to get moving.';}
+    else if(hour>=12&&hour<17){greeting='What are we working on?';subtitle='We can think it through, build something, or solve the next problem.';}
+    else if(hour>=17&&hour<22){greeting='Let’s make some progress.';subtitle='What’s on your mind? We can pick it up one step at a time.';}
+    else{greeting='Hey, you’re up late. What’s on your mind?';subtitle='No pressure to have it all figured out. Start wherever you are.';}
+    h.textContent=greeting;p.textContent=subtitle;
+    document.title='JagX AI — '+greeting+' | JagX & JRILICENSE';
+  }
   function renderAll(){
-    if(!history.length){empty.style.display='flex';thread.querySelectorAll('.msg,.thinking').forEach(function(n){n.remove();});return;}
+    if(!history.length){refreshEmptyGreeting();empty.style.display='flex';thread.querySelectorAll('.msg,.thinking').forEach(function(n){n.remove();});return;}
     empty.style.display='none';
     thread.querySelectorAll('.msg').forEach(function(n){n.remove();});
     history.forEach(function(m){
