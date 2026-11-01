@@ -285,6 +285,40 @@ body,.wrap,.main,.page,.thread{background:#101113!important}
 })();
 </script>
 
+<style id="jagx-human-workspace">
+/* Consistent, product-designed UI across every workspace page. */
+:root{--accent:#b9d985;--line:#303831;--panel:#171b18;--text:#edf1e9;--muted:#a4ada1}
+.nav a,.srow,.hitem,.full,.tog,.jx-tools-btn,.composer,.box,.card{transition:background .16s ease,border-color .16s ease,transform .16s ease}
+.nav a{border-radius:10px;padding:11px 13px;letter-spacing:-.01em}
+.nav a.on{box-shadow:inset 2px 0 0 var(--accent)}
+.top{border-bottom-color:#2c342d}
+.top-title{text-transform:none;letter-spacing:.015em;font-size:13px;font-weight:600}
+.page{padding-top:clamp(28px,5vw,58px)}
+.ph{font-family:Inter,"Helvetica Neue",Arial,sans-serif;font-size:clamp(27px,3vw,36px);font-weight:620;letter-spacing:-.045em;line-height:1.15}
+.lead{font-size:14px;line-height:1.8;max-width:700px;margin-top:4px;color:#a7b0a4}
+.box{background:#151916;border:1px solid #2b332c;border-radius:14px;padding:20px;margin-bottom:13px}
+.box:first-of-type{padding-top:20px}
+.srow{border:1px solid transparent;border-radius:11px;padding:15px 13px}
+.srow:hover{border-color:#343e35;transform:translateY(-1px)}
+.page input,.page select,.page textarea:not(#input),.box input,.box select,.box textarea,.card input{background:#111512;border-color:#333c34;border-radius:10px}
+.full,.tog,.jx-tools-btn{border-radius:10px}
+.full.solid{font-weight:650;letter-spacing:-.01em}
+#empty h1{font-size:clamp(35px,5vw,56px);font-weight:560;line-height:1.07;letter-spacing:-.06em;max-width:680px}
+#empty p:first-of-type{max-width:530px;font-size:14px;line-height:1.8}
+#empty:before{content:"JAGX AI  /  YOUR WORKSPACE";letter-spacing:.15em;color:#b9d985}
+.composer{border-radius:18px;padding:14px 16px 12px}
+.msg.bot .bubble{font-size:15px;line-height:1.82;letter-spacing:0}
+.msg.user .bubble{line-height:1.7}
+@media(max-width:800px){
+ .page{padding:25px 16px}
+ .box{padding:16px;border-radius:12px}
+ .ph{font-size:29px}
+ #empty h1{font-size:clamp(34px,9vw,46px)}
+ .top-title{font-size:12px}
+ .composer{border-radius:16px}
+}
+@media(prefers-reduced-motion:reduce){.nav a,.srow,.hitem,.full,.tog,.jx-tools-btn,.composer,.box,.card{transition:none}}
+</style>
 </head>
 <body>
 <aside class="side" id="side">
@@ -427,7 +461,20 @@ body,.wrap,.main,.page,.thread{background:#101113!important}
   <a class="full solid" style="display:grid;place-items:center" href="https://github.com/wantajudeen/jagx-ai-app/releases/download/apk-latest/JagX-AI.apk">Download APK</a>
   <button class="full ghost" type="button" id="dlClose" style="margin-top:8px">Close</button>
 </div></div>
-<div id="jxImageViewer" role="dialog" aria-modal="true" aria-label="Image viewer"><div class="jx-view-top"><span class="jx-view-name" id="jxViewName"></span><button type="button" id="jxZoomOut" aria-label="Zoom out">−</button><button type="button" id="jxZoomIn" aria-label="Zoom in">+</button><button type="button" id="jxZoomReset" aria-label="Reset zoom">Fit</button><a id="jxViewDownload" download>↓</a><button type="button" id="jxViewClose" aria-label="Close image viewer">×</button></div><img class="jx-view-image" id="jxViewImage" alt="Expanded attachment"/><div class="jx-view-help">Pinch or use + / − to zoom · Double-tap image to zoom · Esc to close</div></div><script src="./core.js?v=13"></script>
+<div id="jxImageViewer" role="dialog" aria-modal="true" aria-label="Image viewer"><div class="jx-view-top"><span class="jx-view-name" id="jxViewName"></span><button type="button" id="jxZoomOut" aria-label="Zoom out">−</button><button type="button" id="jxZoomIn" aria-label="Zoom in">+</button><button type="button" id="jxZoomReset" aria-label="Reset zoom">Fit</button><a id="jxViewDownload" download>↓</a><button type="button" id="jxViewClose" aria-label="Close image viewer">×</button></div><img class="jx-view-image" id="jxViewImage" alt="Expanded attachment"/><div class="jx-view-help">Pinch or use + / − to zoom · Double-tap image to zoom · Esc to close</div></div><script>
+(function(){
+ var h=document.querySelector('#empty h1'),p=document.querySelector('#empty p');
+ if(!h||!p)return;
+ var d=new Date(),hour=d.getHours(),greeting,title,subtitle;
+ if(hour>=5&&hour<12){greeting='Good morning';title='Morning. What are we figuring out today?';subtitle='A fresh start for your ideas, research, writing, code, or whatever is on your mind.';}
+ else if(hour>=12&&hour<17){greeting='Good afternoon';title='What are we working on?';subtitle='Bring a question, an idea, or a problem. We’ll take it one useful step at a time.';}
+ else if(hour>=17&&hour<22){greeting='Good evening';title='Let’s make some progress.';subtitle='Pick up where you left off or start something new. I’m here to help you work it through.';}
+ else {greeting='Still up?';title='Hey, you’re up late. What’s on your mind?';subtitle='We can keep it simple, work through an idea, or tackle whatever brought you here.';}
+ h.textContent=title;p.textContent=subtitle;
+ document.title='JagX AI — '+greeting+' | JagX & JRILICENSE';
+})();
+</script>
+<script src="./core.js?v=13"></script>
 <script src="./features.js?v=44"></script>
 <script src="./botfix.js?v=50"></script>
 </body>
