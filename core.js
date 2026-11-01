@@ -331,12 +331,12 @@
     try{
       var mediaImage=text.match(/^(?:create|generate|draw)\s+(?:an?\s+)?image\s+(?:of|for|showing)\s*:?\s*(.+)$/i);
       var mediaVideo=text.match(/^(?:create|generate|make)\s+(?:a\s+)?video\s+(?:of|about|showing|for)\s*:?\s*(.+)$/i);
-      var endpoint=mediaImage?'/generate/image':(mediaVideo?'/generate/video':'/public-chat');
-      var payload=(mediaImage||mediaVideo)?{prompt:(mediaImage||mediaVideo)[1],style:'Cinematic'}:{message:prompt,history:history.slice(0,-1).slice(-12)};
+      var endpoint=mediaImage?'/images/generate':(mediaVideo?'/video/generate':'/public-chat');
+      var payload=mediaImage?{prompt:mediaImage[1],width:768,height:768}:(mediaVideo?{prompt:mediaVideo[1],duration:4,model:'google/veo-3.1-fast',aspect_ratio:'16:9'}:{message:prompt,history:history.slice(0,-1).slice(-12)});
       var r=await fetch(API+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       var data=await r.json().catch(function(){return {};});
       stopThinking();
-      if(!r.ok){var why=data.detail||('HTTP '+r.status);if(r.status===404)why='JagX backend route not found (404). The live Render service is not serving /public-chat yet. Redeploy wantajudeen/jagx-backend from main, then verify /health reports version 7.0.0 before retrying.';else if(r.status===502||r.status===503)why='JagX AI provider is temporarily unavailable ('+r.status+'). Check the backend provider keys, model name and quota. Details: '+why;history.push({role:'assistant',content:why});}
+      if(!r.ok){var why=data.detail||('HTTP '+r.status);if(r.status===404)why='JagX AI endpoint was not found (404). Check that the deployed service is Tajudeen001-security/JagX-ai-v2 and that it is running the latest main branch.';else if(r.status===502||r.status===503)why='JagX AI provider is temporarily unavailable ('+r.status+'). Check the backend provider keys, model name and quota. Details: '+why;history.push({role:'assistant',content:why});}
       else{
         var ans=data.response||data.message||'';
         if(data.status==='processing')ans=(data.detail||'Your media job is processing. Automatic status updates are not available yet.')+(data.prediction_url?'\\n\\nJob status: '+data.prediction_url:'');
