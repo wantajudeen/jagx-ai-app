@@ -261,6 +261,30 @@ body,.wrap,.main,.page,.thread{background:#101113!important}
 @media(min-width:801px){.empty{height:0!important;min-height:0!important}.thread{padding-bottom:18px}}
 </style>
 
+
+<style id="jagx-tools-workspace">
+.jx-tools-btn{appearance:none;border:1px solid #35373d;background:#202126;color:#d5d7df;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer}
+.jx-tools-btn:hover{background:#2a2c32;border-color:#50535c}
+#page-conn .ph{font-size:25px!important;letter-spacing:-.04em!important}
+#page-conn .lead{max-width:680px!important;line-height:1.65!important}
+#page-conn .srow{background:#191a1f!important;border:1px solid #30323a!important;border-radius:14px!important;padding:13px!important;margin:7px 0!important}
+#page-conn .srow .tog{border-radius:999px!important;background:#272930!important;border:1px solid #3b3d46!important;color:#e0e2e8!important;padding:7px 12px!important}
+#page-conn .srow .tog.on{background:#e1e3e8!important;color:#15161a!important;border-color:#e1e3e8!important}
+#page-conn #jxConnHelp{background:#191a1f!important;border:1px solid #30323a!important;border-radius:16px!important;color:#c6c8d0!important}
+#page-conn #mcpSearch,#page-conn #mcpCat{background:#191a1f!important;border:1px solid #34363e!important;color:#eceef2!important;border-radius:12px!important}
+@media(max-width:520px){.jx-tools-btn{padding:7px 8px;font-size:11px}#modeChip{font-size:11px!important;padding:6px 8px!important}}
+</style>
+<script>
+(function(){
+ function bindJagXTools(){
+   var b=document.getElementById('btnTools');
+   if(b&&!b.dataset.bound){b.dataset.bound='1';b.addEventListener('click',function(){location.hash='#/conn';});}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindJagXTools);else bindJagXTools();
+ setTimeout(bindJagXTools,500);
+})();
+</script>
+
 </head>
 <body>
 <aside class="side" id="side">
@@ -308,6 +332,7 @@ body,.wrap,.main,.page,.thread{background:#101113!important}
         <textarea id="input" rows="1" placeholder="Message JagX…"></textarea>
         <div class="bar">
           <button class="plus" type="button" id="btnPlus" aria-label="Add attachment">+</button>
+          <button type="button" id="btnTools" class="jx-tools-btn" aria-label="Open connectors and plugins" title="Connectors and plugins">⌘ Tools</button>
           <span class="chip" id="modeChip">Chat · Fast</span>
           <button type="button" id="voice" aria-label="Start voice input" title="Start voice input">🎙</button><button class="send" type="button" id="send" aria-label="Send message">↑</button>
         </div>
@@ -402,8 +427,8 @@ body,.wrap,.main,.page,.thread{background:#101113!important}
   <a class="full solid" style="display:grid;place-items:center" href="https://github.com/wantajudeen/jagx-ai-app/releases/download/apk-latest/JagX-AI.apk">Download APK</a>
   <button class="full ghost" type="button" id="dlClose" style="margin-top:8px">Close</button>
 </div></div>
-<div id="jxImageViewer" role="dialog" aria-modal="true" aria-label="Image viewer"><div class="jx-view-top"><span class="jx-view-name" id="jxViewName"></span><button type="button" id="jxZoomOut" aria-label="Zoom out">−</button><button type="button" id="jxZoomIn" aria-label="Zoom in">+</button><button type="button" id="jxZoomReset" aria-label="Reset zoom">Fit</button><a id="jxViewDownload" download>↓</a><button type="button" id="jxViewClose" aria-label="Close image viewer">×</button></div><img class="jx-view-image" id="jxViewImage" alt="Expanded attachment"/><div class="jx-view-help">Pinch or use + / − to zoom · Double-tap image to zoom · Esc to close</div></div><script src="./core.js?v=12"></script>
-<script src="./features.js?v=43"></script>
-<script src="./botfix.js?v=49"></script>
+<div id="jxImageViewer" role="dialog" aria-modal="true" aria-label="Image viewer"><div class="jx-view-top"><span class="jx-view-name" id="jxViewName"></span><button type="button" id="jxZoomOut" aria-label="Zoom out">−</button><button type="button" id="jxZoomIn" aria-label="Zoom in">+</button><button type="button" id="jxZoomReset" aria-label="Reset zoom">Fit</button><a id="jxViewDownload" download>↓</a><button type="button" id="jxViewClose" aria-label="Close image viewer">×</button></div><img class="jx-view-image" id="jxViewImage" alt="Expanded attachment"/><div class="jx-view-help">Pinch or use + / − to zoom · Double-tap image to zoom · Esc to close</div></div><script src="./core.js?v=13"></script>
+<script src="./features.js?v=44"></script>
+<script src="./botfix.js?v=50"></script>
 </body>
 </html>
