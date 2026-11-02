@@ -29,14 +29,14 @@
       '@media(max-width:520px){.jx-launch-grid{grid-template-columns:1fr}.jx-launch-grid button{min-height:68px}}';
     document.head.appendChild(style);
     var status = document.getElementById('jxProviderStatus');
-    fetch(API + '/ready', { method: 'GET', cache: 'no-store' }).then(function (r) {
+    fetch(API + '/health', { method: 'GET', cache: 'no-store' }).then(function (r) {
       if (!r.ok) throw new Error('not ready');
       return r.json();
     }).then(function (data) {
       var providers = data.providers || data.provider_status || (data.details && data.details.providers);
       if (providers && typeof providers === 'object') {
         var nvidia = providers.nvidia;
-        status.textContent = nvidia === true || (nvidia && nvidia.configured) ? 'NVIDIA key configured' : 'NVIDIA key not confirmed';
+        status.textContent = nvidia === true ? 'NVIDIA key configured' : 'NVIDIA key not configured';
       } else {
         status.textContent = 'Backend reachable · provider key status private';
       }
@@ -62,8 +62,9 @@
           window.alert('JagX chat is still loading. Please try again in a moment.');
           return;
         }
+        // The live-session button enables botOn and routes to chat itself.
+        // Do not call JagXGo('chat') afterward: applyRoute would reset botOn to false.
         if (botLive) botLive.click();
-        if (window.JagXGo) window.JagXGo('chat');
         input.value = tasks[kind] + goal.trim();
         input.dispatchEvent(new Event('input', { bubbles: true }));
         window.JagXSend();
