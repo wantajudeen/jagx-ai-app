@@ -123,7 +123,7 @@
   }
   document.getElementById('btnMenu').onclick=openSide;scrim.onclick=closeSide;
   document.getElementById('btnNew').onclick=function(){newChat();go('chat');};
-  document.getElementById('botLive').onclick=function(){botOn=true;mode='bot';document.getElementById('modeChip').textContent='Bot · Live';input.placeholder='Give the bot one clear task…';go('chat');};
+  document.getElementById('botLive').onclick=function(){go('chat');botOn=true;mode='bot';document.getElementById('modeChip').textContent='Bot · Live';input.placeholder='Give the bot one clear task…';};
   document.getElementById('goConn').onclick=function(){go('conn');};
   document.getElementById('goVault').onclick=function(){go('vault');};
   document.getElementById('goSkills').onclick=function(){go('skills');};
