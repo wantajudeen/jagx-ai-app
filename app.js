@@ -13,7 +13,7 @@
   }
   window.__jagxCoreLoading = true;
   var script = document.createElement('script');
-  script.src = './core.js?v=6';
+  script.src = './core.js?v=7';
   script.onload = function () {
     window.__jagxCoreLoading = false;
     loadEnhancements();
