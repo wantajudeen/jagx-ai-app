@@ -34,7 +34,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .msg{margin:0 0 26px}.msg.user{display:flex;justify-content:flex-end}.bubble{max-width:min(100%,700px);font-size:15px;line-height:1.75;word-break:break-word;color:#d4dcd0}.msg.user .bubble{background:#e6e9df;border:1px solid #d6dacd;border-radius:15px 15px 4px 15px;padding:12px 16px;white-space:pre-wrap;color:#22261f}.msg.bot .bubble{color:#d4dcd0}.thinking{color:#767b70;font-size:13px;margin:6px 0 12px}
 pre.code{background:#20241f;border:1px solid #343a30;color:#f1f1e9;border-radius:10px;padding:16px;overflow-x:auto;margin:12px 0;font-size:13px;position:relative}.copy-btn{position:absolute;top:8px;right:8px;font-size:11px;padding:5px 9px;border-radius:6px;background:#3a4234;color:#e0edcf}
 .composer-wrap{padding:10px clamp(18px,4vw,52px) 22px;background:linear-gradient(180deg,rgba(16,18,17,0),#101211 24%)}
-.composer{max-width:790px;margin:0 auto;background:#171b18;border:1px solid #303631;border-radius:14px;padding:13px 15px 11px;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 32px rgba(0,0,0,.22)}.composer:focus-within{border-color:#9bb77b;box-shadow:0 0 0 3px rgba(169,207,104,.17)}
+.composer{max-width:790px;margin:0 auto;background:#171b18;border:1px solid #303631;border-radius:14px;padding:13px 15px 11px;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 32px rgba(0,0,0,.22)}.composer:focus-within{border-color:#3b4439;box-shadow:none}
 .composer textarea,#input{width:100%;outline:0;resize:none;max-height:min(45vh,520px);min-height:28px;font-size:14px;line-height:1.65;background:transparent!important;border:none!important;padding:5px 2px!important;color:var(--text);overflow-y:auto;overscroll-behavior:contain}
 .bar{display:flex;align-items:center;gap:8px}.plus,.send{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;flex-shrink:0}.plus{color:#60675a;font-size:21px;border:1px solid #e2e2d9}.plus:hover{background:#f0f1e9}.chip{font-size:11px;color:#a0a89e;padding:5px 8px;font-weight:550}.send{background:#20251e;color:#f4f4eb;margin-left:auto;font-weight:700;border-radius:8px}.send:hover{background:#39462d}.send:disabled{opacity:.35}
 .foot{text-align:center;color:#85877d;font-size:10px;margin-top:10px;letter-spacing:.01em}.foot span{color:#5f7e3a!important}
@@ -331,6 +331,7 @@ body,.wrap,.main,.page,.thread{background:#101113!important}
     <a href="#/github" data-route="github">Developer tools</a>
     <a href="#/settings" data-route="settings">Settings</a>
     <div class="sec">Chats</div>
+    <button type="button" id="clearChats" class="hitem" style="color:#d1a4a4">Clear chat history</button>
     <div id="histList"></div>
   </nav>
   <div class="side-bot">
@@ -402,7 +403,7 @@ body,.wrap,.main,.page,.thread{background:#101113!important}
     </div>
 
     <div class="page" id="page-vault"><div class="ph">Browser vault</div><p class="lead">Secrets are stored in this browser only in this version. They are not protected by a server-side encrypted vault; avoid saving sensitive credentials on shared devices.</p><div id="vaultList"></div><div class="box"><label>Label</label><input id="vLabel" placeholder="GitHub"/><label>Token</label><input id="vSecret" type="password"/><button class="full solid" type="button" id="vAdd">Save</button></div></div>
-    <div class="page" id="page-skills"><div class="ph">Reusable skills</div><div id="skillList"></div><div class="box"><label>Name</label><input id="skName"/><label>What it does</label><textarea id="skBody" rows="4"></textarea><button class="full solid" type="button" id="skAdd">Save</button></div></div>
+    <div class="page" id="page-skills"><div class="ph">Reusable skills</div><p class="lead">Save reusable instructions for this account on this browser. You can also paste a skill into chat as <b>Install skill: Skill Name</b>, followed by its instructions. Review imported instructions before using them; skills cannot override safety rules or authorize actions by themselves.</p><div id="skillList"></div><div class="box"><label>Name</label><input id="skName" placeholder="Research analyst"/><label>What it does</label><textarea id="skBody" rows="4" placeholder="Paste skill instructions here…"></textarea><button class="full solid" type="button" id="skAdd">Install skill</button></div></div>
 
     <div class="page" id="page-terms">
       <div class="ph">Terms of Service</div>
