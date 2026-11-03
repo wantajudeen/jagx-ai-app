@@ -29,6 +29,7 @@
     if(r==='chat'||r==='build'){var pc=document.getElementById('page-chat');pc.classList.add('on');pc.style.display='flex';}
     else {var map={bot:'page-bot',projects:'page-projects',github:'page-github',settings:'page-settings',conn:'page-conn',vault:'page-vault',skills:'page-skills',terms:'page-terms',privacy:'page-privacy'};var id=map[r];if(id){var el=document.getElementById(id);if(el){el.classList.add('on');el.style.display='flex';}}}
     closeSide();
+    if(r==='github'&&typeof ghStatusCheck==='function'){setTimeout(function(){ghStatusCheck();},250);}
   }
   window.addEventListener('hashchange', applyRoute);
   function loadLocal(){
