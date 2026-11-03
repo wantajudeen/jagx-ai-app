@@ -307,7 +307,8 @@
     });
     thread.scrollTop=thread.scrollHeight;
   }
-  function startThinking(){stopThinking();thinkStart=Date.now();thinkEl=document.createElement('div');thinkEl.className='thinking';thinkEl.textContent='Thinking…';thread.appendChild(thinkEl);empty.style.display='none';thinkTimer=setInterval(function(){if(!thinkEl)return;var s=Math.floor((Date.now()-thinkStart)/1000);thinkEl.textContent='Thinking · '+s+'s';},400);}
+  function setWorkStatus(label){if(thinkEl)thinkEl.textContent=label;}
+  function startThinking(agentMode){stopThinking();thinkStart=Date.now();thinkEl=document.createElement('div');thinkEl.className='thinking';thinkEl.setAttribute('role','status');thinkEl.setAttribute('aria-live','polite');thinkEl.textContent='Calling JagX AI…';thread.appendChild(thinkEl);empty.style.display='none';var stages=agentMode?['Calling JagX AI…','Routing task to agent mode…','Using configured AI providers…','Working through your request…']:['Calling JagX AI…','Using the selected chat mode…','Working through your request…'];var stage=0;thinkTimer=setInterval(function(){if(!thinkEl)return;var elapsed=Math.floor((Date.now()-thinkStart)/1000);if(stage<stages.length-1&&elapsed>=stage+2){stage++;}thinkEl.textContent=stages[stage]+' · '+elapsed+'s';},700);}
   function stopThinking(){if(thinkTimer){clearInterval(thinkTimer);thinkTimer=null;}if(thinkEl&&thinkEl.parentNode)thinkEl.parentNode.removeChild(thinkEl);thinkEl=null;}
   function contextPrefix(text,attachments){
     var extra='';
@@ -339,7 +340,7 @@
     if(editingIndex!==null){history=history.slice(0,editingIndex);editingIndex=null;}
     history.push({role:'user',content:show});
     pendingAtts=[];renderAttach();
-    renderAll();saveLocal();sendBtn.disabled=true;startThinking();
+    renderAll();saveLocal();sendBtn.disabled=true;startThinking(botOn);
     try{
       var mediaImage=text.match(/^(?:create|generate|draw)\s+(?:an?\s+)?image\s+(?:of|for|showing)\s*:?\s*(.+)$/i);
       var mediaVideo=text.match(/^(?:create|generate|make)\s+(?:a\s+)?video\s+(?:of|about|showing|for)\s*:?\s*(.+)$/i);
@@ -347,6 +348,7 @@
       var payload=mediaImage?{prompt:mediaImage[1],width:768,height:768}:(mediaVideo?{prompt:mediaVideo[1],duration:4,model:'google/veo-3.1-fast',aspect_ratio:'16:9'}:{message:prompt,history:history.slice(0,-1).slice(-8),mode:botOn?'agents':(mode==='build'?'reason':'fast'),reflect:mode==='build'});
       var requestHeaders={'Content-Type':'application/json'};if(session&&session.access_token)requestHeaders.Authorization='Bearer '+session.access_token;var r=await fetch(API+endpoint,{method:'POST',headers:requestHeaders,body:JSON.stringify(payload)});
       var data=await r.json().catch(function(){return {};});
+      setWorkStatus(r.ok?'Drafting response…':'Finishing request…');
       stopThinking();
       if(!r.ok){var why=data.detail||('HTTP '+r.status);if(r.status===404)why='JagX AI endpoint was not found (404). Check that the deployed service is Tajudeen001-security/JagX-ai-v2 and that it is running the latest main branch.';else if(r.status===502||r.status===503)why='JagX AI provider is temporarily unavailable ('+r.status+'). Check the backend provider keys, model name and quota. Details: '+why;history.push({role:'assistant',content:why});}
       else{
