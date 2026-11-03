@@ -353,8 +353,8 @@
         var reader=r.body.getReader(),decoder=new TextDecoder(),buffer='',streamAnswer='',streamAgents=[];
         while(true){
           var chunk=await reader.read();if(chunk.done)break;buffer+=decoder.decode(chunk.value,{stream:true});
-          var blocks=buffer.split('\\n\\n');buffer=blocks.pop()||'';
-          blocks.forEach(function(block){var line=block.split('\\n').find(function(x){return x.indexOf('data: ')==0;});if(!line)return;try{var ev=JSON.parse(line.slice(6));
+          var blocks=buffer.split('\n\n');buffer=blocks.pop()||'';
+          blocks.forEach(function(block){var line=block.split('\n').find(function(x){return x.indexOf('data: ')==0;});if(!line)return;try{var ev=JSON.parse(line.slice(6));
             if(ev.event==='status'){setWorkStatus(ev.message||'Working…');}
             else if(ev.event==='agent_start'){setWorkStatus('Calling '+String(ev.agent||'agent')+'…');}
             else if(ev.event==='tool_use'){setWorkStatus('Using tools…');}
@@ -362,7 +362,7 @@
             else if(ev.event==='thinking'){setWorkStatus('Planning the response…');}
             else if(ev.event==='reflecting'){setWorkStatus('Reviewing the draft…');}
             else if(ev.event==='token'){streamAnswer+=ev.token||'';}
-            else if(ev.event==='error'){streamAnswer+='\\n\\nRequest issue: '+(ev.detail||'stream failed');}
+            else if(ev.event==='error'){streamAnswer+='\n\nRequest issue: '+(ev.detail||'stream failed');}
             else if(ev.event==='done'&&Array.isArray(ev.agents_used))streamAgents=ev.agents_used;
           }catch(ignore){}});
         }
