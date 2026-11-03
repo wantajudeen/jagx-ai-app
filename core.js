@@ -125,7 +125,7 @@
   document.getElementById('btnMenu').onclick=openSide;scrim.onclick=closeSide;
   document.getElementById('btnNew').onclick=function(){newChat();go('chat');};
   var clearChatsBtn=document.getElementById('clearChats');
-  if(clearChatsBtn)clearChatsBtn.onclick=function(){if(!confirm('Delete all chat history from this browser and synced chat records for this account? This cannot be undone.'))return;chats=[];chatId=uid();history=[];activeProject=null;chats=[{id:chatId,title:'New conversation',msgs:[],updated:Date.now()}];saveLocal();renderAll();};
+  if(clearChatsBtn)clearChatsBtn.onclick=function(){if(!confirm('Delete all chat history stored in this browser? This cannot be undone.'))return;chats=[];chatId=uid();history=[];activeProject=null;chats=[{id:chatId,title:'New conversation',msgs:[],updated:Date.now()}];saveLocal();renderAll();};
   document.getElementById('botLive').onclick=function(){go('chat');botOn=true;mode='bot';document.getElementById('modeChip').textContent='Bot · Live';input.placeholder='Give the bot one clear task…';};
   document.getElementById('goConn').onclick=function(){go('conn');};
   document.getElementById('goVault').onclick=function(){go('vault');};
